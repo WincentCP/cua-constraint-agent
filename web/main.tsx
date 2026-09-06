@@ -18,6 +18,7 @@ function App(){
    if(m.type==='TASK'){setTask(m.payload);setTranscript([]);}
    if(m.type==='PROGRESS'&&m.payload.text)setMessage(m.payload.text);
    if(m.type==='PREPARE_PLAY'){currentTurn.current=m.payload;confirmation.current=m.payload.confirmation;if(audio.current.onset){deferredTurn.current=m.payload;return;}audio.current.listen(false);setMic('Mendengarkan aplikasi');send('PLAY_READY',{turn_id:m.payload.id});}
+   if(m.type==='TURN_CANCELLED'){if(deferredTurn.current?.id===m.payload.turn_id)deferredTurn.current=undefined;if(currentTurn.current?.id===m.payload.turn_id)currentTurn.current=undefined;}
    if(m.type==='PLAY'){const t=m.payload;setMessage(t.text);setTranscript(old=>[...old,t.text]);try{const ok=await audio.current.play(t.audio);if(ok&&currentTurn.current?.id===t.id)send('PLAYED',{turn_id:t.id});}catch{send('PLAY_FAILED',{turn_id:t.id});}}
    if(m.type==='DEMO_TEXT'){setMessage(m.payload.text);setTranscript(old=>[...old,m.payload.text]);setDemoTurn(m.payload);send('PLAYED',{turn_id:m.payload.id});}
    if(m.type==='LISTEN'){currentTurn.current=undefined;confirmation.current=m.payload.confirmation;audio.current.listen(true);setMic(m.payload.intent==='CONTROL'?'Mendengar stop atau koreksi':'Giliranmu berbicara');}
