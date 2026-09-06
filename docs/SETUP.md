@@ -21,7 +21,7 @@ Untuk mencoba antarmuka tanpa model:
 npm run demo
 ```
 
-Buka `http://localhost:3050/study`. Demo tetap memerlukan Chromium untuk menjalankan task browser, tetapi tidak memerlukan Ollama/STT/TTS karena inputnya teks dan planner-nya simulasi. Data demo tidak masuk hasil penelitian. Hentikan dengan Ctrl+C.
+Buka `http://localhost:3050/study`. Demo tidak memerlukan Ollama/STT/TTS karena inputnya teks dan planner-nya simulasi. Chromium diperlukan untuk menjalankan task sintetis; jika belum terpasang, demo tetap memandu consent/readiness dan memberi fallback yang dapat diulang atau ditutup, tetapi task browser akan dilewati. Data demo tidak masuk hasil penelitian. Hentikan dengan Ctrl+C.
 
 ## 2. Ollama dan model
 
