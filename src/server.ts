@@ -49,8 +49,12 @@ const narratives:Record<string,string>={verified_complete:'Satu barang yang meme
 async function startRun(s:Session,scenario:Scenario,condition:Condition,auto=false){
  if(s.starting||s.run&&!s.run.terminal||s.state==='CLOSED'||s.state==='CLOSING')throw Error('session_busy');s.starting=true;
  try{if(s.run)await s.run.done;if(session!==s||(['CLOSED','CLOSING'] as State[]).includes(s.state))return;
-  const world=fixtures.create(scenario);s.world=world;const epoch=s.epoch;let run:AgentRun|undefined;
-  const task=await openTask(world.id,world.secret,()=>{void run?.finish('execution_failed','egress_or_popup_blocked');},process.env.CHROMIUM_PATH);if(s.epoch!==epoch){await task.server.kill();fixtures.remove(world.id);return;}
+  const world=fixtures.create(scenario);s.world=world;const epoch=s.epoch;let run:AgentRun|undefined;let task:Awaited<ReturnType<typeof openTask>>;
+  try{task=await openTask(world.id,world.secret,()=>{void run?.finish('execution_failed','egress_or_popup_blocked');},process.env.CHROMIUM_PATH);}catch(error){
+   world.closed=true;fixtures.remove(world.id);s.world=undefined;event(s,'run_start_failure',{reason:'infrastructure_failed',detail:error instanceof Error?error.message:'browser_start_failed'});state(s,'BETWEEN_TASKS');
+   say(s,'Tugas belum bisa dimulai karena browser lokal belum siap. Ucapkan lanjut untuk mencoba lagi, atau selesai untuk menutup sesi.','BETWEEN_TASKS');return;
+  }
+  if(s.epoch!==epoch){await task.server.kill();fixtures.remove(world.id);return;}
   const metadata={condition,base:scenario.base,split:scenario.split,presentation:scenario.presentation,kind:scenario.kind,template:scenario.template,config_hash:CONFIG_HASH,prompt_hash:PROMPT_HASH,dataset_hash:hash(scenario),demo,model:MODEL,chromium:task.browser.version(),node:process.version,freeze:existsSync('config/freeze.json')?JSON.parse(readFileSync('config/freeze.json','utf8')):null};
   run=new AgentRun(task.page,task.browser,task.server,condition,demo?new DemoModel():new Ollama(),{
    log:(type,payload,sensitive)=>event(s,type,payload,sensitive),
