@@ -1,6 +1,6 @@
 import {createServer,type IncomingMessage,type ServerResponse} from 'node:http';
 import {readFileSync,existsSync,mkdirSync,writeFileSync} from 'node:fs';
-import {resolve,extname} from 'node:path';
+import {resolve,relative,isAbsolute,extname} from 'node:path';
 import {randomBytes,randomUUID,timingSafeEqual} from 'node:crypto';
 import {WebSocketServer,WebSocket} from 'ws';
 import {z} from 'zod';
@@ -26,7 +26,8 @@ const store=new Store(process.env.DATA_PATH||'data/research.sqlite'),fixtures=ne
 const equal=(a:string,b:string)=>a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 type State='CONSENT'|'READINESS'|'READY'|'IN_TASK'|'BETWEEN_TASKS'|'FEEDBACK'|'CLOSING'|'CLOSED';
 type Turn={id:string;text:string;intent:'ANSWER'|'CONTROL'|'BETWEEN_TASKS'|'END';confirmation?:string;resultRun?:string;ready:boolean};
-type Session={id:string;token:string;code:string;mode:'demo'|'study'|'pilot'|'benchmark';slot:number;index:number;state:State;epoch:number;seq:number;ws?:WebSocket;lastHeartbeat:number;run?:AgentRun;world?:World;requests:Set<string>;turn?:Turn;lastPlayed?:Turn;timer?:NodeJS.Timeout;answerTimer?:NodeJS.Timeout;reprompts:number;comprehension:boolean;readyHeard:boolean;started?:number;starting:boolean;pendingSpeech?:boolean;inputTurn?:string};
+type ScheduleItem={scenario:Scenario;condition:Condition;manifestIndex?:number};
+type Session={id:string;token:string;code:string;mode:'demo'|'study'|'pilot'|'benchmark';slot:number;index:number;state:State;epoch:number;seq:number;ws?:WebSocket;lastHeartbeat:number;run?:AgentRun;world?:World;retryItem?:ScheduleItem;benchmarkTotal?:number;requests:Set<string>;turn?:Turn;lastPlayed?:Turn;deferredSay?:{text:string;intent:Turn['intent'];confirmation?:string;resultRun?:string};timer?:NodeJS.Timeout;answerTimer?:NodeJS.Timeout;workTimer?:NodeJS.Timeout;reprompts:number;comprehension:boolean;readyHeard:boolean;started?:number;starting:boolean;pendingSpeech?:boolean;inputTurn?:string};
 let session:Session|undefined;let closing=false;
 const Consent=z.object({accepted:z.boolean(),adult:z.boolean(),version:z.string().min(1),request_id:z.string().uuid()}).strict();
 const consentConfig=()=>({contact:process.env.RESEARCHER_CONTACT??'',version:process.env.CONSENT_VERSION??'',ethics:process.env.ETHICS_PROCEDURE??'',custodian:process.env.DATA_CUSTODIAN??'',deletion:process.env.DELETION_PLAN??''});
@@ -35,31 +36,38 @@ function emit(s:Session,type:string,payload:unknown={}){const e={type,payload,se
 function event(s:Session,type:string,payload:unknown,sensitive=false){try{return store.event(s.id,s.run?.id??null,type,{session_id:s.id,...s.run?.envelope(),...payload as object},sensitive,s.mode==='demo'||s.mode==='benchmark');}catch(e){void s.run?.finish('infrastructure_failed','storage_failure');throw e;}}
 function state(s:Session,value:State){s.state=value;emit(s,'STATE',{state:value});}
 function clearTurn(s:Session){clearTimeout(s.answerTimer);s.turn=undefined;s.pendingSpeech=false;}
+function stopWorking(s:Session){clearTimeout(s.workTimer);s.workTimer=undefined;}
+function scheduleWorking(s:Session,delay:number=LIMITS.workFirstMs){stopWorking(s);if(s.mode==='benchmark'||s.state!=='IN_TASK'||s.run?.terminal||s.run?.held||s.turn)return;s.workTimer=setTimeout(()=>{if(s.state==='IN_TASK'&&!s.run?.terminal&&!s.run?.held&&!s.turn){emit(s,'WORKING',{});scheduleWorking(s,LIMITS.workRepeatMs);}},delay);}
 function say(s:Session,text:string,intent:Turn['intent']='ANSWER',confirmation?:string,resultRun?:string){
- if(s.state==='CLOSED'||s.state==='CLOSING')return;clearTurn(s);const turn:Turn={id:randomUUID(),text,intent,confirmation,resultRun,ready:false};s.turn=turn;emit(s,'PREPARE_PLAY',turn);
+ if(s.state==='CLOSED'||s.state==='CLOSING')return;if(s.pendingSpeech){s.deferredSay={text,intent,confirmation,resultRun};return;}stopWorking(s);if(s.turn)emit(s,'TURN_CANCELLED',{turn_id:s.turn.id,reason:'superseded'});clearTurn(s);const turn:Turn={id:randomUUID(),text,intent,confirmation,resultRun,ready:false};s.turn=turn;emit(s,'PREPARE_PLAY',turn);
 }
+function flushDeferred(s:Session){const pending=s.deferredSay;if(!pending)return;if(s.turn){s.deferredSay=undefined;return;}if(!s.pendingSpeech){s.deferredSay=undefined;say(s,pending.text,pending.intent,pending.confirmation,pending.resultRun);}}
 async function playReady(s:Session,id:string){const t=s.turn;if(!t||t.id!==id||t.ready)return;t.ready=true;const epoch=s.epoch;
  if(demo){emit(s,'DEMO_TEXT',t);return;}
  try{const audio=await voice.request('tts',{text:t.text});if(session!==s||s.epoch!==epoch||s.turn?.id!==id)return;emit(s,'PLAY',{...t,audio:audio.audio,mime:audio.mime});}
  catch{if(s.epoch!==epoch)return;emit(s,'AUDIO_ERROR',{text:'Suara tidak tersedia. Tekan Escape untuk berhenti; minta peneliti memeriksa perangkat.'});event(s,'voice_failure',{engine:'tts'});await s.run?.finish('infrastructure_failed','tts_unavailable');}
 }
 function answerDeadline(s:Session){clearTimeout(s.answerTimer);s.answerTimer=setTimeout(()=>{if(s.pendingSpeech)return;if(s.reprompts++<LIMITS.reprompts&&s.lastPlayed)say(s,'Silakan jawab. Kamu juga bisa mengatakan ulang, lewati, atau selesai.','ANSWER',s.lastPlayed.confirmation);else if(s.run&&!s.run.terminal)void s.run.finish('no_response','answer_silence');else void closeSession(s);},LIMITS.answerMs);}
-function played(s:Session,id:string){const t=s.turn;if(!t||id!==t.id)return;s.lastPlayed={...t};s.turn=undefined;if(t.resultRun)store.delivery(t.resultRun,true);event(s,'playback_completed',{turn_id:id,intent:t.intent});emit(s,'LISTEN',{intent:t.intent,confirmation:t.confirmation});if(s.state==='READINESS')s.readyHeard=true;if(t.intent==='ANSWER')answerDeadline(s);if(s.run?.goal&&!s.run.terminal&&s.run.phase!=='AWAITING_APPROVAL')s.run.resume();if(t.intent==='END')void closeSession(s);}
+function played(s:Session,id:string){const t=s.turn;if(!t||id!==t.id)return;s.lastPlayed={...t};s.turn=undefined;if(t.resultRun)store.delivery(t.resultRun,true);event(s,'playback_completed',{turn_id:id,intent:t.intent});emit(s,'LISTEN',{intent:t.intent,confirmation:t.confirmation});if(s.state==='READINESS')s.readyHeard=true;if(t.intent==='ANSWER')answerDeadline(s);if(s.run?.goal&&!s.run.terminal&&s.run.phase!=='AWAITING_APPROVAL'){s.run.resume();scheduleWorking(s);}if(t.intent==='END')void closeSession(s);}
 const narratives:Record<string,string>={verified_complete:'Satu barang yang memenuhi syarat sudah masuk ke keranjang penelitian.',no_feasible_in_scope:'Ketiga produk yang tersedia dalam tugas ini terbukti tidak memenuhi semua syarat.',insufficient_evidence:'Bukti yang tersedia belum cukup untuk memastikan pilihan yang sesuai.',budget_exhausted:'Batas pemeriksaan sudah tercapai. Saya belum dapat memastikan pilihan yang sesuai.',skipped:'Tugas dilewati.',user_stopped:'Sesi dihentikan.',execution_failed:'Hasil tugas belum dapat diverifikasi.',infrastructure_failed:'Tugas berhenti karena kendala perangkat atau layanan lokal.',timeout:'Batas waktu tugas tercapai.',no_response:'Tugas dihentikan karena belum ada jawaban.',unsupported_goal:'Tujuan ini belum dapat diproses dalam lingkup tugas.',invalid_plan:'Tugas dihentikan karena keluaran perencana tidak valid.'};
-async function startRun(s:Session,scenario:Scenario,condition:Condition,auto=false){
+async function startRun(s:Session,scenario:Scenario,condition:Condition,auto=false,manifestIndex?:number){
  if(s.starting||s.run&&!s.run.terminal||s.state==='CLOSED'||s.state==='CLOSING')throw Error('session_busy');s.starting=true;
  try{if(s.run)await s.run.done;if(session!==s||(['CLOSED','CLOSING'] as State[]).includes(s.state))return;
   const world=fixtures.create(scenario);s.world=world;const epoch=s.epoch;let run:AgentRun|undefined;let task:Awaited<ReturnType<typeof openTask>>;
+  const metadataBase={condition,base:scenario.base,split:scenario.split,presentation:scenario.presentation,kind:scenario.kind,template:scenario.template,manifest_index:manifestIndex??null,config_hash:CONFIG_HASH,prompt_hash:PROMPT_HASH,dataset_hash:hash(scenario),demo,model:MODEL,node:process.version,freeze:existsSync('config/freeze.json')?JSON.parse(readFileSync('config/freeze.json','utf8')):null};
   try{task=await openTask(world.id,world.secret,()=>{void run?.finish('execution_failed','egress_or_popup_blocked');},process.env.CHROMIUM_PATH);}catch(error){
-   world.closed=true;fixtures.remove(world.id);s.world=undefined;event(s,'run_start_failure',{reason:'infrastructure_failed',detail:error instanceof Error?error.message:'browser_start_failed'});state(s,'BETWEEN_TASKS');
+   const failedId=randomUUID(),detail=error instanceof Error?error.message:'browser_start_failed',metadata={...metadataBase,chromium:null};world.closed=true;fixtures.remove(world.id);s.world=undefined;s.run=undefined;
+   store.run(failedId,s.id,metadata);store.event(s.id,failedId,'run_start_failure',{session_id:s.id,run_id:failedId,epoch:s.epoch,goal_revision:0,reason:'infrastructure_failed',detail},false,s.mode==='demo'||s.mode==='benchmark');store.result(failedId,{run_id:failedId,goal:null,selected_product:null,agent_claimed_success:false,agent_termination_reason:'infrastructure_failed',detail,counters:{probes:0,actions:0,observations:0,llmCalls:0,inputTokens:0,outputTokens:0,recoveries:0,informativeProbes:0,evidenceAcquired:0,firstFeasibleProbe:null,routerComparisons:0,routerDisagreements:0},goal_intake_ms:0,task_wall_ms:0,cleanup_ms:0,public_refutations:false,completion_audio_delivered:null,verification_status:'UNKNOWN',metadata,oracle_success:null,oracle_assessment_reason:'browser_never_started',wrong_final_effect:null,feasible_exists:null});
+   if(s.mode!=='benchmark')s.retryItem={scenario,condition,manifestIndex};state(s,'BETWEEN_TASKS');
    say(s,'Tugas belum bisa dimulai karena browser lokal belum siap. Ucapkan lanjut untuk mencoba lagi, atau selesai untuk menutup sesi.','BETWEEN_TASKS');return;
   }
   if(s.epoch!==epoch){await task.server.kill();fixtures.remove(world.id);return;}
-  const metadata={condition,base:scenario.base,split:scenario.split,presentation:scenario.presentation,kind:scenario.kind,template:scenario.template,config_hash:CONFIG_HASH,prompt_hash:PROMPT_HASH,dataset_hash:hash(scenario),demo,model:MODEL,chromium:task.browser.version(),node:process.version,freeze:existsSync('config/freeze.json')?JSON.parse(readFileSync('config/freeze.json','utf8')):null};
+  const metadata={...metadataBase,chromium:task.browser.version()};
   run=new AgentRun(task.page,task.browser,task.server,condition,demo?new DemoModel():new Ollama(),{
    log:(type,payload,sensitive)=>event(s,type,payload,sensitive),
-   status:(phase,text)=>emit(s,'PROGRESS',{phase,text}),
+   status:(phase,text)=>{emit(s,'PROGRESS',{phase,text});if(phase==='EXPLORING')scheduleWorking(s);else stopWorking(s);},
    ask:(text,confirmation)=>say(s,text,'ANSWER',confirmation),
+   ack:(text)=>{if(auto)run?.resume();else say(s,text,'CONTROL');},
    finished:async(outcome:AgentOutcome,quiescent:boolean)=>{
     world.closed=true;const result={...outcome,metadata,...assessOracle(world,outcome.goal,quiescent)};
     store.result(outcome.run_id,result);fixtures.remove(world.id);s.world=undefined;s.epoch++;clearTurn(s);voice.close();
@@ -75,10 +83,11 @@ async function startRun(s:Session,scenario:Scenario,condition:Condition,auto=fal
  }finally{s.starting=false;}
 }
 async function next(s:Session){if(s.starting)return;if(s.state!=='READY'&&s.state!=='BETWEEN_TASKS')return;if(s.comprehension){say(s,'Ceritakan singkat hasil yang kamu pahami, atau katakan lewati.');return;}
- if(s.state==='BETWEEN_TASKS')s.index++;const schedule=s.mode==='study'?studyOrder(s.slot):development.map(scenario=>({scenario,condition:'P' as Condition}));if(s.index>=schedule.length){state(s,'FEEDBACK');say(s,'Bagian apa yang mudah atau sulit diikuti? Silakan beri masukan singkat.');return;}const item=schedule[s.index];await startRun(s,item.scenario,item.condition);}
-async function closeSession(s:Session){if(s.state==='CLOSED'||s.state==='CLOSING')return;state(s,'CLOSING');s.epoch++;clearTurn(s);clearTimeout(s.timer);voice.close();await s.run?.finish('user_stopped');store.close(s.id);state(s,'CLOSED');s.ws?.close();if(session===s)session=undefined;}
+ const retry=s.retryItem;if(retry)s.retryItem=undefined;else if(s.state==='BETWEEN_TASKS')s.index++;const schedule=s.mode==='study'?studyOrder(s.slot):development.map(scenario=>({scenario,condition:'P' as Condition}));if(!retry&&s.index>=schedule.length){state(s,'FEEDBACK');say(s,'Bagian apa yang mudah atau sulit diikuti? Silakan beri masukan singkat.');return;}const item=retry??schedule[s.index];await startRun(s,item.scenario,item.condition,false,retry?.manifestIndex);}
+async function closeSession(s:Session){if(s.state==='CLOSED'||s.state==='CLOSING')return;state(s,'CLOSING');s.epoch++;stopWorking(s);clearTurn(s);clearTimeout(s.timer);voice.close();await s.run?.finish('user_stopped');store.close(s.id);state(s,'CLOSED');s.ws?.close();if(session===s)session=undefined;}
 async function textInput(s:Session,text:string,confirmation?:string){
  const cmd=command(text);s.pendingSpeech=false;s.inputTurn=undefined;s.reprompts=0;clearTimeout(s.answerTimer);
+ try{
  if(cmd==='STOP'){await closeSession(s);return;}if(cmd==='SKIP'){if(s.comprehension){s.comprehension=false;say(s,'Ucapkan lanjut untuk tugas berikutnya, ulang hasil, atau selesai.','BETWEEN_TASKS');}else await s.run?.finish('skipped');return;}
  if(cmd==='REPEAT'){if(s.lastPlayed)say(s,s.lastPlayed.text,s.lastPlayed.intent,s.lastPlayed.confirmation);return;}
  if(s.state==='READINESS'){if(/\bsiap\b/i.test(text)&&s.readyHeard){state(s,'READY');s.started=Date.now();s.timer=setTimeout(()=>void closeSession(s),LIMITS.sessionMs);say(s,'Pemeriksaan selesai. Saat saya berbicara, mikrofon ditutup. Tekan Escape kapan saja untuk berhenti. Ucapkan lanjut untuk mulai.','BETWEEN_TASKS');}else say(s,'Setelah mendengar contoh ini, ucapkan siap.');return;}
@@ -87,9 +96,10 @@ async function textInput(s:Session,text:string,confirmation?:string){
  if(cmd==='NEXT'){await next(s);return;}
  const run=s.run;if(!run||run.terminal)return;
  if(cmd==='EMPTY'){if(run.phase==='AWAITING_APPROVAL'||!run.goal){say(s,'Saya belum mendengar jawaban yang jelas. Silakan ulangi.','ANSWER',run.spokenConfirmation);}else {run.resume();emit(s,'LISTEN',{intent:'CONTROL'});}return;}
- if(cmd==='NO'&&run.phase==='AWAITING_APPROVAL'){await run.finish('user_stopped','approval_declined');return;}
+ if((cmd==='NO'||/\bbukan\s+(?:yang\s+)?(?:itu|tadi)\b/i.test(text))&&run.phase==='AWAITING_APPROVAL'){if(!run.rejectProposal())say(s,'Baik, tidak ada perubahan yang dilakukan.','CONTROL');return;}
  if(cmd==='YES'&&run.phase==='AWAITING_APPROVAL'){await run.approve(confirmation??run.spokenConfirmation??'');emit(s,'LISTEN',{intent:'CONTROL'});return;}
- emit(s,'PROCESSING',{});await run.input(text);if(!run.terminal&&run.phase!=='AWAITING_APPROVAL')emit(s,'LISTEN',{intent:'CONTROL'});
+ emit(s,'PROCESSING',{});await run.input(text);if(!run.terminal&&run.phase!=='AWAITING_APPROVAL'&&!s.turn)emit(s,'LISTEN',{intent:'CONTROL'});
+ }finally{flushDeferred(s);}
 }
 async function body(req:IncomingMessage,max=1_000_000){const chunks:Buffer[]=[];let size=0;for await(const c of req){size+=c.length;if(size>max)throw Error('payload_too_large');chunks.push(c);}return Buffer.concat(chunks);}
 function json(res:ServerResponse,status:number,value:unknown){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));}
@@ -98,10 +108,11 @@ function auth(req:IncomingMessage){const s=session;if(!s||!equal(req.headers.aut
 function validRequest(s:Session,id:unknown){if(typeof id!=='string'||!z.string().uuid().safeParse(id).success)throw Error('request_id_required');if(s.requests.has(id))return false;if(s.requests.size>10000)throw Error('request_limit');s.requests.add(id);return true;}
 const server=createServer(async(req,res)=>{try{
  const host=req.headers.host;if(!['localhost:3050','127.0.0.1:3050'].includes(host??'')){json(res,403,{error:'host_rejected'});return;}
- const origin=req.headers.origin;if(origin&&origin!==ORIGIN&&origin!=='http://127.0.0.1:3050'){json(res,403,{error:'origin_rejected'});return;}
+ const url=new URL(req.url??'/',ORIGIN);const path=url.pathname,origin=req.headers.origin;const taskRequest=path.startsWith('/task/');
+ // Browser-generated form submissions can carry the opaque Origin value "null". It is accepted only inside the isolated fixture, whose unguessable HttpOnly SameSite=Strict cookie is still mandatory.
+ if(origin&&origin!==ORIGIN&&origin!=='http://127.0.0.1:3050'&&!(taskRequest&&origin==='null')){json(res,403,{error:'origin_rejected'});return;}
  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');
- const url=new URL(req.url??'/',ORIGIN);const path=url.pathname;
- if(path.startsWith('/task/')){const match=/^\/task\/([^/]+)(\/.*)$/.exec(path);const w=match&&fixtures.worlds.get(match[1]);if(!w||w.closed||!equal((req.headers.cookie??'').split(';').map(x=>x.trim()).find(x=>x.startsWith('fixture_access='))?.slice(15)??'',w.secret)){json(res,403,{error:'fixture_access_denied'});return;}if(req.method==='POST'){const destination=mutateWorld(w,match![2],new URLSearchParams((await body(req,4096)).toString()));res.writeHead(303,{Location:destination});res.end();return;}const html=renderWorld(w,match![2],url.searchParams);if(!html){json(res,404,{error:'not_found'});return;}res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});res.end(html);return;}
+ if(taskRequest){const match=/^\/task\/([^/]+)(\/.*)$/.exec(path);const w=match&&fixtures.worlds.get(match[1]);if(!w||w.closed||!equal((req.headers.cookie??'').split(';').map(x=>x.trim()).find(x=>x.startsWith('fixture_access='))?.slice(15)??'',w.secret)){json(res,403,{error:'fixture_access_denied'});return;}if(req.method==='POST'){const destination=mutateWorld(w,match![2],new URLSearchParams((await body(req,4096)).toString()));res.writeHead(303,{Location:destination});res.end();return;}const html=renderWorld(w,match![2],url.searchParams);if(!html){json(res,404,{error:'not_found'});return;}res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});res.end(html);return;}
  if(path==='/api/readiness'&&req.method==='GET'){json(res,200,readiness());return;}
  if(path==='/api/sessions'&&req.method==='POST'){
   if(session){json(res,409,{error:'one_session_only'});return;}const b=z.object({code:z.string().regex(/^[A-Za-z0-9_-]{1,20}$/),mode:z.enum(['demo','study','pilot']),slot:z.number().int().min(0).max(3).default(0),request_id:z.string().uuid()}).parse(JSON.parse((await body(req,4096)).toString()));
@@ -109,7 +120,7 @@ const server=createServer(async(req,res)=>{try{
   const s:Session={id:randomUUID(),token:randomBytes(32).toString('hex'),code:b.code,mode:b.mode,slot:b.slot,index:0,state:'CONSENT',epoch:0,seq:0,lastHeartbeat:Date.now(),requests:new Set([b.request_id]),reprompts:0,comprehension:false,readyHeard:false,starting:false};session=s;store.session(s.id,s.code,s.mode);json(res,201,{session_id:s.id,session_token:s.token,state:s.state,epoch:s.epoch});return;
  }
  if(path==='/api/consent'&&req.method==='POST'){const s=auth(req);const b=Consent.parse(JSON.parse((await body(req,4096)).toString()));if(!validRequest(s,b.request_id)){json(res,200,{duplicate:true});return;}if(s.state!=='CONSENT')throw Error('consent_state');if(b.version!==(demo?'demo-v1':consentConfig().version))throw Error('consent_version_mismatch');store.consent(s.id,{accepted:b.accepted,adult:b.adult,version:b.version,timestamp:new Date().toISOString()});if(!b.accepted||!b.adult)await closeSession(s);else{state(s,'READINESS');say(s,'Ini contoh suara aplikasi. Setelah mikrofon diizinkan, ucapkan siap.');}json(res,200,{state:s.state});return;}
- if(path==='/api/research/results'&&req.method==='GET'){if(!researcherAuth(req))throw Error('unauthorized');const data=store.export();json(res,200,{...data,summary:summarize(data.results),paired:pairedAnalysis(data.results),active:session?{code:session.code,state:session.state,run_id:session.run?.id}:null});return;}
+ if(path==='/api/research/results'&&req.method==='GET'){if(!researcherAuth(req))throw Error('unauthorized');const data=store.export();json(res,200,{...data,summary:summarize(data.results),paired:pairedAnalysis(data.results),active:session?{session_id:session.id,code:session.code,state:session.state,run_id:session.run?.id??null,completed:session.index,total:session.benchmarkTotal??(session.mode==='study'?4:undefined)}:null});return;}
  if(path==='/api/research/export'&&req.method==='GET'){if(!researcherAuth(req))throw Error('unauthorized');const data=store.export(url.searchParams.get('session')??undefined);if(url.searchParams.get('format')==='csv'){res.writeHead(200,{'Content-Type':'text/csv; charset=utf-8','Content-Disposition':'attachment; filename="cua-results.csv"','Cache-Control':'no-store'});res.end(csv(data.results.map((r:any)=>({...r,...r.metadata,...r.counters}))));}else json(res,200,{...data,summary:summarize(data.results),paired:pairedAnalysis(data.results)});return;}
  if(path.startsWith('/api/research/')&&req.method==='POST'){if(!researcherAuth(req))throw Error('unauthorized');const b=JSON.parse((await body(req,8192)).toString());z.string().uuid().parse(b.request_id);
   if(path==='/api/research/shutdown'){json(res,200,{stopping:true});void shutdown();return;}
@@ -118,23 +129,24 @@ const server=createServer(async(req,res)=>{try{
    if(session)throw Error('one_session_only');const split=z.enum(['development','main']).parse(b.split);
    if(demo&&split==='main')throw Error('main_disallows_demo');
    if(!demo&&!readiness().preflight?.passed)throw Error('preflight_required');
+   const fullSchedule:ScheduleItem[]=split==='main'?benchmarkManifest().map((e,manifestIndex)=>({condition:e.condition,scenario:main.find(s=>s.base===e.base&&s.presentation===e.presentation)!,manifestIndex})):development.flatMap(scenario=>(['P','B1'] as Condition[]).map(condition=>({condition,scenario})));
    if(split==='main'){
     if(!existsSync('config/freeze.json'))throw Error('freeze_required');const frozen=JSON.parse(readFileSync('config/freeze.json','utf8'));
     if(frozen.config_hash!==CONFIG_HASH||frozen.prompt_hash!==PROMPT_HASH||frozen.dataset_hash!==hash(main)||frozen.lockfile_hash!==hash(readFileSync('package-lock.json','utf8')))throw Error('freeze_mismatch');
     for(const [file,digest] of Object.entries(frozen.file_hashes))if(hash(readFileSync(String(file),'utf8'))!==digest)throw Error('source_changed_after_freeze');
     const tags:any=await (await fetch('http://127.0.0.1:11435/api/tags',{signal:AbortSignal.timeout(5000)})).json();if(tags.models?.find((m:any)=>m.name===MODEL.name)?.digest!==frozen.model_digest)throw Error('model_digest_changed');
-    if(store.export().results.some((r:any)=>r.metadata?.split==='main'&&!r.metadata.demo))throw Error('main_already_attempted_preserve_original');
    }
-   const s:Session={id:randomUUID(),token:randomBytes(32).toString('hex'),code:'SYNTHETIC',mode:'benchmark',slot:0,index:0,state:'READY',epoch:0,seq:0,lastHeartbeat:Date.now(),requests:new Set([b.request_id]),reprompts:0,comprehension:false,readyHeard:true,starting:false};session=s;store.session(s.id,s.code,s.mode);
-   const schedule=split==='main'?benchmarkManifest().map(e=>({condition:e.condition,scenario:main.find(s=>s.base===e.base&&s.presentation===e.presentation)!})):development.flatMap(scenario=>(['P','B1'] as Condition[]).map(condition=>({condition,scenario})));
-   json(res,202,{session_id:s.id,episodes: schedule.length,split,demo,status:'started'});
-   void(async()=>{try{for(const item of schedule){if(session!==s||s.state==='CLOSING'||s.state==='CLOSED')break;await startRun(s,item.scenario,item.condition,true);await s.run?.done;s.index++;}}catch(e){event(s,'benchmark_failure',{detail:e instanceof Error?e.message:'failed'});}finally{await closeSession(s);}})();return;
+   const prior=split==='main'?store.export().results.filter((r:any)=>r.metadata?.split==='main'&&!r.metadata?.demo):[];const cell=(x:{base:string;presentation:string;condition:string})=>`${x.base}|${x.presentation}|${x.condition}`;const completed=new Set(prior.map((r:any)=>cell(r.metadata)));const schedule=fullSchedule.filter(item=>!completed.has(cell({base:item.scenario.base,presentation:item.scenario.presentation,condition:item.condition})));
+   if(!schedule.length)throw Error(split==='main'?'main_complete':'benchmark_complete');
+   const s:Session={id:randomUUID(),token:randomBytes(32).toString('hex'),code:'SYNTHETIC',mode:'benchmark',slot:0,index:completed.size,state:'READY',epoch:0,seq:0,lastHeartbeat:Date.now(),requests:new Set([b.request_id]),reprompts:0,comprehension:false,readyHeard:true,starting:false,benchmarkTotal:fullSchedule.length};session=s;store.session(s.id,s.code,s.mode);
+   json(res,202,{session_id:s.id,remaining:schedule.length,completed:completed.size,total:fullSchedule.length,split,demo,status:completed.size?'resumed':'started'});
+   void(async()=>{try{for(const item of schedule){if(session!==s||s.state==='CLOSING'||s.state==='CLOSED')break;await startRun(s,item.scenario,item.condition,true,item.manifestIndex);await s.run?.done;s.index++;}}catch(e){event(s,'benchmark_failure',{detail:e instanceof Error?e.message:'failed'});}finally{await closeSession(s);}})();return;
   }
   if(path==='/api/research/delete'){const id=z.string().uuid().parse(b.session_id);if(session?.id===id)throw Error('active_session_cannot_delete');json(res,200,store.deleteSession(id));return;}
   if(path==='/api/research/intervention'){if(!session)throw Error('no_session');event(session,'researcher_intervention',z.object({kind:z.enum(['technical','content']),note:z.string().max(500)}).parse(b.intervention),true);json(res,200,{recorded:true});return;}
  }
  if(path.startsWith('/api/')){json(res,404,{error:'not_found'});return;}
- const file=path.startsWith('/assets/')?resolve('dist','.'+path):resolve('dist/index.html');if(!file.startsWith(resolve('dist')+'/')||!existsSync(file)){res.writeHead(503,{'Content-Type':'text/plain'});res.end('Jalankan npm run build terlebih dahulu.');return;}res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; media-src 'self' blob:; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'");res.writeHead(200,{'Content-Type':({'.js':'text/javascript','.css':'text/css','.html':'text/html'} as any)[extname(file)]??'application/octet-stream'});res.end(readFileSync(file));
+ const distRoot=resolve('dist');const file=path.startsWith('/assets/')?resolve(distRoot,'.'+path):resolve(distRoot,'index.html');const rel=relative(distRoot,file);if(rel.startsWith('..')||isAbsolute(rel)||!existsSync(file)){res.writeHead(503,{'Content-Type':'text/plain'});res.end('Jalankan npm run build terlebih dahulu.');return;}res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; media-src 'self' blob:; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'");res.writeHead(200,{'Content-Type':({'.js':'text/javascript','.css':'text/css','.html':'text/html'} as any)[extname(file)]??'application/octet-stream'});res.end(readFileSync(file));
  }catch(e){json(res,e instanceof Error&&e.message==='unauthorized'?401:400,{error:e instanceof Error?e.message:'request_failed'});}});
 const wss=new WebSocketServer({noServer:true,maxPayload:900000});
 server.on('upgrade',(req,socket,head)=>{if(!['localhost:3050','127.0.0.1:3050'].includes(req.headers.host??'')||![ORIGIN,'http://127.0.0.1:3050'].includes(req.headers.origin??'')||req.url!=='/events'){socket.destroy();return;}wss.handleUpgrade(req,socket,head,ws=>wss.emit('connection',ws,req));});

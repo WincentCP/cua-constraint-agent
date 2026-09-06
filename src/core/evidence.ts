@@ -22,7 +22,7 @@ export function extractFacts(tree:AXNode[], candidates:Candidate[], observationI
 }
 export class EvidenceStore {
   facts:Fact[]=[];
-  add(facts:Fact[]){for(const f of facts)if(!this.facts.some(x=>JSON.stringify(x)===JSON.stringify(f)))this.facts.push(f);}
+  add(facts:Fact[]){for(const f of facts)if(!this.facts.some(x=>x.candidateKey===f.candidateKey&&x.field===f.field&&x.value===f.value&&JSON.stringify(x.variantScope??null)===JSON.stringify(f.variantScope??null)&&x.sourceText===f.sourceText))this.facts.push(f);}
   matrix(candidates:Candidate[],goal:Goal):Matrix {
     return Object.fromEntries(candidates.map(c=>[c.key,Object.fromEntries(constraints(goal).map(k=>[k,this.status(c.key,k,goal)]))])) as Matrix;
   }

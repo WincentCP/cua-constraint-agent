@@ -2,7 +2,7 @@
 
 Research MVP lokal berdasarkan PRD CUA v4 (6 September 2026). Aplikasi memilih satu produk dan varian pada toko sintetis, meminta persetujuan eksplisit, lalu memverifikasi keranjang. Semua inferensi dirancang berjalan di komputer peneliti; tidak ada cloud inference, checkout, atau biaya API.
 
-**Status: implementasi awal, belum siap pengambilan data manusia.** TypeScript, build frontend, dan pengujian unit/HTTP telah dijalankan. Pengujian browser dengan engine lokal nyata dan uji suara pada perangkat studi belum lulus gate karena belum dijalankan di lingkungan pembangunan ini. Jangan menyamakan demo atau unit test dengan bukti kelayakan penelitian. Lihat [status verifikasi](docs/STATUS.md).
+**Status: MVP telah diperkeras dan diaudit end-to-end, tetapi belum siap pengambilan data manusia.** Unit/HTTP/browser synthetic dan UI demo nyata telah diuji; Ollama/STT/TTS/mikrofon/screen-reader pada perangkat studi tetap menjadi gate. Jangan menyamakan demo dengan bukti kelayakan penelitian. Lihat [audit](docs/AUDIT.md), [revisi PRD](docs/PRD-REVISION.md), dan [status verifikasi](docs/STATUS.md).
 
 ## Mulai dari sini
 
@@ -36,7 +36,8 @@ P dan B1 menerima model, prompt, hasil annotation, matrix, tools, dan budget yan
 | `npm test` | Unit, lifecycle, dataset, SQLite, HTTP smoke |
 | `npm run test:integration` | Browser Chromium nyata dengan planner demo berlabel |
 | `npm run demo` | Coordinator demo teknis dengan input teks |
-| `npm start` | Jalankan Ollama milik aplikasi, preflight, backend, buka Coordinator |
+| `npm start` | Build, jalankan Ollama milik aplikasi, gunakan preflight cache bila valid, backend, buka Coordinator |
+| `npm run start:full` | Paksa full preflight sebelum backend |
 | `npm run stop` | Shutdown melalui endpoint lokal terautentikasi |
 | `npm run preflight` | Pemeriksaan engine nyata; port 3050 harus kosong |
 | `npm run benchmark -- --development` | Mulai 12 episode development P/B1 melalui backend aktif |
@@ -62,7 +63,7 @@ Di demo, ketik `siap` setelah consent, lalu `lanjut`. Salin instruksi task sebag
 
 Main terdiri dari 16 base × 2 presentasi × 2 policy = 64 episode. Denominator solvable 24 per policy, atau 12 untuk setiap presentasi. Unit inferensi adalah base (12 solvable), bukan 64 sampel independen. Analisis bootstrap bersifat deskriptif dan berkelompok per base. Metadata demo tidak masuk ringkasan penelitian.
 
-Manifest, prompt, kode, lockfile, model digest, dan konfigurasi harus dibekukan setelah pilot. Jika main telah dicoba, endpoint menolak pengulangan otomatis. Re-run pasangan karena infrastruktur perlu protokol replacement dengan ID baru; alur otomatis replacement belum diimplementasikan.
+Manifest, prompt, kode, lockfile, model digest, dan konfigurasi harus dibekukan setelah pilot. Main dapat dilanjutkan pada cell yang belum tercatat; hasil asli dan infrastructure failure tidak ditimpa. Replacement berpasangan tetap memerlukan protokol baru dan ID baru.
 
 Tidak ada hasil benchmark main, data peserta, approval etik, atau klaim P lebih unggul yang disertakan dalam repo ini.
 

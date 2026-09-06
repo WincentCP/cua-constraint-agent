@@ -20,7 +20,7 @@ export type Annotation = {probe_id:string;may_answer:Constraint[];generic_progre
 export type Matrix = Record<string,Record<Constraint,Status>>;
 export type AXNode = {ref:string;role:string;name:string;text:string;states:string;children:AXNode[];url?:string};
 export type Observation = {id:string;viewKey:string;heading:string;tree:AXNode[];snapshot:string;controls:Control[];candidates:Candidate[];facts:Fact[];fingerprint:string};
-export type Counters = {probes:number;actions:number;observations:number;llmCalls:number;inputTokens:number;outputTokens:number;recoveries:number;informativeProbes:number;evidenceAcquired:number;firstFeasibleProbe:number|null};
+export type Counters = {probes:number;actions:number;observations:number;llmCalls:number;inputTokens:number;outputTokens:number;recoveries:number;informativeProbes:number;evidenceAcquired:number;firstFeasibleProbe:number|null;routerComparisons:number;routerDisagreements:number};
 export class RunError extends Error { constructor(public reason:Reason,public detail:string){super(detail);} }
 export class StaleWork extends Error {}
 export const constraints = (g:Goal):Constraint[] => ['requested_variant_available','requested_variant_price',...(g.material?['requested_material']:[])] as Constraint[];

@@ -6,7 +6,7 @@ export function selectProbe(condition:Condition,probes:Probe[],annotations:Annot
  const sat=(p:Probe)=>constraints(goal).filter(k=>matrix[p.ownerKey][k]==='SATISFIED').length;
  const info=(p:Probe)=>byId.get(p.probeId)!.may_answer.filter(k=>matrix[p.ownerKey][k]==='UNKNOWN').length;
  return [...probes].sort((a,b)=>{
-   if(condition==='P')return sat(b)-sat(a)||order(a)-order(b)||info(b)-info(a)||a.initialOrder-b.initialOrder;
+   if(condition==='P')return sat(b)-sat(a)||info(b)-info(a)||a.forwardCost-b.forwardCost||order(a)-order(b)||a.initialOrder-b.initialOrder;
    return byId.get(b.probeId)!.generic_progress_score-byId.get(a.probeId)!.generic_progress_score||order(a)-order(b)||a.initialOrder-b.initialOrder;
  })[0];
 }

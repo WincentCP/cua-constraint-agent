@@ -92,7 +92,7 @@ Anda dapat membuat token lokal sendiri dengan `node -e "console.log(require('nod
 npm start
 ```
 
-Startup mengecek port, menjalankan Ollama milik aplikasi, lalu preflight: storage, model/digest, satu parse JSON nyata, satu probe/verifikasi browser nyata, pemeriksaan worker, TTS, dan pemuatan STT. Jika ada kegagalan, startup berhenti dan menulis `data/preflight.json`. Setelah lolos, backend berjalan di `http://localhost:3050`, Coordinator `/study`, panel `/research`.
+Startup mengecek port, menjalankan Ollama milik aplikasi, lalu memakai `data/preflight.json` hanya bila config/prompt/model digest masih cocok. Jika cache tidak valid, startup menjalankan preflight penuh: storage, model/digest, satu parse JSON nyata, satu probe/verifikasi browser nyata, worker, TTS, dan STT. `npm run start:full` selalu memaksa pemeriksaan penuh. Jika gagal, startup berhenti dan menulis `data/preflight.json`. Setelah lolos, backend berjalan di `http://localhost:3050`, Coordinator `/study`, panel `/research`.
 
 Preflight STT memakai PCM hening untuk memeriksa pemuatan/inferensi. **Ini bukan tes akurasi ucapan.** Pemeriksaan mikrofon, ucapan Bahasa Indonesia peneliti, keyboard stop, keterpahaman TTS, payload konteks maksimum, dan alur hands-free masih wajib manual.
 
@@ -109,7 +109,7 @@ Shutdown terautentikasi menutup backend dan supervisor menutup Ollama miliknya. 
 ## 7. Urutan sebelum studi utama
 
 1. `npm test` dan `npm run test:integration` harus lulus di perangkat target.
-2. Jalankan development dengan model nyata: `npm run benchmark -- --development` ketika backend aktif.
+2. Jalankan development dengan model nyata: `npm run benchmark -- --development` ketika backend aktif. Command menunggu sampai semua episode selesai dan menggagalkan gate bila P/B1 tidak pernah berbeda.
 3. B1 harus menyelesaikan sedikitnya dua STAGED solvable berbeda dengan probe nyata. Periksa latency, invalid output, trace, kemampuan parser koreksi, dan batas konteks 8192.
 4. Selesaikan checklist manual dan perbaiki gap pada `docs/STATUS.md`. Lakukan pilot peserta terpisah sesuai prosedur kampus. Jangan mengaktifkan studi hanya karena build lulus.
 5. Catat bukti pemeriksaan, tentukan manifest/prompt/config final, dan isi informasi penelitian yang benar. `HUMAN_STUDY_ENABLED=true` adalah tindakan eksplisit peneliti setelah menilai kesiapan, bukan sertifikasi otomatis.

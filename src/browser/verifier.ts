@@ -1,6 +1,6 @@
 import {EvidenceStore,feasible} from '../core/evidence.ts';
 import {flatten} from './observer.ts';
-import {same,type Check,type Control,type Goal,type Observation,type RouteStep} from '../core/types.ts';
+import {same,type Check,type Goal,type Observation,type RouteStep} from '../core/types.ts';
 export type Expected={kind:RouteStep['kind'];ownerKey:string;title:string;name:string;option?:string};
 export function expectedBefore(step:RouteStep,o:Observation):Expected{return {kind:step.kind,ownerKey:step.target.ownerKey,title:o.candidates.find(c=>c.key===step.target.ownerKey)?.title??'',name:step.target.exactName,option:step.optionLabel};}
 export function verifyEffect(expected:Expected,o:Observation):Check{

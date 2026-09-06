@@ -1,13 +1,13 @@
-import React,{useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {LocalAudio} from './audio';
 import './style.css';
 const id=()=>crypto.randomUUID();
 type Config={demo:boolean;configured:boolean;study_enabled:boolean;model:string;config:{contact:string;version:string;ethics:string;custodian:string;deletion:string};preflight:any};
 function App(){
- const research=location.pathname==='/research';const [config,setConfig]=useState<Config>();const [state,setState]=useState('SETUP');const [code,setCode]=useState('P01');const [adult,setAdult]=useState(false);const [accepted,setAccepted]=useState(false);const [message,setMessage]=useState('Selamat datang. Kita akan mencoba tugas belanja sederhana bersama.');const [error,setError]=useState('');const [text,setText]=useState('');const [mic,setMic]=useState('Belum aktif');const [task,setTask]=useState<any>();const [transcript,setTranscript]=useState<string[]>([]);const [demoTurn,setDemoTurn]=useState<any>();const [researchToken,setResearchToken]=useState('');const [results,setResults]=useState<any>();const [slot,setSlot]=useState(0);
- const audio=useRef(new LocalAudio());const socket=useRef<WebSocket|undefined>(undefined);const envelope=useRef<any>({});const token=useRef('');const sequence=useRef(0);const confirmation=useRef<string|undefined>(undefined);const currentTurn=useRef<any>(undefined);const deferredTurn=useRef<any>(undefined);const inputTurn=useRef<string>('');const microphoneReady=useRef(false);const alive=useRef(true);
- useEffect(()=>{void fetch('/api/readiness').then(r=>r.json()).then(setConfig).catch(()=>setError('Backend belum terhubung.'));return()=>{alive.current=false;audio.current.close();socket.current?.close();};},[]);
+ const research=location.pathname==='/research';const [config,setConfig]=useState<Config>();const [state,setState]=useState('SETUP');const [code,setCode]=useState('P01');const [adult,setAdult]=useState(false);const [accepted,setAccepted]=useState(false);const [message,setMessage]=useState('Selamat datang. Kita akan mencoba tugas belanja sederhana bersama.');const [error,setError]=useState('');const [text,setText]=useState('');const [mic,setMic]=useState('Belum aktif');const [task,setTask]=useState<any>();const [transcript,setTranscript]=useState<string[]>([]);const [researchToken,setResearchToken]=useState('');const [results,setResults]=useState<any>();const [slot,setSlot]=useState(0);
+ const audio=useRef(new LocalAudio());const socket=useRef<WebSocket|undefined>(undefined);const envelope=useRef<any>({});const token=useRef('');const sequence=useRef(0);const confirmation=useRef<string|undefined>(undefined);const currentTurn=useRef<any>(undefined);const inputTurn=useRef<string>('');const microphoneReady=useRef(false);
+ useEffect(()=>{void fetch('/api/readiness').then(r=>r.json()).then(setConfig).catch(()=>setError('Backend belum terhubung.'));return()=>{audio.current.close();socket.current?.close();};},[]);
  function send(type:string,extra:object={}){if(socket.current?.readyState===WebSocket.OPEN)socket.current.send(JSON.stringify({...envelope.current,type,request_id:id(),...extra}));}
  function stop(){audio.current.cancel();setMic('Berhenti');send('STOP');}
  useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();stop();}};addEventListener('keydown',key);return()=>removeEventListener('keydown',key);},[]);
@@ -17,12 +17,13 @@ function App(){
    if(m.type==='STATE'){setState(m.payload.state);if(m.payload.state==='CLOSED')audio.current.close();}
    if(m.type==='TASK'){setTask(m.payload);setTranscript([]);}
    if(m.type==='PROGRESS'&&m.payload.text)setMessage(m.payload.text);
-   if(m.type==='PREPARE_PLAY'){currentTurn.current=m.payload;confirmation.current=m.payload.confirmation;if(audio.current.onset){deferredTurn.current=m.payload;return;}audio.current.listen(false);setMic('Mendengarkan aplikasi');send('PLAY_READY',{turn_id:m.payload.id});}
-   if(m.type==='TURN_CANCELLED'){if(deferredTurn.current?.id===m.payload.turn_id)deferredTurn.current=undefined;if(currentTurn.current?.id===m.payload.turn_id)currentTurn.current=undefined;}
+   if(m.type==='PREPARE_PLAY'){audio.current.cancel();currentTurn.current=m.payload;confirmation.current=m.payload.confirmation;setMic('Mendengarkan aplikasi');send('PLAY_READY',{turn_id:m.payload.id});}
+   if(m.type==='TURN_CANCELLED'){if(currentTurn.current?.id===m.payload.turn_id){audio.current.cancel();currentTurn.current=undefined;}}
    if(m.type==='REJECTED'){const reason=m.payload?.reason;setMic(reason==='half_duplex_playing'?'Tunggu suara aplikasi selesai':'Menyiapkan giliran terbaru');setError(reason==='half_duplex_playing'?'Tunggu sampai suara aplikasi selesai, lalu bicara lagi.':'Permintaan tadi sudah kedaluwarsa. Gunakan Ulangi, atau minta peneliti memeriksa sesi.');}
    if(m.type==='PLAY'){const t=m.payload;setMessage(t.text);setTranscript(old=>[...old,t.text]);try{const ok=await audio.current.play(t.audio);if(ok&&currentTurn.current?.id===t.id)send('PLAYED',{turn_id:t.id});}catch{send('PLAY_FAILED',{turn_id:t.id});}}
-   if(m.type==='DEMO_TEXT'){setMessage(m.payload.text);setTranscript(old=>[...old,m.payload.text]);setDemoTurn(m.payload);send('PLAYED',{turn_id:m.payload.id});}
-   if(m.type==='LISTEN'){currentTurn.current=undefined;confirmation.current=m.payload.confirmation;audio.current.listen(true);setMic(m.payload.intent==='CONTROL'?'Mendengar stop atau koreksi':'Giliranmu berbicara');}
+   if(m.type==='DEMO_TEXT'){setMessage(m.payload.text);setTranscript(old=>[...old,m.payload.text]);send('PLAYED',{turn_id:m.payload.id});}
+   if(m.type==='LISTEN'){currentTurn.current=undefined;confirmation.current=m.payload.confirmation;audio.current.listen(false);await audio.current.signal('listen').catch(()=>{});audio.current.listen(true);setMic(m.payload.intent==='CONTROL'?'Mendengar stop atau koreksi':'Giliranmu berbicara');}
+   if(m.type==='WORKING'){setMic('Masih memeriksa');void audio.current.signal('working').catch(()=>{});}
    if(m.type==='PROCESSING'){audio.current.listen(false);setMic('Memproses ucapan secara lokal');}
    if(m.type==='INPUT_HOLD')setMic('Mendengar ucapanmu');
    if(m.type==='RESULT')setMessage(m.payload.summary);
@@ -30,7 +31,7 @@ function App(){
   };ws.onclose=()=>{audio.current.close();setMic('Terputus');setState(v=>v==='CLOSED'?v:'CLOSED');};
   const heartbeat=setInterval(()=>{if(ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify({type:'HEARTBEAT'}));else if(ws.readyState===WebSocket.CLOSED)clearInterval(heartbeat);},1000);
  }catch(e){setError((e as Error).message);}}
- async function enableMicrophone(){if(microphoneReady.current)return;try{await audio.current.microphone(()=>{inputTurn.current=id();send('SPEECH_ONSET',{turn_id:inputTurn.current});},(pcm,truncated)=>{send('PCM',{turn_id:inputTurn.current,pcm,truncated,confirmation:confirmation.current});deferredTurn.current=undefined;});microphoneReady.current=true;audio.current.listen(!audio.current.playing);setMic('Mikrofon siap');setError('');}catch{microphoneReady.current=false;audio.current.close();send('MIC_FAILED');setError('Mikrofon belum diizinkan. Perbaiki izin situs Chrome, lalu pilih Coba lagi mikrofon.');}}
+ async function enableMicrophone(){if(microphoneReady.current)return;try{await audio.current.microphone(()=>{inputTurn.current=id();send('SPEECH_ONSET',{turn_id:inputTurn.current});},(pcm,truncated)=>{send('PCM',{turn_id:inputTurn.current,pcm,truncated,confirmation:confirmation.current});});microphoneReady.current=true;audio.current.listen(!audio.current.playing);setMic('Mikrofon siap');setError('');}catch{microphoneReady.current=false;audio.current.close();send('MIC_FAILED');setError('Mikrofon belum diizinkan. Perbaiki izin situs Chrome, lalu pilih Coba lagi mikrofon.');}}
  async function consent(yes:boolean){try{await audio.current.unlock();await api('/api/consent',{accepted:yes,adult,version:config?.demo?'demo-v1':config!.config.version,request_id:id()});if(yes&&!config?.demo)await enableMicrophone();}catch(e){setError((e as Error).message);}}
  async function loadResults(){try{setResults(await (await api('/api/research/results',undefined,researchToken)).json());setError('');}catch(e){setError((e as Error).message);}}
  async function download(format:string){try{const r=await api(`/api/research/export?format=${format}`,undefined,researchToken);const url=URL.createObjectURL(await r.blob());const a=document.createElement('a');a.href=url;a.download=`cua-results.${format}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){setError((e as Error).message);}}

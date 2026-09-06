@@ -3,7 +3,7 @@
 
 **Versi 4.0 · 6 September 2026 · Research MVP lokal untuk skripsi S1**
 
-**Status:** spesifikasi baru berdasarkan persetujuan kandidat B. Dokumen ini menetapkan rancangan yang harus dibangun; tidak menyatakan implementasi, model lokal, benchmark, atau studi peserta sudah berhasil diuji.
+**Status:** spesifikasi referensi berdasarkan persetujuan kandidat B. Delta implementasi setelah audit ada di [PRD-REVISION.md](PRD-REVISION.md); dokumen ini tidak menyatakan model lokal, benchmark, atau studi peserta sudah berhasil diuji.
 
 **Pemilik:** mahasiswa sebagai Product Owner/Peneliti. **Pembaca:** implementer, AI coding agent, pembimbing, dan reviewer.
 
@@ -289,7 +289,7 @@ Untuk kandidat `c`, `S(c)` = jumlah hard constraint berstatus SATISFIED; `U(c)` 
 
 | Kondisi | Fungsi pemilihan |
 |---|---|
-| **P: constraint-directed** | Pilih kandidat eligible dengan `S(c)` terbesar. Seri: urutan awal kandidat. Di dalam kandidat itu, pilih probe dengan `I(a)` terbesar. Seri: urutan kontrol semantik yang stabil. Jika semua `I=0`, gunakan urutan yang sama; tidak mengarang relasi bukti. |
+| **P: constraint-directed** | Pilih kandidat eligible dengan `S(c)` terbesar, lalu coverage `I(a)` terhadap constraint UNKNOWN pada kandidat. Seri berikutnya: forward cost, urutan awal kandidat, lalu urutan kontrol semantik yang stabil. Jika semua `I=0`, gunakan urutan yang sama; tidak mengarang relasi bukti. |
 | **B1: generic lookahead** | Pilih probe eligible dengan `generic_progress_score` tertinggi. Seri: urutan awal kandidat, lalu urutan kontrol yang sama. |
 
 **FR-P05.** Prioritas tersebut diimplementasikan sebagai fungsi kode terpisah atas input yang sama. Prompt, model, extractor, matrix, route discovery, commit, verifier, recovery, dan UI tidak bercabang berdasarkan condition. Condition disimpan di metadata eksperimen, tidak dikirim ke model.
@@ -471,6 +471,8 @@ Treatment adalah **satu kebijakan penjadwalan probe** yang mempunyai aturan prio
 
 Setiap base dibuat dalam dua kondisi presentasi: **EARLY**, seluruh fakta yang tersedia diletakkan pada daftar; **STAGED**, fakta yang sama baru muncul pada satu/dua tahap detail. Pada unavailable-evidence, fakta yang memang tidak tersedia tetap tidak tersedia dalam kedua presentasi. Goal, isi produk, dan jawaban objektif sama dalam pasangan presentasi.
 
+Implementasi audit mengizinkan STAGED menampilkan fakta publik material yang tidak menentukan varian (misalnya bahan) pada daftar, selama harga/stok varian tetap tertutup dan struktur route tidak memberi seed/answer position. Ini menguji apakah policy memilih route yang menentukan, bukan sekadar menemukan fakta apa pun.
+
 **Total: 16 base × 2 presentasi × 2 policy = 64 episode.** Per policy: 24 episode solvable, empat no-solution, empat unavailable-evidence. Satu run per sel; tidak ada rerun opsional untuk memilih hasil terbaik. Pengulangan tambahan adalah studi lanjutan dengan protokol baru, bukan kewajiban skripsi.
 
 **FR-B03.** Empat template semantik/presentasi dan distribusi posisi kandidat ditetapkan dalam manifest dataset. Main values/seed berbeda dari development; config dan file main dibekukan sebelum evaluasi. Dua template sudah dipakai pada development, dua variasi layout disimpan untuk main dengan kontrak semantik yang sama. Jangan mengubah extractor/policy berdasarkan kegagalan main lalu melaporkan run lama dan baru sebagai satu eksperimen.
@@ -602,12 +604,12 @@ Angka berikut adalah default normatif MVP, bukan SLO production. Perubahan hanya
 | Kandidat / depth | Tiga produk; maksimal dua interaksi maju dari daftar pada route detail. |
 | Probe | Maksimal empat **forward dispatch** pada EXPLORING, termasuk gagal, uninformative, variant selection, dan reopen untuk restoration. |
 | Browser actions | Maksimal 18 dispatch CLICK/SELECT/WAIT sepanjang run; return, verification navigation dan retry termasuk. AX read/poll bukan action. |
-| LLM calls | Maksimal 18 permintaan total per run: goal parse, probe annotation, repair, dan correction parsing; aborted call tetap dihitung. Verifier/extractor tidak memakai LLM. |
+| LLM calls | Maksimal 12 permintaan total per run: goal parse, probe annotation, repair, dan correction parsing; aborted call tetap dihitung. Verifier/extractor tidak memakai LLM. |
 | Re-observe/recovery | Satu re-observe tambahan per kegagalan capture/stale; satu recovery cycle per aksi, maksimal dua per run; maksimal satu retry aksi per cycle. |
 | Deadline task | 180 detik wall time sejak `goal_accepted_at` (Goal lengkap lolos parser/checker) sampai terminal, termasuk interaksi/approval dan engine wait; tidak reset karena correction. Cleanup dicatat terpisah. |
 | Goal intake | Maksimal 60 detik sejak prompt goal selesai diputar sampai Goal valid; parser pending tunduk pada sisa batas ini. Tanpa input yang dapat diproses: no_response; tujuan di luar scope: unsupported_goal; habis ketika processing: timeout dengan detail goal_intake_timeout. Benchmark memakai waktu input teks sebagai awal intake. |
 | LLM / browser timeout | 60 detik per call / lima detik per aksi, masing-masing dibatasi sisa deadline. |
-| Verification | Poll read-only setiap 250 ms, maksimal tiga detik; satu retry collection hanya jika recovery budget masih ada. |
+| Verification | Satu read untuk efek, satu settle-read bila belum PASS, lalu paling banyak satu retry idempoten jika recovery budget masih ada; ADD_CART tidak diulang. |
 | WAIT | 250–1.000 ms; ikut action budget. Tidak digunakan untuk melewati deadline atau menunggu tanpa status. |
 | Approval | Grant berlaku maksimal 30 detik sejak jawaban afirmatif dikenali; tidak dipakai sesudah goal/effect berubah. Proposal menunggu menurut ANSWER/task deadline. |
 | ANSWER onset | Delapan detik, maksimal dua reprompt. Bila ucapan sudah mulai, jangan memotong pada batas onset. |

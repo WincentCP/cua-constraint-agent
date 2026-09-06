@@ -1,6 +1,6 @@
 import {hash,LIMITS} from '../core/config.ts';
 import {refuted} from '../core/evidence.ts';
-import {same,RunError,type Candidate,type Control,type Goal,type Matrix,type Observation,type Probe,type RouteStep} from '../core/types.ts';
+import {same,RunError,type Control,type Goal,type Matrix,type Observation,type Probe,type RouteStep} from '../core/types.ts';
 export class Routes {
  history=new Map<string,Control>();visited=new Set<string>();
  key(c:Pick<Control,'ownerKey'|'exactName'|'role'>,g:Goal){return hash([c.ownerKey,c.role,c.exactName,c.role==='combobox'?[g.size,g.color]:null]);}

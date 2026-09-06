@@ -3,9 +3,9 @@
   "engines": { "node": ">=24.0.0" },
   "scripts": {
     "dev": "node --import tsx src/server.ts", "build": "tsc --noEmit && vite build",
-    "start": "node --import tsx scripts/start.ts", "stop": "node --import tsx scripts/stop.ts",
+    "start": "node --import tsx scripts/start.ts", "start:full": "node --import tsx scripts/start.ts --full-preflight", "stop": "node --import tsx scripts/stop.ts",
     "demo": "node --import tsx src/server.ts --demo", "preflight": "node --import tsx scripts/preflight.ts",
-    "test": "node --import tsx --test tests/*.test.ts", "test:integration": "node --import tsx --test tests/integration/*.test.ts",
+    "test": "node --import tsx --test tests/*.test.ts", "test:integration": "node --import tsx --test --test-concurrency=1 tests/integration/*.test.ts",
     "freeze": "node --import tsx scripts/freeze.ts", "benchmark": "node --import tsx scripts/benchmark.ts",
     "typecheck": "tsc --noEmit"
   },
