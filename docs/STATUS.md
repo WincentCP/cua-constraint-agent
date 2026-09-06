@@ -4,8 +4,10 @@
 
 - TypeScript strict `tsc --noEmit`: lulus.
 - Build produksi React/Vite: lulus.
-- 28 test unit/lifecycle/dataset/SQLite/HTTP: lulus pada saat checkpoint awal; lihat output verifikasi akhir untuk jumlah terbaru.
+- 28 test unit/lifecycle/dataset/SQLite/HTTP: lulus setelah perbaikan turn suara.
 - HTTP smoke benar-benar memulai backend demo lokal dan memeriksa halaman, token peneliti, origin luar, akses fixture dan penolakan consent.
+- Demo coordinator terarah (consent → readiness → lanjut → fallback browser → FEEDBACK → CLOSED) menghasilkan 71 event tanpa `ERROR`. Saat Chromium tidak tersedia, peserta mendapat pesan suara yang meminta “lanjut” untuk mencoba lagi atau “selesai” untuk menutup sesi; tidak ada hang diam-diam.
+- Turn `PREPARE_PLAY` yang berpapasan dengan onset ucapan kini dibatalkan eksplisit dan dibersihkan di UI agar keluaran basi tidak pernah diputar.
 - Uji model untuk unit/lifecycle memakai test double atau `DemoModel` yang eksplisit; **bukan inferensi qwen2.5:7b**.
 
 ## Belum diverifikasi — jangan dianggap lulus
@@ -20,9 +22,9 @@
 
 ## Gap implementasi yang masih harus ditutup sebelum DoD PRD
 
-1. Pengujian race suara/pergantian turn belum lengkap: khususnya onset berpapasan dengan PREPARE_PLAY, REPEAT saat inference, hasil STT terlambat, dan callback audio terminal. Kode memiliki fence/epoch, tetapi belum dibuktikan lewat perangkat nyata dan semua fault injection.
+1. Pengujian race suara/pergantian turn belum lengkap: onset–PREPARE_PLAY sudah memiliki pembatalan eksplisit, tetapi REPEAT saat inference, hasil STT terlambat, callback audio terminal, dan semua fault injection belum dibuktikan lewat perangkat nyata.
 2. Konten bantuan audio tetap dan consent audio mandiri belum dibundel. UI consent dapat dibaca screen reader dan keyboard, tetapi fallback audio tanpa worker belum memenuhi seluruh FR-U/PR.
-3. Episode dimulai setelah inisialisasi browser. Kegagalan peluncuran browser sebelum objek run tercipta saat ini tercatat sebagai gangguan batch; ledger attempted-run individual untuk fase STARTING perlu diperkuat sebelum main.
+3. Episode dimulai setelah inisialisasi browser. Jika browser gagal dibuka sebelum objek run tercipta, sesi sekarang memberi fallback terpandu dan dapat mencoba `lanjut` lagi, tetapi belum ada ledger attempted-run individual untuk fase STARTING sebelum main.
 4. Versi implementasi ini hanya melakukan re-observe recovery; belum memiliki seluruh fault-injection acceptance untuk timeout efek dan no-progress signature. Browser integration yang ditulis belum menggantikan AC-10–19 penuh.
 5. Pilot peserta/practice task, resolusi referensi nonvisual “yang tadi/yang kedua”, intervensi peneliti melalui UI, bunyi kerja terjadwal, dan protokol replacement pair belum lengkap. Jangan mengklaim semua alur FR-H/U selesai.
 6. Empat template saat ini terutama memvariasikan label semantik, bukan empat layout yang sepenuhnya berbeda. Validasi dan finalisasi variasi presentasi sebelum freeze.
