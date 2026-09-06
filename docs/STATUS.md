@@ -8,6 +8,7 @@
 - HTTP smoke benar-benar memulai backend demo lokal dan memeriksa halaman, token peneliti, origin luar, akses fixture dan penolakan consent.
 - Demo coordinator terarah (consent → readiness → lanjut → fallback browser → FEEDBACK → CLOSED) menghasilkan 71 event tanpa `ERROR`. Saat Chromium tidak tersedia, peserta mendapat pesan suara yang meminta “lanjut” untuk mencoba lagi atau “selesai” untuk menutup sesi; tidak ada hang diam-diam.
 - Turn `PREPARE_PLAY` yang berpapasan dengan onset ucapan kini dibatalkan eksplisit dan dibersihkan di UI agar keluaran basi tidak pernah diputar.
+- Jika izin mikrofon gagal, UI menyatakan langkah perbaikan dan menyediakan tombol “Coba lagi mikrofon”; respons `REJECTED` juga diberi status/pesan yang dapat dibaca screen reader.
 - Uji model untuk unit/lifecycle memakai test double atau `DemoModel` yang eksplisit; **bukan inferensi qwen2.5:7b**.
 
 ## Belum diverifikasi — jangan dianggap lulus
