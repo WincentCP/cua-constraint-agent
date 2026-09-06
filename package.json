@@ -1,0 +1,14 @@
+{
+  "name": "cua-constraint-agent", "version": "0.1.0", "private": true, "type": "module",
+  "engines": { "node": ">=24.0.0" },
+  "scripts": {
+    "dev": "node --import tsx src/server.ts", "build": "tsc --noEmit && vite build",
+    "start": "node --import tsx scripts/start.ts", "stop": "node --import tsx scripts/stop.ts",
+    "demo": "node --import tsx src/server.ts --demo", "preflight": "node --import tsx scripts/preflight.ts",
+    "test": "node --import tsx --test tests/*.test.ts", "test:integration": "node --import tsx --test tests/integration/*.test.ts",
+    "freeze": "node --import tsx scripts/freeze.ts", "benchmark": "node --import tsx scripts/benchmark.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": { "playwright": "^1.58.0", "react": "^19.2.6", "react-dom": "^19.2.6", "ws": "^8.18.3", "yaml": "^2.8.2", "zod": "^3.25.76" },
+  "devDependencies": { "@types/node": "^24.0.0", "@types/react": "^19.2.0", "@types/react-dom": "^19.2.0", "@types/ws": "^8.18.1", "tsx": "^4.21.0", "typescript": "^5.9.3", "vite": "^7.3.1" }
+}

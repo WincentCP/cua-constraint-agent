@@ -1,0 +1,3 @@
+import {existsSync,readFileSync} from 'node:fs';
+if(existsSync('.env'))process.loadEnvFile('.env');const token=process.env.RESEARCHER_TOKEN||(existsSync('.runtime/researcher-token')?readFileSync('.runtime/researcher-token','utf8').trim():'');
+const split=process.argv.includes('--development')?'development':'main';const r=await fetch('http://127.0.0.1:3050/api/research/benchmark',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({request_id:crypto.randomUUID(),split})});const data=await r.json();console.log(JSON.stringify(data,null,2));if(!r.ok)process.exitCode=1;

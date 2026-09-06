@@ -1,0 +1,15 @@
+{
+  "version": "4.0-draft-implementation",
+  "frozen": false,
+  "human_study_enabled_by_default": false,
+  "conditions": ["P", "B1"],
+  "task_family": "synthetic_product_variant_cart",
+  "benchmark": {"bases":16,"presentations":["EARLY","STAGED"],"episodes":64,"solvable_per_policy":24,"no_solution_per_policy":4,"unavailable_evidence_per_policy":4},
+  "participants": {"pilot":1,"main":4,"minimum_age":18,"tasks_per_main_participant":4},
+  "retention_days": {"verbatim":30,"semantic":90},
+  "paid_or_cloud_inference": false,
+  "raw_audio_storage": false,
+  "ethics_approval": null,
+  "researcher_contact": null,
+  "note": "Draft implementation defaults. Freeze only after real-engine and participant pilot gates. No participant or benchmark results are supplied."
+}

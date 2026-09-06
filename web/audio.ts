@@ -1,0 +1,13 @@
+export class LocalAudio {
+ context?:AudioContext;stream?:MediaStream;worklet?:AudioWorkletNode;source?:AudioBufferSourceNode;playing=false;onset=false;generation=0;
+ async unlock(){this.context??=new AudioContext({sampleRate:16000});await this.context.resume();}
+ async microphone(onset:()=>void,utterance:(pcm:string,truncated:boolean)=>void){
+  await this.unlock();this.stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true},video:false});
+  await this.context!.audioWorklet.addModule('/vad-worklet.js');this.worklet=new AudioWorkletNode(this.context!,'local-vad');this.context!.createMediaStreamSource(this.stream).connect(this.worklet);this.worklet.connect(this.context!.destination);
+  this.worklet.port.onmessage=e=>{if(e.data.type==='onset'){this.onset=true;onset();}if(e.data.type==='utterance'){this.onset=false;const bytes=new Uint8Array(e.data.pcm.buffer);let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));utterance(btoa(binary),e.data.truncated);bytes.fill(0);binary='';}};
+ }
+ listen(enabled:boolean){this.worklet?.port.postMessage({type:'listen',enabled:enabled&&!this.playing});}
+ async play(base64:string){this.listen(false);const generation=++this.generation;this.playing=true;await this.unlock();const bytes=Uint8Array.from(atob(base64),c=>c.charCodeAt(0));try{const buffer=await this.context!.decodeAudioData(bytes.buffer);if(generation!==this.generation)return false;const source=this.context!.createBufferSource();this.source=source;source.buffer=buffer;source.connect(this.context!.destination);return await new Promise<boolean>(resolve=>{source.onended=()=>{if(generation===this.generation)this.playing=false;resolve(generation===this.generation);};source.start();});}finally{bytes.fill(0);}}
+ cancel(){this.generation++;this.source?.stop();this.source=undefined;this.playing=false;this.onset=false;this.listen(false);}
+ close(){this.cancel();this.stream?.getTracks().forEach(t=>t.stop());this.worklet?.disconnect();void this.context?.close();this.context=undefined;this.worklet=undefined;}
+}
