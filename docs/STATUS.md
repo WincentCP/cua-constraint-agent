@@ -18,7 +18,7 @@
 - Uji keyboard/screen reader dan visual QA pada perangkat peserta.
 - Baseline B1 pada dua task STAGED berbeda, latency/payload maksimum, dan kelayakan 20 menit.
 - Manifest penelitian final, freeze setelah pilot, 64 episode main, pilot peserta, dan studi empat peserta.
-- Repository GitHub private sudah dibuat dan source MVP sudah dipush ke branch `main`. Remote commit: `3975990eedaf3fff9119356d26315ac6114694fe`. Ini hanya status source delivery; benchmark utama dan studi peserta belum dijalankan.
+- Repository GitHub private sudah dibuat dan source MVP sudah dipush ke branch `main`. Commit dokumentasi terbaru: `24d8876799e4157a9e62c6f441143273743c278a`. Ini hanya status source delivery; benchmark utama dan studi peserta belum dijalankan.
 
 ## Gap implementasi yang masih harus ditutup sebelum DoD PRD
 
