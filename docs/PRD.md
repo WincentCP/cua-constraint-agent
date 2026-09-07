@@ -58,15 +58,17 @@ Penelusuran tersebut mendukung **hipotesis desain dan kontribusi empiris yang te
 
 ### 2.3 RQ dan novelty statement
 
-**RQ1 — utama:** Dengan informasi awal, model, alat, aturan kelayakan, dan budget yang sama, apakah pemilihan probe berdasarkan constraint meningkatkan keberhasilan objektif dibanding pemilihan probe berdasarkan penilaian kemajuan umum LLM?
+**Main RQ:** Dengan model, observasi publik, tools, verifier, dan interaction budget yang sama, apakah constraint-directed evidence acquisition meningkatkan verified task success dan efisiensi pemerolehan bukti pada task solvable, sambil mempertahankan appropriate abstention ketika tidak ada solusi atau bukti yang cukup, dibandingkan generic LLM progress-based exploration?
 
-**RQ2 — mekanisme:** Apakah perbedaan itu terkait dengan perolehan bukti constraint yang lebih efisien, terutama ketika informasi penentu baru muncul pada tahap berikutnya?
+**RQ1 — Effectiveness:** Apakah constraint-directed evidence acquisition meningkatkan verified objective success pada task solvable dibanding generic exploration?
 
-**RQ3 — penggunaan:** Bagaimana pengguna tunanetra memahami hasil, memberi koreksi, dan menyelesaikan task melalui alur suara; serta apa pola intervensi dan beban interaksi pada kedua kondisi?
+**RQ2 — Evidence efficiency and abstention:** Apakah policy memperoleh decisive evidence dengan lebih sedikit pemeriksaan, menghasilkan lebih banyak informative probes, lebih cepat mencapai evidence closure, dan lebih tepat membedakan ACT dari ABSTAIN?
 
-> Penelitian ini merancang dan mengevaluasi kebijakan eksplorasi terbatas yang menggunakan constraint tujuan dan bukti accessibility tree untuk memeriksa kelayakan pilihan pada tahapan web berikutnya, serta menguji pengaruhnya terhadap keberhasilan tugas dan kebutuhan intervensi pengguna tunanetra.
+**RQ3 — Exploratory accessibility:** Bagaimana pengguna tunanetra memahami proposal, hasil terverifikasi, uncertainty/abstention, melakukan correction terhadap constraint, dan mengikuti interaksi nonvisual melalui voice + keyboard/screen reader?
 
-Klaim dibatasi pada keluarga tugas, semantik, model, perangkat, dan peserta yang diuji. Tidak mengklaim superioritas AX terhadap screenshot, agent universal, atau peningkatan besar sebelum hasil tersedia. Hasil tidak berbeda atau lebih buruk tetap merupakan hasil penelitian yang sah.
+> Penelitian ini mengisolasi dan mengevaluasi kebijakan **constraint-directed evidence acquisition** pada accessibility-tree-based computer-use agent. Policy menggunakan status bukti constraint untuk menentukan pemeriksaan berikutnya di bawah interaction budget terbatas, lalu dibandingkan secara capability-matched dengan generic LLM exploration. Evaluasi mencakup verified task success, evidence efficiency, dan appropriate abstention.
+
+Klaim dibatasi pada keluarga tugas, semantik, model, perangkat, dan peserta yang diuji. Tidak mengklaim first accessibility-tree CUA, first verifier, first shopping/blind-user/web-exploration agent, superioritas AX terhadap screenshot, agent universal, atau peningkatan sebelum hasil tersedia. RQ3 eksploratif dan participant kecil tidak mendukung generalisasi luas. Hasil tidak berbeda atau lebih buruk tetap merupakan hasil penelitian yang sah.
 
 ### 2.4 Peta kontribusi
 
@@ -76,7 +78,7 @@ Klaim dibatasi pada keluarga tugas, semantik, model, perangkat, dan peserta yang
 | AX, semantic action, matriks bukti | Fondasi bersama; tidak diisolasi sebagai penyebab peningkatan. |
 | Planner lokal | Mendukung interpretasi goal dan kontrol; bukan model ML baru. |
 | Post-action verification dan bounded recovery | Reliability bersama, bukan klaim novelty utama. |
-| Voice-first dan kontrol pengguna | Interaction layer yang dievaluasi secara eksploratif. |
+| Voice, keyboard/screen reader, dan kontrol pengguna | Supporting interaction layer yang dievaluasi secara eksploratif; bukan novelty utama. |
 | Fixture, hidden oracle, metrik | Infrastruktur metodologi dan kontribusi reproducibility. |
 | Deployment, export, startup tooling | Supporting engineering. |
 
@@ -84,7 +86,7 @@ Klaim dibatasi pada keluarga tugas, semantik, model, perangkat, dan peserta yang
 
 ### 3.1 Pengalaman peserta
 
-Peneliti menyiapkan perangkat. Peserta membuka URL lokal, mendengarkan penjelasan/consent, memulai dan memberi permission mikrofon, menyelesaikan readiness check, lalu berbicara secara natural. Agent mencari bukti, menyampaikan satu pilihan yang memenuhi syarat, meminta satu persetujuan memasukkan barang, memverifikasi keranjang, dan menawarkan task berikutnya melalui suara.
+Peneliti menyiapkan perangkat. Peserta membuka URL lokal, mendengarkan penjelasan/consent, memberi permission mikrofon, dan menyelesaikan readiness/practice singkat. Sistem membacakan task satu kali; peserta cukup berkata “mulai” atau memberi correction singkat. Agent mencari bukti, menyampaikan satu pilihan yang memenuhi syarat, meminta satu persetujuan memasukkan barang, memverifikasi keranjang, membacakan hasil/uncertainty singkat, menanyakan pemahaman, lalu menunggu “lanjut”.
 
 Peserta tidak membuka terminal, memasang extension, melihat task browser, atau memahami Playwright. Mikrofon dan keyboard tersedia; headphone disarankan. Peserta tetap boleh memakai screen reader pada aplikasi peserta.
 
@@ -263,7 +265,7 @@ Jika probe target berada di view lain, route dijalankan bertahap dengan re-obser
 
 ### 7.2 Input dan output planner yang sama
 
-Setelah extractor memperbarui bukti dan controller memeriksa stopping rule, satu panggilan LLM menginterpretasi semua probe yang eligible. Prompt tidak memuat condition label P/B1.
+Setelah extractor memperbarui bukti dan controller memeriksa stopping rule, satu panggilan LLM menginterpretasi semua probe yang eligible. Prompt tidak memuat condition label P/B1. Bila tepat satu probe eligible dan annotation tidak dibutuhkan fungsi lain, kedua kondisi langsung memilihnya deterministik tanpa LLM call dan tanpa router comparison.
 
 ```json
 {
@@ -314,7 +316,7 @@ Tidak ada shortlist/ranking akhir yang berbeda antar-kondisi. Tidak ada output �
 
 State segar harus mengonfirmasi produk, varian, harga dan availability. Fakta baru yang bertentangan membatalkan pemilihan dan approval; eksplorasi dapat dilanjutkan hanya dengan budget tersisa. Keputusan “tidak jadi” dari pengguna tidak boleh diabaikan.
 
-**FR-P08.** Agent menyampaikan satu ringkasan efek: produk, warna/ukuran, harga, quantity satu, tujuan keranjang penelitian. Satu persetujuan eksplisit diperlukan untuk tombol tambah. Tidak ada konfirmasi untuk setiap probe atau navigasi. Penolakan berarti task dihentikan atau goal dikoreksi; jangan otomatis memilih alternatif yang tidak diminta.
+**FR-P08.** Agent menyampaikan satu ringkasan efek: produk, warna/ukuran, harga, quantity satu, tujuan keranjang penelitian. Satu persetujuan eksplisit diperlukan untuk tombol tambah. Tidak ada konfirmasi untuk setiap probe atau navigasi. “Bukan yang itu” menolak kandidat saat ini dan agent boleh mencari kandidat eligible lain dengan goal/budget yang sama; correction constraint membuat revision baru. Jangan mengubah goal atau memilih substitusi di luar constraint.
 
 ## 8. Kontrak Observe → Plan → Policy → Execute → Verify → Recover
 
@@ -387,7 +389,7 @@ Mapping canonical: crash restart/disconnect memakai `infrastructure_failed` deng
 
 ### 10.1 Flow normal
 
-**FR-U01.** Peserta mendengar tujuan singkat, memberi goal, menerima acknowledgment, lalu agent bekerja. Status singkat cukup sebelum eksplorasi dan saat ada alasan baru. Jangan membacakan AX, setiap klik, istilah probe, score, atau internal retry. Satu keputusan efek keranjang disampaikan setelah kelayakan terbukti.
+**FR-U01.** Peserta mendengar system task satu kali, lalu cukup berkata “mulai” atau memberi correction. Agent memberi acknowledgment lalu bekerja. Status singkat cukup sebelum eksplorasi dan saat ada alasan baru: misalnya sedang memeriksa harga/ketersediaan, menemukan proposal, atau bukti belum cukup. Jangan membacakan AX, setiap klik, istilah probe, score, atau internal retry. Satu keputusan efek keranjang disampaikan setelah kelayakan terbukti.
 
 **FR-U02.** Setelah hasil diumumkan dan cleanup selesai: “Ucapkan lanjut untuk tugas berikutnya, ulang hasil, atau selesai.” Mic terbuka otomatis. Task berikut tidak dimulai hanya karena hening. Setelah task terakhir, agent meminta feedback singkat lalu menutup sesi.
 
@@ -454,9 +456,11 @@ Koreksi sesudah add-to-cart telah dikirim tidak dianggap membatalkan efek. Verif
 
 **FR-B01.** Kondisi wajib hanya P dan B1 pada §7.3. Comparator merupakan implementasi terkontrol generic lookahead, bukan replikasi penuh Tree Search, Morae, atau Savant. Tidak boleh mengklaim mengalahkan sistem asli paper dari eksperimen ini.
 
-Yang sama: model/digest, quantization, generation config, goal parser, prompt, AX access, extractor, matrix, probe discovery, route execution, predicate, final selection, approval, verifier, recovery, safety, dan seluruh budget. Tidak ada screenshot/metadata tambahan hanya untuk P.
+Yang sama: goal, public observation pada state pembanding, evidence matrix, eligible probes, route/cost information, model/digest, quantization, generation config, goal parser, prompt, AX access, extractor, route execution, predicate, final selection, approval/UI, verifier, recovery, safety, dan seluruh runtime budget. Label P/B1 tidak diberikan kepada model. Tidak ada screenshot/metadata tambahan hanya untuk P. Observasi setelah pilihan aksi berbeda tidak harus identik.
 
 Treatment adalah **satu kebijakan penjadwalan probe** yang mempunyai aturan prioritas kandidat dan prioritas kontrol. Desain dua kondisi ini menguji kebijakan tersebut sebagai satu kesatuan; tidak memisahkan kontribusi masing-masing aturan. Tidak menambah ablation komponen pada MVP.
+
+P wajib mengurutkan: (1) jumlah constraint `SATISFIED` pada kandidat, (2) coverage constraint `UNKNOWN` yang diperkirakan dapat dijawab probe, (3) forward cost lebih rendah, dan (4) stable deterministic tie-break. Perubahan urutan ini adalah perubahan metode penelitian dan memerlukan keputusan peneliti. B1 memakai generic LLM progress assessment/`generic_progress_score` dan boleh mempertimbangkan seluruh goal, constraints, evidence, feasibility, route, costs, serta remaining budget; jangan membatasi kompetensinya. Bila hanya satu probe eligible, kedua kondisi memilihnya deterministik tanpa ranking LLM dan keputusan itu tidak dihitung sebagai router comparison.
 
 **FR-B02.** Benchmark memakai instruksi teks/transkrip tetap, melewati STT/TTS. Goal parser tetap dijalankan identik. Konfirmasi benchmark diberikan otomatis hanya setelah controller menerbitkan request approval yang legal; approval bukan sumber jawaban benar. User study menguji suara secara terpisah.
 
@@ -470,6 +474,8 @@ Treatment adalah **satu kebijakan penjadwalan probe** yang mempunyai aturan prio
 | Main unavailable evidence | Dua base; sebagian fakta penentu tidak diekspos dalam semua route yang didukung | Ketepatan ketidakpastian; backend truth bukan informasi yang boleh dipakai agent. |
 
 Setiap base dibuat dalam dua kondisi presentasi: **EARLY**, seluruh fakta yang tersedia diletakkan pada daftar; **STAGED**, fakta yang sama baru muncul pada satu/dua tahap detail. Pada unavailable-evidence, fakta yang memang tidak tersedia tetap tidak tersedia dalam kedua presentasi. Goal, isi produk, dan jawaban objektif sama dalam pasangan presentasi.
+
+Sebagian base harus membentuk matched counterfactual dengan goal dan tampilan awal yang hampir sama tetapi keputusan benar berbeda: ACT, ABSTAIN karena no-solution yang memiliki public refutation, atau ABSTAIN karena decisive public evidence memang unavailable. Jumlah total tetap 64; perubahan manifest sebelum freeze harus diselaraskan dengan dokumentasi dan test, bukan dilakukan diam-diam setelah melihat hasil.
 
 Implementasi audit mengizinkan STAGED menampilkan fakta publik material yang tidak menentukan varian (misalnya bahan) pada daftar, selama harga/stok varian tetap tertutup dan struktur route tidak memberi seed/answer position. Ini menguji apakah policy memilih route yang menentukan, bukan sekadar menemukan fakta apa pun.
 
@@ -487,7 +493,7 @@ Pengamatan sesudah kebijakan memilih aksi berbeda boleh berbeda: itu akibat perl
 
 **FR-B06.** Budget tetap ditentukan lewat pilot, bukan dipilih berdasarkan gap P/B di main. Bila perangkat tidak dapat menjalankan model/voice dalam batas yang layak, selesaikan masalah readiness sebelum freeze. Jangan mengganti ke provider berbayar, memberi model lebih baik pada P, atau menghapus task sulit setelah melihat hasil.
 
-**FR-B07.** Semua attempted run tercatat. Infrastructure failure dilaporkan terpisah, tetap masuk laporan attempted success. Jika perlu pengulangan karena gangguan infrastruktur, ulangi **pasangan P/B1** dengan ID baru, simpan percobaan asli, dan laporkan analisis original serta replacement; tidak mengganti hasil diam-diam.
+**FR-B07.** Run mengikuti urutan `create run ID → persist attempt → browser startup → execute`. Semua attempted run tercatat; browser startup failure atau process crash menjadi `infrastructure_failed` dan tetap berada dalam attempted denominator. Report memisahkan planned, attempted, completed, infrastructure failure, oracle null, dan unattempted. Split, mode, demo, config, prompt, dataset, freeze, atau model berbeda tidak dicampur. Duplicate `base + presentation + condition` tidak boleh dipilih diam-diam. Jika perlu pengulangan karena gangguan infrastruktur, ulangi **pasangan P/B1** dengan ID serta alasan baru, simpan percobaan asli, dan laporkan original serta replacement sebagai analisis terpisah.
 
 ### 12.4 Metrik dan denominator
 
@@ -498,6 +504,7 @@ Pengamatan sesudah kebijakan memilih aksi berbeda boleh berbeda: itu akibat perl
 | Perolehan bukti | Jumlah constraint UNKNOWN yang menjadi SATISFIED/REFUTED dengan sumber valid setelah probe; hitung per kandidat+constraint sekali, bukan tiap pembacaan ulang. |
 | Probe informatif | Probe yang menambah bukti constraint / seluruh probe; route reopening yang tidak memberi bukti baru tetap masuk denominator. Jika nol probe, N/A. |
 | Probe sampai kandidat terbukti sesuai | Counter saat kandidat pertama lengkap SATISFIED; run tanpa kandidat lengkap ditandai tidak tercapai/censored, bukan diberi nol. |
+| Evidence closure | Probe saat decisive evidence cukup untuk ACT atau ABSTAIN. Setiap fixture menyimpan minimum task-relevant evidence path dan decisive constraints evaluator-only; `actual closure probes - reference minimum probes` adalah excess probe cost. Nilai tanpa denominator bermakna adalah N/A, bukan nol. |
 | Biaya | Probe, seluruh browser action, observation, LLM call/token, serta wall time per attempted run. Tampilkan juga biaya pada pasangan yang **keduanya** berhasil. |
 | No-solution correctness | Kesimpulan `no_feasible_in_scope` yang benar menurut oracle **dan** memiliki refutation publik tiap kandidat / empat episode no-solution per policy. |
 | Unknown handling | Kesimpulan jujur mengenai bukti yang tidak cukup pada empat unavailable-evidence per policy; pisahkan dari budget habis sebelum route selesai diperiksa. |
@@ -505,6 +512,8 @@ Pengamatan sesudah kebijakan memilih aksi berbeda boleh berbeda: itu akibat perl
 | Wrong final effect | Salah produk/varian/quantity/harga atau extra item; bukan sekadar membuka kandidat yang ternyata tidak layak. |
 | Verification/recovery/safety | PASS/FAIL/UNKNOWN; recovery attempted/resolved; aksi terlarang blocked/dispatched; reason code. |
 | Infrastructure | Model/voice unavailable, browser crash, storage failure, timeout engine; terpisah dari healthy-model invalid output, salah grounding, dan budget policy. |
+
+Failure dilaporkan minimal sebagai goal/parser, grounding/binding, constraint/evidence, probe-budget exhaustion, execution, verification, infrastructure, atau voice/device. Terminal reason existing tetap disimpan agar laporan dapat menjelaskan penyebab P/B1 gagal.
 
 False completion dan salah pilihan adalah guardrail sekunder: shared verifier/feasibility gate dapat membuat angkanya rendah pada kedua kondisi. **Tidak menjanjikan penurunan choice reversal atau jumlah confirmation**, karena aturan penawaran pilihan dan confirmation memang sama.
 
@@ -514,9 +523,9 @@ Inference utama tentang kebijakan dibatasi oleh kompetensi B1, model lokal, sert
 
 ## 13. Hidden oracle dan outcome yang tidak bocor
 
-**FR-Q01.** Evaluator membaca state fixture privat hanya sesudah agent outcome dibekukan dan browser quiescent. Planner input dibangun dari DTO allowlist. Tidak ada evaluator tool, reward, boolean jawaban, seed, atau private store dalam konteks agent. Evaluator bukan bagian recovery.
+**FR-Q01.** Evaluator membaca state fixture privat hanya sesudah agent outcome dibekukan dan browser quiescent. Planner input dibangun dari DTO allowlist. Tidak ada evaluator tool, reference goal/path, decisive-constraint annotation, reward, boolean jawaban, seed, atau private store dalam konteks agent. Evaluator bukan bagian recovery.
 
-**FR-Q02.** Oracle mengevaluasi final stored cart, kebenaran constraint menurut data fixture, quantity/extra item, dan forbidden effect. Oracle memiliki implementasi pembanding independen dari runtime evidence extractor; keduanya boleh memakai spesifikasi domain yang sama, tidak saling memanggil verdict. Mutasi visual “sukses” tanpa update backend harus menghasilkan perbedaan yang terdeteksi.
+**FR-Q02.** Untuk fixed benchmark, oracle selalu mengevaluasi final stored cart terhadap independent scenario/reference goal—bukan parsed `outcome.goal`—termasuk kebenaran constraint, quantity/extra item, harga, dan forbidden effect. Parsed goal serta kecocokannya dengan reference disimpan terpisah. Oracle memiliki implementasi pembanding independen dari runtime evidence extractor; keduanya boleh memakai spesifikasi domain yang sama, tidak saling memanggil verdict. Mutasi visual “sukses” tanpa update backend harus menghasilkan perbedaan yang terdeteksi. `oracle_success=null` bila final state tidak dapat dinilai aman.
 
 **FR-Q03.** Simpan field berikut secara terpisah:
 
@@ -531,9 +540,11 @@ agent_termination_reason: enum
 oracle_assessment_reason: enum
 ```
 
+Minimal evaluator output juga memuat `parsed_goal`, `oracle_reference_goal`, `goal_matches_reference`, `feasible_exists`, dan `wrong_final_effect`. Pada user study simpan initial task/reference goal, participant transcript, parsed revisions, dan revision history. Bila correction mengubah intended goal, reference revisi berasal dari annotation independen setelah sesi; jangan menyalin parsed goal atau memakai cart success untuk menebak maksud. Sampai adjudikasi, pertahankan original-task assessment, tandai deviation, dan jangan menyamarkan perubahan tujuan.
+
 Tidak ada success signal bebas dari model pada schema planner. Jika model menulis klaim sukses di luar schema, itu invalid output, bukan authority. Bench tanpa suara memakai `completion_audio_delivered=null`.
 
-**FR-Q04.** Solvable tetapi agent abstain tetap task failure. Ketidakpastian yang jujur dihargai sebagai truthfulness, bukan diubah menjadi keberhasilan penyelesaian. Kasus no-solution mempunyai outcome diagnostik sendiri, bukan dimasukkan ke denominator cart success. Unknown karena page/engine tidak dapat diperiksa tidak disamakan dengan bukti tidak adanya pilihan.
+**FR-Q04.** Agent hanya ACT ketika semua required constraint memiliki supporting public evidence; `UNKNOWN != SATISFIED`. Solvable tetapi agent abstain tetap task failure. No-solution benar memerlukan refutation publik seluruh kandidat relevan dan cart kosong. Unavailable-evidence benar memerlukan decisive fact memang tidak tersedia, explicit uncertainty, dan cart kosong. Pisahkan true unavailable evidence dari budget exhaustion, grounding failure, execution failure, serta infrastructure failure. `UNKNOWN` adalah status verifikasi, bukan terminal outcome.
 
 ## 14. User study yang realistis
 
@@ -626,7 +637,7 @@ Angka berikut adalah default normatif MVP, bukan SLO production. Perubahan hanya
 
 Compiler route menghitung tiap aksi, tidak menyembunyikan macro. Plan probe yang memerlukan lebih banyak forward/action daripada sisa budget tidak eligible. Backtracking sendiri tidak memunculkan informasi baru dalam fixture; bila desain halaman melanggarnya, klasifikasi dan budget harus diperbaiki sebelum evaluasi.
 
-Run ID dan counter dibuat sebelum goal intake; seluruh parser call saat intake tetap masuk cap 18. Handler deadline berjalan independen dari inference; parser result yang datang sesudah timeout tidak memulai task. Catat goal-intake duration, task wall time, cleanup, dan waktu sampai audio hasil selesai secara terpisah. Waktu pengalaman pengguna total mencakup semuanya, bukan hanya agent clock.
+Run ID, attempt ledger, dan counter dibuat sebelum browser startup/goal intake; seluruh parser call saat intake tetap masuk cap 12. Handler deadline berjalan independen dari inference; parser result yang datang sesudah timeout tidak memulai task. Catat goal-intake duration, task wall time, cleanup, dan waktu sampai audio hasil selesai secara terpisah. Waktu pengalaman pengguna total mencakup semuanya, bukan hanya agent clock.
 
 Pilot mencatat waktu median/rentang pada perangkat nyata. Jika 180 detik terlalu pendek karena engine lambat, lakukan keputusan pra-freeze yang transparan atas model lokal atau scope; jangan mengklaim kegagalan infrastruktur sebagai bukti kelemahan policy.
 

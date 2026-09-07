@@ -6,12 +6,12 @@ import {WebSocketServer,WebSocket} from 'ws';
 import {z} from 'zod';
 import {Store} from './storage.ts';
 import {FixtureStore,renderWorld,mutateWorld,type World} from './fixture/world.ts';
-import {development,main,studyOrder,benchmarkManifest,type Scenario} from './fixture/dataset.ts';
+import {development,main,study,studyOrder,benchmarkManifest,type Scenario} from './fixture/dataset.ts';
 import {AgentRun,type AgentOutcome} from './agent/run.ts';
 import {Ollama,PROMPT_HASH} from './agent/planner.ts';
 import {DemoModel} from './agent/demo-model.ts';
 import {openTask} from './browser/task-browser.ts';
-import {assessOracle} from './evaluation/oracle.ts';
+import {evaluateOutcome} from './evaluation/oracle.ts';
 import {csv,summarize,pairedAnalysis} from './evaluation/report.ts';
 import {Voice} from './voice.ts';
 import {command} from './core/policy.ts';
@@ -26,7 +26,8 @@ const store=new Store(process.env.DATA_PATH||'data/research.sqlite'),fixtures=ne
 const equal=(a:string,b:string)=>a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 type State='CONSENT'|'READINESS'|'READY'|'IN_TASK'|'BETWEEN_TASKS'|'FEEDBACK'|'CLOSING'|'CLOSED';
 type Turn={id:string;text:string;intent:'ANSWER'|'CONTROL'|'BETWEEN_TASKS'|'END';confirmation?:string;resultRun?:string;ready:boolean};
-type ScheduleItem={scenario:Scenario;condition:Condition;manifestIndex?:number};
+type AttemptMetadata={role:'original'|'replacement'|'participant_retry';pairId?:string;reason?:string;replacesRunId?:string};
+type ScheduleItem={scenario:Scenario;condition:Condition;manifestIndex?:number;attempt?:AttemptMetadata};
 type Session={id:string;token:string;code:string;mode:'demo'|'study'|'pilot'|'benchmark';slot:number;index:number;state:State;epoch:number;seq:number;ws?:WebSocket;lastHeartbeat:number;run?:AgentRun;world?:World;retryItem?:ScheduleItem;benchmarkTotal?:number;requests:Set<string>;turn?:Turn;lastPlayed?:Turn;deferredSay?:{text:string;intent:Turn['intent'];confirmation?:string;resultRun?:string};timer?:NodeJS.Timeout;answerTimer?:NodeJS.Timeout;workTimer?:NodeJS.Timeout;reprompts:number;comprehension:boolean;readyHeard:boolean;started?:number;starting:boolean;pendingSpeech?:boolean;inputTurn?:string};
 let session:Session|undefined;let closing=false;
 const Consent=z.object({accepted:z.boolean(),adult:z.boolean(),version:z.string().min(1),request_id:z.string().uuid()}).strict();
@@ -34,6 +35,7 @@ const consentConfig=()=>({contact:process.env.RESEARCHER_CONTACT??'',version:pro
 function readiness(){let preflight:any=null;try{preflight=JSON.parse(readFileSync('data/preflight.json','utf8'));}catch{}const config=consentConfig();return {demo,config,configured:Object.values(config).every(Boolean),preflight,study_enabled:!demo&&process.env.HUMAN_STUDY_ENABLED==='true'&&Object.values(config).every(Boolean)&&preflight?.passed===true&&preflight?.config_hash===CONFIG_HASH,local_only:true,model:MODEL.name};}
 function emit(s:Session,type:string,payload:unknown={}){const e={type,payload,session_id:s.id,run_id:s.run?.terminal?null:s.run?.id??null,epoch:s.epoch,goal_revision:s.run?.goal?.revision??0,run_epoch:s.run?.epoch??0,turn_id:s.turn?.id??null,event_seq:++s.seq};if(s.ws?.readyState===WebSocket.OPEN)s.ws.send(JSON.stringify(e));}
 function event(s:Session,type:string,payload:unknown,sensitive=false){try{return store.event(s.id,s.run?.id??null,type,{session_id:s.id,...s.run?.envelope(),...payload as object},sensitive,s.mode==='demo'||s.mode==='benchmark');}catch(e){void s.run?.finish('infrastructure_failed','storage_failure');throw e;}}
+voice.onIncident=(type,payload)=>{if(session)event(session,type,payload);};
 function state(s:Session,value:State){s.state=value;emit(s,'STATE',{state:value});}
 function clearTurn(s:Session){clearTimeout(s.answerTimer);s.turn=undefined;s.pendingSpeech=false;}
 function stopWorking(s:Session){clearTimeout(s.workTimer);s.workTimer=undefined;}
@@ -50,27 +52,28 @@ async function playReady(s:Session,id:string){const t=s.turn;if(!t||t.id!==id||t
 function answerDeadline(s:Session){clearTimeout(s.answerTimer);s.answerTimer=setTimeout(()=>{if(s.pendingSpeech)return;if(s.reprompts++<LIMITS.reprompts&&s.lastPlayed)say(s,'Silakan jawab. Kamu juga bisa mengatakan ulang, lewati, atau selesai.','ANSWER',s.lastPlayed.confirmation);else if(s.run&&!s.run.terminal)void s.run.finish('no_response','answer_silence');else void closeSession(s);},LIMITS.answerMs);}
 function played(s:Session,id:string){const t=s.turn;if(!t||id!==t.id)return;s.lastPlayed={...t};s.turn=undefined;if(t.resultRun)store.delivery(t.resultRun,true);event(s,'playback_completed',{turn_id:id,intent:t.intent});emit(s,'LISTEN',{intent:t.intent,confirmation:t.confirmation});if(s.state==='READINESS')s.readyHeard=true;if(t.intent==='ANSWER')answerDeadline(s);if(s.run?.goal&&!s.run.terminal&&s.run.phase!=='AWAITING_APPROVAL'){s.run.resume();scheduleWorking(s);}if(t.intent==='END')void closeSession(s);}
 const narratives:Record<string,string>={verified_complete:'Satu barang yang memenuhi syarat sudah masuk ke keranjang penelitian.',no_feasible_in_scope:'Ketiga produk yang tersedia dalam tugas ini terbukti tidak memenuhi semua syarat.',insufficient_evidence:'Bukti yang tersedia belum cukup untuk memastikan pilihan yang sesuai.',budget_exhausted:'Batas pemeriksaan sudah tercapai. Saya belum dapat memastikan pilihan yang sesuai.',skipped:'Tugas dilewati.',user_stopped:'Sesi dihentikan.',execution_failed:'Hasil tugas belum dapat diverifikasi.',infrastructure_failed:'Tugas berhenti karena kendala perangkat atau layanan lokal.',timeout:'Batas waktu tugas tercapai.',no_response:'Tugas dihentikan karena belum ada jawaban.',unsupported_goal:'Tujuan ini belum dapat diproses dalam lingkup tugas.',invalid_plan:'Tugas dihentikan karena keluaran perencana tidak valid.'};
-async function startRun(s:Session,scenario:Scenario,condition:Condition,auto=false,manifestIndex?:number){
+async function startRun(s:Session,scenario:Scenario,condition:Condition,auto=false,manifestIndex?:number,attempt:AttemptMetadata={role:'original'}){
  if(s.starting||s.run&&!s.run.terminal||s.state==='CLOSED'||s.state==='CLOSING')throw Error('session_busy');s.starting=true;
  try{if(s.run)await s.run.done;if(session!==s||(['CLOSED','CLOSING'] as State[]).includes(s.state))return;
-  const world=fixtures.create(scenario);s.world=world;const epoch=s.epoch;let run:AgentRun|undefined;let task:Awaited<ReturnType<typeof openTask>>;
-  const metadataBase={condition,base:scenario.base,split:scenario.split,presentation:scenario.presentation,kind:scenario.kind,template:scenario.template,manifest_index:manifestIndex??null,config_hash:CONFIG_HASH,prompt_hash:PROMPT_HASH,dataset_hash:hash(scenario),demo,model:MODEL,node:process.version,freeze:existsSync('config/freeze.json')?JSON.parse(readFileSync('config/freeze.json','utf8')):null};
-  try{task=await openTask(world.id,world.secret,()=>{void run?.finish('execution_failed','egress_or_popup_blocked');},process.env.CHROMIUM_PATH);}catch(error){
-   const failedId=randomUUID(),detail=error instanceof Error?error.message:'browser_start_failed',metadata={...metadataBase,chromium:null};world.closed=true;fixtures.remove(world.id);s.world=undefined;s.run=undefined;
-   store.run(failedId,s.id,metadata);store.event(s.id,failedId,'run_start_failure',{session_id:s.id,run_id:failedId,epoch:s.epoch,goal_revision:0,reason:'infrastructure_failed',detail},false,s.mode==='demo'||s.mode==='benchmark');store.result(failedId,{run_id:failedId,goal:null,selected_product:null,agent_claimed_success:false,agent_termination_reason:'infrastructure_failed',detail,counters:{probes:0,actions:0,observations:0,llmCalls:0,inputTokens:0,outputTokens:0,recoveries:0,informativeProbes:0,evidenceAcquired:0,firstFeasibleProbe:null,routerComparisons:0,routerDisagreements:0},goal_intake_ms:0,task_wall_ms:0,cleanup_ms:0,public_refutations:false,completion_audio_delivered:null,verification_status:'UNKNOWN',metadata,oracle_success:null,oracle_assessment_reason:'browser_never_started',wrong_final_effect:null,feasible_exists:null});
-   if(s.mode!=='benchmark')s.retryItem={scenario,condition,manifestIndex};state(s,'BETWEEN_TASKS');
+  const attemptId=randomUUID(),epoch=s.epoch;let world:World|undefined,run:AgentRun|undefined,task:Awaited<ReturnType<typeof openTask>>;
+  const dataset=scenario.split==='main'?main:scenario.split==='development'?development:study;const metadataBase={condition,base:scenario.base,split:scenario.split,session_mode:s.mode,presentation:scenario.presentation,kind:scenario.kind,template:scenario.template,counterfactual_group:scenario.counterfactualGroup??null,public_task_instruction:scenario.instruction,oracle_reference_goal:structuredClone(scenario.goal),manifest_index:manifestIndex??null,attempt_role:attempt.role,replacement_pair_id:attempt.pairId??null,replacement_reason:attempt.reason??null,replaces_run_id:attempt.replacesRunId??null,config_hash:CONFIG_HASH,prompt_hash:PROMPT_HASH,dataset_hash:hash(dataset),scenario_hash:hash(scenario),demo,model:MODEL,node:process.version,freeze:existsSync('config/freeze.json')?JSON.parse(readFileSync('config/freeze.json','utf8')):null};
+  store.run(attemptId,s.id,{...metadataBase,chromium:null});
+  try{world=fixtures.create(scenario);s.world=world;task=await openTask(world.id,world.secret,()=>{void run?.finish('execution_failed','egress_or_popup_blocked');},process.env.CHROMIUM_PATH);}catch(error){
+   const detail=error instanceof Error?error.message:'browser_start_failed',metadata={...metadataBase,chromium:null};if(world){world.closed=true;fixtures.remove(world.id);}s.world=undefined;s.run=undefined;
+   store.event(s.id,attemptId,'run_start_failure',{session_id:s.id,run_id:attemptId,epoch:s.epoch,goal_revision:0,reason:'infrastructure_failed',detail},false,s.mode==='demo'||s.mode==='benchmark');store.result(attemptId,{run_id:attemptId,goal:null,goal_history:[],parsed_goal:null,oracle_reference_goal:structuredClone(scenario.goal),goal_matches_reference:false,reference_goal_status:'fixed_task_reference',selected_product:null,agent_claimed_success:false,agent_termination_reason:'infrastructure_failed',detail,counters:{probes:0,actions:0,observations:0,llmCalls:0,inputTokens:0,outputTokens:0,recoveries:0,informativeProbes:0,evidenceAcquired:0,firstFeasibleProbe:null,evidenceClosureProbe:null,routerComparisons:0,routerDisagreements:0},goal_intake_ms:0,task_wall_ms:0,cleanup_ms:0,public_refutations:false,completion_audio_delivered:null,verification_status:'UNKNOWN',metadata,oracle_success:null,oracle_assessment_reason:'browser_never_started',wrong_final_effect:null,feasible_exists:null,reference_decision:scenario.referenceEvidence.decision,reference_minimum_probes:scenario.referenceEvidence.minimumProbes,reference_decisive_constraints:scenario.referenceEvidence.decisiveConstraints,reference_evidence_path:scenario.referenceEvidence.path,probes_to_evidence_closure:null,excess_probe_cost:null,act_abstain_correct:null,failure_category:'infrastructure_failure'});
+   if(s.mode!=='benchmark')s.retryItem={scenario,condition,manifestIndex,attempt:{role:'participant_retry',reason:'browser_start_failure',replacesRunId:attemptId}};state(s,'BETWEEN_TASKS');
    say(s,'Tugas belum bisa dimulai karena browser lokal belum siap. Ucapkan lanjut untuk mencoba lagi, atau selesai untuk menutup sesi.','BETWEEN_TASKS');return;
   }
-  if(s.epoch!==epoch){await task.server.kill();fixtures.remove(world.id);return;}
-  const metadata={...metadataBase,chromium:task.browser.version()};
+  if(s.epoch!==epoch){await task.server.kill();fixtures.remove(world!.id);return;}
+  const metadata={...metadataBase,chromium:task.browser.version()};store.updateRunMetadata(attemptId,metadata);
   run=new AgentRun(task.page,task.browser,task.server,condition,demo?new DemoModel():new Ollama(),{
    log:(type,payload,sensitive)=>event(s,type,payload,sensitive),
    status:(phase,text)=>{emit(s,'PROGRESS',{phase,text});if(phase==='EXPLORING')scheduleWorking(s);else stopWorking(s);},
    ask:(text,confirmation)=>say(s,text,'ANSWER',confirmation),
    ack:(text)=>{if(auto)run?.resume();else say(s,text,'CONTROL');},
    finished:async(outcome:AgentOutcome,quiescent:boolean)=>{
-    world.closed=true;const result={...outcome,metadata,...assessOracle(world,outcome.goal,quiescent)};
-    store.result(outcome.run_id,result);fixtures.remove(world.id);s.world=undefined;s.epoch++;clearTurn(s);voice.close();
+    world.closed=true;const result={...outcome,metadata,...evaluateOutcome(world,outcome,quiescent,s.mode==='study'||s.mode==='pilot')};
+    store.result(outcome.run_id,result);fixtures.remove(world.id);s.world=undefined;s.epoch++;clearTurn(s);
     emit(s,'RESULT',{outcome,summary:narratives[outcome.agent_termination_reason]});
     if(s.state==='CLOSING'||s.state==='CLOSED'||s.mode==='benchmark')return;
     if(!quiescent){await closeSession(s);return;}
@@ -78,12 +81,12 @@ async function startRun(s:Session,scenario:Scenario,condition:Condition,auto=fal
     const selected=outcome.goal?`${outcome.selected_product?' '+outcome.selected_product.title+'.':''} Ukuran ${outcome.goal.size}, warna ${outcome.goal.color}, batas harga ${outcome.goal.maxPriceIdr.toLocaleString('id-ID')} rupiah.`:'';
     say(s,narratives[outcome.agent_termination_reason]+selected+(s.comprehension?' Menurutmu, barang apa yang dipilih dan syarat apa yang sudah atau belum terpenuhi?':' Ucapkan lanjut untuk tugas berikutnya, ulang hasil, atau selesai.'),s.comprehension?'ANSWER':'BETWEEN_TASKS',undefined,outcome.run_id);
    }
-  },auto);s.run=run;store.run(run.id,s.id,metadata);state(s,'IN_TASK');emit(s,'TASK',{instruction:scenario.instruction,index:s.index+1,total:s.mode==='study'?4:6});
-  if(auto)await run.input(scenario.instruction);else say(s,scenario.instruction+' Silakan sampaikan tujuanmu.','ANSWER');
+  },auto,scenario.instruction,attemptId);s.run=run;state(s,'IN_TASK');emit(s,'TASK',{instruction:scenario.instruction,index:s.index+1,total:s.mode==='study'?4:6});
+  if(auto)await run.input(scenario.instruction);else say(s,scenario.instruction+' Jika sudah benar, ucapkan mulai. Kamu juga bisa langsung menyampaikan koreksi singkat.','ANSWER');
  }finally{s.starting=false;}
 }
 async function next(s:Session){if(s.starting)return;if(s.state!=='READY'&&s.state!=='BETWEEN_TASKS')return;if(s.comprehension){say(s,'Ceritakan singkat hasil yang kamu pahami, atau katakan lewati.');return;}
- const retry=s.retryItem;if(retry)s.retryItem=undefined;else if(s.state==='BETWEEN_TASKS')s.index++;const schedule=s.mode==='study'?studyOrder(s.slot):development.map(scenario=>({scenario,condition:'P' as Condition}));if(!retry&&s.index>=schedule.length){state(s,'FEEDBACK');say(s,'Bagian apa yang mudah atau sulit diikuti? Silakan beri masukan singkat.');return;}const item=retry??schedule[s.index];await startRun(s,item.scenario,item.condition,false,retry?.manifestIndex);}
+ const retry=s.retryItem;if(retry)s.retryItem=undefined;else if(s.state==='BETWEEN_TASKS')s.index++;const schedule=s.mode==='study'?studyOrder(s.slot):development.map(scenario=>({scenario,condition:'P' as Condition}));if(!retry&&s.index>=schedule.length){state(s,'FEEDBACK');say(s,'Bagian apa yang mudah atau sulit diikuti? Silakan beri masukan singkat.');return;}const item=retry??schedule[s.index];await startRun(s,item.scenario,item.condition,false,retry?.manifestIndex,retry?.attempt);}
 async function closeSession(s:Session){if(s.state==='CLOSED'||s.state==='CLOSING')return;state(s,'CLOSING');s.epoch++;stopWorking(s);clearTurn(s);clearTimeout(s.timer);voice.close();await s.run?.finish('user_stopped');store.close(s.id);state(s,'CLOSED');s.ws?.close();if(session===s)session=undefined;}
 async function textInput(s:Session,text:string,confirmation?:string){
  const cmd=command(text);s.pendingSpeech=false;s.inputTurn=undefined;s.reprompts=0;clearTimeout(s.answerTimer);
@@ -126,21 +129,25 @@ const server=createServer(async(req,res)=>{try{
   if(path==='/api/research/shutdown'){json(res,200,{stopping:true});void shutdown();return;}
   if(path==='/api/research/abort'){if(session)await closeSession(session);json(res,200,{stopped:true});return;}
   if(path==='/api/research/benchmark'){
-   if(session)throw Error('one_session_only');const split=z.enum(['development','main']).parse(b.split);
+   if(session)throw Error('one_session_only');const request=z.object({request_id:z.string().uuid(),split:z.enum(['development','main']),replacement:z.object({base:z.string(),presentation:z.enum(['EARLY','STAGED']),reason:z.string().min(5).max(500)}).strict().optional()}).strict().parse(b),split=request.split;
    if(demo&&split==='main')throw Error('main_disallows_demo');
    if(!demo&&!readiness().preflight?.passed)throw Error('preflight_required');
-   const fullSchedule:ScheduleItem[]=split==='main'?benchmarkManifest().map((e,manifestIndex)=>({condition:e.condition,scenario:main.find(s=>s.base===e.base&&s.presentation===e.presentation)!,manifestIndex})):development.flatMap(scenario=>(['P','B1'] as Condition[]).map(condition=>({condition,scenario})));
+   const scenarioFor=(base:string,presentation:string)=>{const matches=main.filter(s=>s.base===base&&s.presentation===presentation);if(matches.length!==1)throw Error('dataset_cell_not_unique');return matches[0];};
+   const fullSchedule:ScheduleItem[]=split==='main'?benchmarkManifest().map((e,manifestIndex)=>({condition:e.condition,scenario:scenarioFor(e.base,e.presentation),manifestIndex})):development.flatMap(scenario=>(['P','B1'] as Condition[]).map(condition=>({condition,scenario})));
    if(split==='main'){
     if(!existsSync('config/freeze.json'))throw Error('freeze_required');const frozen=JSON.parse(readFileSync('config/freeze.json','utf8'));
     if(frozen.config_hash!==CONFIG_HASH||frozen.prompt_hash!==PROMPT_HASH||frozen.dataset_hash!==hash(main)||frozen.lockfile_hash!==hash(readFileSync('package-lock.json','utf8')))throw Error('freeze_mismatch');
     for(const [file,digest] of Object.entries(frozen.file_hashes))if(hash(readFileSync(String(file),'utf8'))!==digest)throw Error('source_changed_after_freeze');
     const tags:any=await (await fetch('http://127.0.0.1:11435/api/tags',{signal:AbortSignal.timeout(5000)})).json();if(tags.models?.find((m:any)=>m.name===MODEL.name)?.digest!==frozen.model_digest)throw Error('model_digest_changed');
    }
-   const prior=split==='main'?store.export().results.filter((r:any)=>r.metadata?.split==='main'&&!r.metadata?.demo):[];const cell=(x:{base:string;presentation:string;condition:string})=>`${x.base}|${x.presentation}|${x.condition}`;const completed=new Set(prior.map((r:any)=>cell(r.metadata)));const schedule=fullSchedule.filter(item=>!completed.has(cell({base:item.scenario.base,presentation:item.scenario.presentation,condition:item.condition})));
+   const prior=split==='main'?store.export().results.filter((r:any)=>r.metadata?.split==='main'&&!r.metadata?.demo&&r.metadata?.config_hash===CONFIG_HASH&&r.metadata?.prompt_hash===PROMPT_HASH&&r.metadata?.dataset_hash===hash(main)&&(r.metadata?.attempt_role??'original')==='original'):[];const cell=(x:{base:string;presentation:string;condition:string})=>`${x.base}|${x.presentation}|${x.condition}`;const counts=new Map<string,number>(),originalRunIds=new Map<string,string>();for(const row of prior){const key=cell(row.metadata);counts.set(key,(counts.get(key)??0)+1);originalRunIds.set(key,row.run_id);}if([...counts.values()].some(n=>n>1))throw Error('duplicate_original_cell');
+   const completed=new Set(prior.map((r:any)=>cell(r.metadata)));let schedule:ScheduleItem[],initialCompleted:number,total:number,replacementPairId:string|undefined;
+   if(request.replacement){if(split!=='main')throw Error('replacement_main_only');const scenario=scenarioFor(request.replacement.base,request.replacement.presentation);for(const condition of ['P','B1'] as Condition[])if((counts.get(cell({base:scenario.base,presentation:scenario.presentation,condition}))??0)!==1)throw Error('replacement_requires_original_pair');replacementPairId=randomUUID();schedule=(['P','B1'] as Condition[]).map(condition=>{const originalCell=cell({base:scenario.base,presentation:scenario.presentation,condition});return {scenario,condition,attempt:{role:'replacement',pairId:replacementPairId,reason:request.replacement!.reason,replacesRunId:originalRunIds.get(originalCell)}};});initialCompleted=0;total=2;}
+   else{schedule=fullSchedule.filter(item=>!completed.has(cell({base:item.scenario.base,presentation:item.scenario.presentation,condition:item.condition})));initialCompleted=completed.size;total=fullSchedule.length;}
    if(!schedule.length)throw Error(split==='main'?'main_complete':'benchmark_complete');
-   const s:Session={id:randomUUID(),token:randomBytes(32).toString('hex'),code:'SYNTHETIC',mode:'benchmark',slot:0,index:completed.size,state:'READY',epoch:0,seq:0,lastHeartbeat:Date.now(),requests:new Set([b.request_id]),reprompts:0,comprehension:false,readyHeard:true,starting:false,benchmarkTotal:fullSchedule.length};session=s;store.session(s.id,s.code,s.mode);
-   json(res,202,{session_id:s.id,remaining:schedule.length,completed:completed.size,total:fullSchedule.length,split,demo,status:completed.size?'resumed':'started'});
-   void(async()=>{try{for(const item of schedule){if(session!==s||s.state==='CLOSING'||s.state==='CLOSED')break;await startRun(s,item.scenario,item.condition,true,item.manifestIndex);await s.run?.done;s.index++;}}catch(e){event(s,'benchmark_failure',{detail:e instanceof Error?e.message:'failed'});}finally{await closeSession(s);}})();return;
+   const s:Session={id:randomUUID(),token:randomBytes(32).toString('hex'),code:'SYNTHETIC',mode:'benchmark',slot:0,index:initialCompleted,state:'READY',epoch:0,seq:0,lastHeartbeat:Date.now(),requests:new Set([b.request_id]),reprompts:0,comprehension:false,readyHeard:true,starting:false,benchmarkTotal:total};session=s;store.session(s.id,s.code,s.mode);
+   json(res,202,{session_id:s.id,remaining:schedule.length,completed:initialCompleted,total,split,demo,replacement_pair_id:replacementPairId??null,status:request.replacement?'replacement_started':initialCompleted?'resumed':'started'});
+   void(async()=>{try{for(const item of schedule){if(session!==s||s.state==='CLOSING'||s.state==='CLOSED')break;await startRun(s,item.scenario,item.condition,true,item.manifestIndex,item.attempt);await s.run?.done;s.index++;}}catch(e){event(s,'benchmark_failure',{detail:e instanceof Error?e.message:'failed'});}finally{await closeSession(s);}})();return;
   }
   if(path==='/api/research/delete'){const id=z.string().uuid().parse(b.session_id);if(session?.id===id)throw Error('active_session_cannot_delete');json(res,200,store.deleteSession(id));return;}
   if(path==='/api/research/intervention'){if(!session)throw Error('no_session');event(session,'researcher_intervention',z.object({kind:z.enum(['technical','content']),note:z.string().max(500)}).parse(b.intervention),true);json(res,200,{recorded:true});return;}

@@ -1,6 +1,6 @@
 # Ruang Akses — Constraint-Directed Computer-Use Agent
 
-Research MVP lokal berdasarkan PRD CUA v4 (6 September 2026). Aplikasi memilih satu produk dan varian pada toko sintetis, meminta persetujuan eksplisit, lalu memverifikasi keranjang. Semua inferensi dirancang berjalan di komputer peneliti; tidak ada cloud inference, checkout, atau biaya API.
+Research MVP lokal berdasarkan PRD CUA v4 dan revisi metodologi 7 September 2026. Aplikasi menguji apakah constraint-directed evidence acquisition membantu agent memperoleh bukti yang tepat sebelum bertindak—atau abstain ketika solusi/bukti tidak tersedia—dibanding generic LLM progress-based exploration. Semua inferensi dirancang berjalan di komputer peneliti; tidak ada cloud inference, checkout, atau biaya API.
 
 **Status: MVP telah diperkeras dan diaudit end-to-end, tetapi belum siap pengambilan data manusia.** Unit/HTTP/browser synthetic dan UI demo nyata telah diuji; Ollama/STT/TTS/mikrofon/screen-reader pada perangkat studi tetap menjadi gate. Jangan menyamakan demo dengan bukti kelayakan penelitian. Lihat [audit](docs/AUDIT.md), [revisi PRD](docs/PRD-REVISION.md), dan [status verifikasi](docs/STATUS.md).
 
@@ -23,10 +23,10 @@ Research MVP lokal berdasarkan PRD CUA v4 (6 September 2026). Aplikasi memilih s
 | Kebijakan | P constraint-directed dan B1 generic lookahead; hanya router yang bercabang |
 | Efek keranjang | Kelayakan penuh, state segar, approval terikat efek, sekali pakai |
 | Lingkungan | Tiga produk, EARLY/STAGED, empat variasi label/presentasi, state server privat |
-| Evaluasi | Oracle setelah outcome dibekukan dan browser ditutup; manifest 64 episode |
+| Evaluasi | Oracle independen terhadap reference goal setelah outcome dibekukan; manifest 64 episode |
 | Privasi | Raw audio hanya memori, retention 30/90 hari, bearer token dan origin/host guard |
 
-P dan B1 menerima model, prompt, hasil annotation, matrix, tools, dan budget yang sama. `src/core/router.ts` adalah satu-satunya percabangan pemilihan berdasarkan kondisi. `may_answer` tidak pernah menjadi fakta. Agent tidak mengimpor fixture atau oracle.
+P dan B1 menerima goal, observasi publik, evidence matrix, eligible probes, model, prompt/parser, tools, verifier, dan budget yang sama. `src/core/router.ts` adalah satu-satunya percabangan pemilihan probe berdasarkan kondisi. P mengurutkan jumlah constraint `SATISFIED`, coverage `UNKNOWN`, forward cost, lalu stable tie-break; B1 memakai `generic_progress_score` LLM tanpa dibatasi hanya pada sebagian constraint. Satu eligible probe dipilih deterministik pada kedua kondisi tanpa comparison. `may_answer` tidak pernah menjadi fakta. Agent tidak mengimpor fixture, reference evidence path, atau oracle.
 
 ## Perintah
 
@@ -44,7 +44,7 @@ P dan B1 menerima model, prompt, hasil annotation, matrix, tools, dan budget yan
 | `npm run freeze -- --pilot-approved` | Bekukan kode/config/model/dataset setelah pilot; perlu git bersih |
 | `npm run benchmark` | Mulai 64 episode main dari freeze; tidak boleh demo |
 
-Di demo, ketik `siap` setelah consent, lalu `lanjut`. Salin instruksi task sebagai goal, jawab `ya` saat ditawarkan barang, lalu `lanjut`. Diam tidak berarti setuju. Mode nyata menggunakan mikrofon, bukan browser SpeechRecognition atau layanan suara internet.
+Di demo, ketik `siap` setelah consent, lalu `lanjut`. Sistem membacakan task; peserta cukup mengetik/berkata `mulai` atau memberi koreksi singkat, lalu `ya` saat menyetujui proposal. Diam tidak berarti setuju. Mode nyata menggunakan mikrofon, bukan browser SpeechRecognition atau layanan suara internet.
 
 ## Struktur
 
@@ -61,9 +61,9 @@ Di demo, ketik `siap` setelah consent, lalu `lanjut`. Salin instruksi task sebag
 
 ## Reproduksibilitas dan batas klaim
 
-Main terdiri dari 16 base × 2 presentasi × 2 policy = 64 episode. Denominator solvable 24 per policy, atau 12 untuk setiap presentasi. Unit inferensi adalah base (12 solvable), bukan 64 sampel independen. Analisis bootstrap bersifat deskriptif dan berkelompok per base. Metadata demo tidak masuk ringkasan penelitian.
+Main terdiri dari 16 base × 2 presentasi × 2 policy = 64 episode. Denominator solvable 24 per policy, atau 12 untuk setiap presentasi. Unit inferensi adalah base (12 solvable), bukan 64 sampel independen. Report memisahkan split, mode, config/prompt/dataset/freeze/model, serta planned, attempted, completed, infrastructure failure, oracle null, replacement, dan unattempted. Angka keberhasilan denominator penuh tetap `N/A` sampai cell original lengkap. Metadata demo tidak masuk ringkasan penelitian.
 
-Manifest, prompt, kode, lockfile, model digest, dan konfigurasi harus dibekukan setelah pilot. Main dapat dilanjutkan pada cell yang belum tercatat; hasil asli dan infrastructure failure tidak ditimpa. Replacement berpasangan tetap memerlukan protokol baru dan ID baru.
+Manifest, prompt, kode, lockfile, model digest, dan konfigurasi harus dibekukan setelah pilot. Main dapat dilanjutkan hanya pada cell original yang belum tercatat. Duplicate cell ditolak; hasil asli dan infrastructure failure tidak ditimpa. Replacement selalu berupa pasangan P/B1 dengan pair ID serta alasan eksplisit dan dianalisis terpisah.
 
 Tidak ada hasil benchmark main, data peserta, approval etik, atau klaim P lebih unggul yang disertakan dalam repo ini.
 

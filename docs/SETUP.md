@@ -21,7 +21,7 @@ Untuk mencoba antarmuka tanpa model:
 npm run demo
 ```
 
-Buka `http://localhost:3050/study`. Demo tidak memerlukan Ollama/STT/TTS karena inputnya teks dan planner-nya simulasi. Chromium diperlukan untuk menjalankan task sintetis; jika belum terpasang, demo tetap memandu consent/readiness dan memberi fallback yang dapat diulang atau ditutup, tetapi task browser akan dilewati. Data demo tidak masuk hasil penelitian. Hentikan dengan Ctrl+C.
+Buka `http://localhost:3050/study`. Demo tidak memerlukan Ollama/STT/TTS karena inputnya teks dan planner-nya simulasi. Setelah task dibacakan, masukkan `mulai` atau correction singkat; participant tidak menyalin ulang task. Chromium diperlukan untuk menjalankan task sintetis; jika belum terpasang, demo tetap memandu consent/readiness dan memberi fallback yang dapat diulang atau ditutup, tetapi task browser akan dilewati. Data demo tidak masuk hasil penelitian. Hentikan dengan Ctrl+C.
 
 ## 2. Ollama dan model
 
@@ -94,7 +94,7 @@ npm start
 
 Startup mengecek port, menjalankan Ollama milik aplikasi, lalu memakai `data/preflight.json` hanya bila config/prompt/model digest masih cocok. Jika cache tidak valid, startup menjalankan preflight penuh: storage, model/digest, satu parse JSON nyata, satu probe/verifikasi browser nyata, worker, TTS, dan STT. `npm run start:full` selalu memaksa pemeriksaan penuh. Jika gagal, startup berhenti dan menulis `data/preflight.json`. Setelah lolos, backend berjalan di `http://localhost:3050`, Coordinator `/study`, panel `/research`.
 
-Preflight STT memakai PCM hening untuk memeriksa pemuatan/inferensi. **Ini bukan tes akurasi ucapan.** Pemeriksaan mikrofon, ucapan Bahasa Indonesia peneliti, keyboard stop, keterpahaman TTS, payload konteks maksimum, dan alur hands-free masih wajib manual.
+Preflight STT memakai PCM hening untuk memeriksa pemuatan/inferensi. **Ini bukan tes akurasi ucapan.** Pemeriksaan mikrofon, ucapan Bahasa Indonesia peneliti, keyboard stop, keterpahaman TTS, payload konteks maksimum, dan alur nonvisual masih wajib manual. Saat TTS mic ditutup, sehingga stop suara tidak tersedia pada fase itu; Escape tetap tersedia. Jangan menyebut sistem hands-free penuh sebelum kemampuan tersebut dibuktikan.
 
 Jangan menjalankan `npm run preflight` bersamaan dengan backend: keduanya memerlukan port 3050 untuk fixture. Untuk preflight mandiri, jalankan Ollama khusus 11435 di terminal tersendiri, tetapi kosongkan 3050.
 
@@ -109,12 +109,12 @@ Shutdown terautentikasi menutup backend dan supervisor menutup Ollama miliknya. 
 ## 7. Urutan sebelum studi utama
 
 1. `npm test` dan `npm run test:integration` harus lulus di perangkat target.
-2. Jalankan development dengan model nyata: `npm run benchmark -- --development` ketika backend aktif. Command menunggu sampai semua episode selesai dan menggagalkan gate bila P/B1 tidak pernah berbeda.
+2. Jalankan development dengan model nyata: `npm run benchmark -- --development` ketika backend aktif. Command menunggu sampai semua episode selesai. Bila comparison eligible ada tetapi disagreement nol, audit apakah kedua router benar-benar mengikuti aturannya; ini bukan automatic failure dan bukan alasan melemahkan B1 atau mengubah dataset untuk memaksa perbedaan.
 3. B1 harus menyelesaikan sedikitnya dua STAGED solvable berbeda dengan probe nyata. Periksa latency, invalid output, trace, kemampuan parser koreksi, dan batas konteks 8192.
 4. Selesaikan checklist manual dan perbaiki gap pada `docs/STATUS.md`. Lakukan pilot peserta terpisah sesuai prosedur kampus. Jangan mengaktifkan studi hanya karena build lulus.
 5. Catat bukti pemeriksaan, tentukan manifest/prompt/config final, dan isi informasi penelitian yang benar. `HUMAN_STUDY_ENABLED=true` adalah tindakan eksplisit peneliti setelah menilai kesiapan, bukan sertifikasi otomatis.
 6. Commit kode yang telah lolos pilot. Jalankan `npm run freeze -- --pilot-approved`, lalu commit `config/freeze.json`.
-7. Jalankan `npm run benchmark` untuk 64 episode. Jangan mengubah kode, model, budget, atau main dataset setelah freeze.
+7. Jalankan `npm run benchmark` untuk 64 original episode. Jangan mengubah kode, model, budget, atau main dataset setelah freeze. Report harus menunjukkan planned/attempted/completed/infrastructure/oracle-null/unattempted; benchmark yang belum lengkap tidak boleh disajikan sebagai denominator penuh.
 8. User study: empat peserta utama, masing-masing empat task; pilih slot peserta 1–4. Dataset study berbeda dari main. Tidak ada kondisi yang diumumkan pada UI peserta.
 
 ## 8. Privasi
