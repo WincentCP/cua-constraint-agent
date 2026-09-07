@@ -48,6 +48,8 @@ Mic ditutup selama TTS. Karena itu voice stop tidak tersedia saat agent berbicar
 - **Oracle/reference leakage:** evaluator-only reference goal/path/decisive constraints tidak masuk planner DTO. Wrong parsed goal tetap gagal terhadap fixed reference; participant revision tidak otomatis menjadi truth.
 - **Benchmark realism:** matched scenarios membedakan ACT, public no-solution, dan truly unavailable evidence; actual variant price/stock tetap memerlukan inspection. Tiga candidate membatasi realism dan harus dinyatakan sebagai controlled scope, bukan live-web generalization.
 - **Denominator:** report memisahkan experiment identity, incomplete main, infra/oracle-null, duplicate, original, dan paired replacement. Original failure tidak dihapus.
+- **Automatic research record:** Task 1 membuka structured session trace tanpa participant control baru. Canonical events dan raw payload tetap tersedia; per-task evaluation serta session summary diturunkan otomatis. `task_success` mengikuti independent ACT/ABSTAIN oracle, sedangkan unassessable/stop/skip/infrastructure menjadi `ABORTED`, bukan false success.
+- **Media/privacy:** desain yang dipilih tidak merekam desktop, video, user audio, atau TTS audio. Ini sengaja mempertahankan scope RQ dan protokol privasi; transcript per-turn yang memang sudah ada tetap mengikuti retention verbatim.
 - **Budget:** actual dispatch membayar action; forward retry juga probe; pre-dispatch binding failure gratis karena belum ada browser interaction. Semua ceilings sama.
 - **Freeze risk:** model, prompt, budget, dataset, baseline, atau P priority tidak boleh dipilih/diubah setelah melihat main untuk memaksimalkan kemenangan P.
 

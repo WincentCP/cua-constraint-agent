@@ -23,7 +23,7 @@ Versi ini menggantikan requirement versi sebelumnya untuk pengembangan berikutny
 | Biaya layanan | Rp0 API/hosting. Seluruh inferensi lokal; tidak ada free trial atau fallback berbayar. |
 | Interaksi | Voice-first; mic otomatis saat menjawab dan ketika agent bekerja tanpa TTS. Escape tetap menjadi stop darurat. |
 | Evaluasi | Benchmark berpasangan 64 episode; pilot pengguna terpisah dan studi eksploratif empat peserta utama. |
-| Data penelitian | Event log, hasil oracle, JSON/CSV. Tanpa kamera, screen recording, atau penyimpanan raw audio. |
+| Data penelitian | Structured session trace, automatic task/session evaluation, hasil oracle, JSON/CSV. Tanpa kamera, screen recording, atau penyimpanan raw audio. |
 
 Judul kerja yang paling mencerminkan variabel penelitian:
 
@@ -444,11 +444,15 @@ Koreksi sesudah add-to-cart telah dikirim tidak dianggap membatalkan efek. Verif
 | Selesai run | Outcome agent beku + fixture quiescent → oracle result, event summary tersimpan. |
 | Ekspor/hapus | Researcher token + filter/session ID → JSON/CSV atau deletion receipt. |
 
-**FR-I02.** SQLite menyimpan `sessions`, `runs`, `events`, `run_results`. Fakta, action, verification, dan transkrip menjadi payload event bertipe; tidak perlu tabel analitik terpisah. State fixture disimpan pada namespace berbeda dari event agent dan tidak masuk planner DTO.
+**FR-I02.** SQLite menyimpan `sessions`, `runs`, `events`, `run_results`, dan cache turunan kecil `session_summaries`. Fakta, action, verification, dan transkrip menjadi payload event bertipe; tidak ada database/service analitik terpisah. State fixture disimpan pada namespace berbeda dari event agent dan tidak masuk planner DTO. Raw event tetap source untuk re-analysis; session summary tidak mengganti data mentah.
 
 **FR-I03.** Sebelum dispatch efek, simpan event intent; setelah hasil simpan outcome. Jika penulisan gagal, tutup gate. Oracle menghasilkan hasil terpisah setelah agent outcome beku. Export tidak menghitung ulang atau mengubah agent claim agar cocok dengan oracle.
 
-**FR-I04.** Peneliti memperoleh ringkasan per run dan timeline sederhana. JSON/CSV memuat config hash, condition, metrik, alasan gagal, dan tautan ID event lokal. Tidak ada PDF generator, video recorder, atau analytics service pada MVP.
+**FR-I04.** Peneliti memperoleh ringkasan per run dan timeline sederhana. Structured recording mulai otomatis saat Task 1 dan berakhir saat sesi ditutup, tanpa tombol/flow peserta tambahan. Canonical event minimal memuat timestamp, session/task ID, event type, result, metadata, dan schema version. Jenis inti meliputi `TASK_START`, `OBSERVATION`, `ACTION_ATTEMPT`, `ACTION_SUCCESS`, `ACTION_FAILED`, `VERIFICATION`, `RECOVERY_ATTEMPT`, `RECOVERY_RESULT`, `CLARIFICATION`, `USER_INTERVENTION`, `ORACLE_CHECK`, `TASK_END`, dan lifecycle sesi. JSON/CSV memuat config hash, condition, metrik, alasan gagal, dan ID event lokal. Tidak ada PDF generator, video recorder, atau analytics service pada MVP.
+
+**FR-I05.** Setelah outcome beku dan browser quiescent, automatic evaluation menyimpan `task_id`, start/end/completion time, `SUCCESS/FAILED/ABORTED`, oracle-grounded `task_success`, actions, failed actions, retry, recovery result, clarification, intervention/takeover/help, error type, final URL, serta final public accessibility-state fingerprint. `SUCCESS` berarti verdict ACT/ABSTAIN benar; `FAILED` berarti oracle dapat menilai dan verdict salah; stop, skip, infrastructure failure, atau verdict yang tidak aman dinilai menjadi `ABORTED` dengan `task_success=null`. Session summary menghitung task success rate terhadap seluruh attempted task (aborted tetap dalam denominator), assessable-only rate secara terpisah, average/median completion time untuk task non-aborted, action failure rate, recovery success rate, totals, dan per-task result. Denominator kosong adalah `null`, bukan nol.
+
+**FR-I06.** Telemetry non-kritis best effort: kegagalannya ditampung sebagai `RECORDING_FAILURE`/status `DEGRADED` dan tidak menghentikan task. Durable attempt ledger, result persistence, serta action intent sebelum dispatch tetap critical/fail-closed karena kehilangan bagian itu dapat menyebabkan side effect tanpa audit trail atau denominator corruption.
 
 ## 12. Benchmark: desain minimum yang dibekukan
 

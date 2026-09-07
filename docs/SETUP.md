@@ -123,6 +123,8 @@ Tidak ada kamera, screenshot peserta, rekaman layar, atau file raw audio. Worker
 
 Gunakan panel untuk export/hapus sesi. Export dibuat sebagai respons download, tidak disimpan sebagai salinan tambahan oleh aplikasi. **Salinan yang sudah Anda unduh berada di luar pengelolaan aplikasi**: peneliti bertanggung jawab menghapusnya sesuai consent/withdrawal. Gunakan enkripsi disk dan akun OS penelitian. Jangan unggah data peserta ke repository.
 
+Structured research trace mulai otomatis saat Task 1; peserta tidak perlu mengaktifkan recording. Export JSON memuat raw canonical events, hasil automatic evaluation per task, dan persisted session summary. `recording_status=DEGRADED` berarti ada telemetry non-kritis yang gagal dan harus diperiksa sebelum analisis. Tidak ada file video atau audio mentah yang perlu dikelola.
+
 ## Troubleshooting
 
 | Gejala | Langkah |

@@ -15,13 +15,17 @@ Status ini memisahkan implementasi dari bukti yang benar-benar sudah dijalankan.
 - Participant dapat menerima system task dengan `mulai`, memberi correction singkat, reject proposal, repeat/skip/stop, dan menggunakan Escape. Stale approval/turn dibatalkan.
 - Voice worker dipertahankan selama sesi sehat; timeout/restart dan stale/cancelled request dicatat/dibatalkan. Mic ditutup saat TTS dan bantuan menyebut Escape sebagai stop yang tetap tersedia.
 - Automated accessibility QA memakai axe; warna status/teks yang sebelumnya gagal contrast sudah diperbaiki.
+- Structured session trace otomatis dimulai pada Task 1 tanpa tombol peserta. Canonical event menyimpan timestamp/task ID/result/schema version; action attempt dan retry mempunyai correlation ID.
+- Automatic task evaluation menyimpan `SUCCESS/FAILED/ABORTED`, oracle-grounded `task_success`, timing, action failure, retry/recovery outcome, clarification, intervention/takeover/help, failure type, dan final URL/AX fingerprint. Session summary dipersist dan raw event tetap tersedia.
+- Tidak ada screen/video recording atau raw user/TTS audio. Kegagalan telemetry non-kritis menghasilkan status `DEGRADED`; durable action intent tetap fail-closed.
 
 ## Sudah diverifikasi di lingkungan pembangunan ini
 
 - TypeScript strict dan build produksi: lulus.
-- Unit/lifecycle/dataset/SQLite/HTTP: 39 test lulus.
+- Unit/lifecycle/dataset/SQLite/HTTP/automatic evaluation: 44 test lulus.
 - Browser integration memakai Playwright + Chromium nyata: 13 test lulus, termasuk EARLY/STAGED P/B1, no-solution, unavailable evidence, budget exhaustion, rejection, false toast, fake cart, detached reference, retry accounting, serta reference-goal oracle.
 - Automated axe coordinator + keyboard skip-link: 1 test lulus.
+- Development smoke melalui server demo: 12/12 run tersimpan dengan `TASK_START`, `ORACLE_CHECK`, `TASK_END`, final URL/AX fingerprint, dan persisted session summary; 12 berstatus `SUCCESS`. Ini hanya verifikasi plumbing dengan `DemoModel`, bukan hasil penelitian.
 - HTTP startup-failure test membuktikan attempted run sudah ada sebelum browser dan dipulihkan sebagai infrastructure failure dengan run ID yang sama.
 - Test planner/demo membuktikan `mulai`, short correction, vague price clarification, dan single-probe no-ranking.
 - Semua hasil di atas memakai `DemoModel`/test double yang eksplisit; **bukan inferensi model penelitian nyata**.

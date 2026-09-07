@@ -36,6 +36,7 @@ Lulus unit test hanya membuktikan fungsi yang diuji. “Ditulis” bukan “dija
 | Budget | Retry forward membayar probe+action; pre-dispatch binding failure tidak dihitung | Real trace/ceiling feasibility pada perangkat target |
 | Evidence/abstention | Reference minimum paths tidak masuk planner; closure/excess metric; matched ACT/no-solution/unavailable browser tests | Dataset freeze review oleh peneliti |
 | Accessibility | Automated axe dan keyboard skip-link lulus | Full keyboard, NVDA, mic, TTS/STT, earcon, collision, pilot pengguna target |
+| Automatic evaluation | Canonical event mapping, oracle-grounded task status, action/retry/recovery counters, null denominator, median/rate, crash/startup failure, raw export dan summary persistence lulus | Review field/retention dengan protokol etik sebelum pilot |
 
 ## Checklist manual — catat bukti, jangan sekadar centang
 

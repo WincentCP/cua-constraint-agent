@@ -23,8 +23,8 @@ Research MVP lokal berdasarkan PRD CUA v4 dan revisi metodologi 7 September 2026
 | Kebijakan | P constraint-directed dan B1 generic lookahead; hanya router yang bercabang |
 | Efek keranjang | Kelayakan penuh, state segar, approval terikat efek, sekali pakai |
 | Lingkungan | Tiga produk, EARLY/STAGED, empat variasi label/presentasi, state server privat |
-| Evaluasi | Oracle independen terhadap reference goal setelah outcome dibekukan; manifest 64 episode |
-| Privasi | Raw audio hanya memori, retention 30/90 hari, bearer token dan origin/host guard |
+| Evaluasi | Oracle independen setelah outcome dibekukan; automatic task evaluation, structured session trace, dan manifest 64 episode |
+| Privasi | Tidak ada video/raw audio; audio hanya memori, retention 30/90 hari, bearer token dan origin/host guard |
 
 P dan B1 menerima goal, observasi publik, evidence matrix, eligible probes, model, prompt/parser, tools, verifier, dan budget yang sama. `src/core/router.ts` adalah satu-satunya percabangan pemilihan probe berdasarkan kondisi. P mengurutkan jumlah constraint `SATISFIED`, coverage `UNKNOWN`, forward cost, lalu stable tie-break; B1 memakai `generic_progress_score` LLM tanpa dibatasi hanya pada sebagian constraint. Satu eligible probe dipilih deterministik pada kedua kondisi tanpa comparison. `may_answer` tidak pernah menjadi fakta. Agent tidak mengimpor fixture, reference evidence path, atau oracle.
 
@@ -52,7 +52,7 @@ Di demo, ketik `siap` setelah consent, lalu `lanjut`. Sistem membacakan task; pe
 - `src/agent/`: planner lokal, loop run, route, perencana demo terisolasi.
 - `src/browser/`: browser task, observer/registry, verifier deterministik.
 - `src/fixture/`: dataset dan dunia sintetis privat.
-- `src/evaluation/`: oracle independen dan ringkasan/analisis berpasangan.
+- `src/evaluation/`: oracle independen, canonical research events, evaluasi task/sesi, dan analisis berpasangan.
 - `src/server.ts`, `src/storage.ts`, `src/voice.ts`: coordinator, data, worker adapter.
 - `web/`, `public/vad-worklet.js`: antarmuka dan VAD lokal.
 - `workers/`: STT/TTS Python melalui stdin/stdout, tanpa audio di disk.
@@ -66,6 +66,12 @@ Main terdiri dari 16 base × 2 presentasi × 2 policy = 64 episode. Denominator 
 Manifest, prompt, kode, lockfile, model digest, dan konfigurasi harus dibekukan setelah pilot. Main dapat dilanjutkan hanya pada cell original yang belum tercatat. Duplicate cell ditolak; hasil asli dan infrastructure failure tidak ditimpa. Replacement selalu berupa pasangan P/B1 dengan pair ID serta alasan eksplisit dan dianalisis terpisah.
 
 Tidak ada hasil benchmark main, data peserta, approval etik, atau klaim P lebih unggul yang disertakan dalam repo ini.
+
+## Automatic evaluation dan research recording
+
+Saat Task 1 dibuat, backend otomatis menandai `SESSION_RECORDING_STARTED`; tidak ada tombol tambahan untuk peserta. “Recording” pada MVP berarti structured session trace lokal—bukan rekaman layar atau audio mentah. Setiap task menyimpan waktu, status `SUCCESS/FAILED/ABORTED`, verdict `task_success` dari oracle ACT/ABSTAIN independen, action/retry/recovery/clarification/intervention, failure taxonomy, serta URL dan fingerprint accessibility state terakhir. Event mempunyai timestamp, session/task ID, canonical type, result, metadata, dan schema version.
+
+Setelah sesi ditutup, SQLite menyimpan session summary berisi task success rate, average/median completion time, action failure rate, recovery success rate, clarification, intervention/takeover, help, total action, dan hasil tiap task. JSON mempertahankan event mentah dan hasil turunan; CSV mengekspor field hasil task. Kegagalan telemetry opsional menandai recording `DEGRADED` tanpa menghentikan agent. Durable action intent tetap fail-closed karena dispatch tanpa audit trail akan merusak keselamatan dan validitas.
 
 ## Dokumentasi
 
