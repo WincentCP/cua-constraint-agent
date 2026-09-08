@@ -3,7 +3,7 @@ import type {Browser,BrowserServer,Page} from 'playwright';
 import {LIMITS} from '../core/config.ts';
 import {Approval,effectFor,type CartEffect} from '../core/policy.ts';
 import {EvidenceStore,feasible,refuted} from '../core/evidence.ts';
-import {constraints,RunError,StaleWork,type Annotation,type Candidate,type Check,type Counters,type Goal,type Observation,type Phase,type Reason,type RouteStep,type Condition} from '../core/types.ts';
+import {constraints,GoalSchema,RunError,StaleWork,type Annotation,type Candidate,type Check,type Counters,type Goal,type Observation,type Phase,type Reason,type RouteStep,type Condition} from '../core/types.ts';
 import {Observer} from '../browser/observer.ts';
 import {expectedBefore,verifyEffect,verifyCart,verifyFreshCandidate} from '../browser/verifier.ts';
 import {Planner,type LocalModel} from './planner.ts';
@@ -15,14 +15,23 @@ export class AgentRun {
  id:string;epoch=0;phase:Phase='STARTING';goal?:Goal;goalAcceptedAt?:number;intakeAt=Date.now();
  counters:Counters={probes:0,actions:0,observations:0,llmCalls:0,inputTokens:0,outputTokens:0,recoveries:0,informativeProbes:0,evidenceAcquired:0,firstFeasibleProbe:null,evidenceClosureProbe:null,routerComparisons:0,routerDisagreements:0};
  observer:Observer;planner:Planner;evidence=new EvidenceStore();routes=new Routes();approval=new Approval();
+ private probeHistory:unknown[]=[];private activeProbe:string|null=null;
  held=false;terminal=false;effectDispatched=false;private lastVerification:Check='UNKNOWN';private aborts=new Set<AbortController>();private waiter?:()=>void;private inputTimer?:NodeJS.Timeout;private deadline?:NodeJS.Timeout;private intakeTimer:NodeJS.Timeout;private loopRunning=false;private clarificationCount=0;private terminalPromise?:Promise<void>;private approvedEffect?:CartEffect;private proposalEffect?:CartEffect;private acquired=new Set<string>();private conflictRead=false;private excluded=new Set<string>();private carried?:Observation;private goalHistory:Goal[]=[];
  done:Promise<void>;private resolveDone!:()=>void;private pendingGoalText='';
  constructor(public page:Page,private browser:Browser,private server:BrowserServer|undefined,private condition:Condition,model:LocalModel,private hooks:RunHooks,private autoApprove=false,private publicInstruction='',id=randomUUID()){
   this.id=id;
-  this.observer=new Observer(page);this.planner=new Planner(model,work=>this.llm(work),hooks.log);this.done=new Promise(r=>{this.resolveDone=r;});
+  this.observer=new Observer(page);this.planner=new Planner(model,work=>this.llm(work),hooks.log,()=>{if(this.counters.recoveries>=LIMITS.recoveries)return false;this.counters.recoveries++;hooks.log('structured_recovery',{attempt:this.counters.recoveries,result:'ATTEMPTED'});return true;});this.done=new Promise(r=>{this.resolveDone=r;});
   this.intakeTimer=setTimeout(()=>{void this.finish('timeout','goal_intake_timeout');},LIMITS.intakeMs);
  }
  envelope(){return {run_id:this.id,epoch:this.epoch,goal_revision:this.goal?.revision??0};}
+ // Automated experiments pass only the public goal, never the fixture or reference path.
+ async startCanonical(value:Goal){
+  if(this.goal||this.terminal||this.phase!=='STARTING')throw Error('canonical_goal_already_started');
+  const goal=GoalSchema.parse(structuredClone(value));
+  this.goal=goal;this.goalHistory.push(structuredClone(goal));this.goalAcceptedAt=Date.now();clearTimeout(this.intakeTimer);
+  this.deadline=setTimeout(()=>{void this.finish('timeout','task_deadline');},LIMITS.taskMs);
+  try{this.hooks.log('goal_accepted',{goal,source:'canonical_fixture',...this.envelope()});this.setPhase('EXPLORING');this.kick();}catch(e){await this.fail(e);}
+ }
  private setPhase(phase:Phase,text?:string){this.phase=phase;this.hooks.status(phase,text);}
  private remaining(){return (this.goalAcceptedAt?this.goalAcceptedAt+LIMITS.taskMs:this.intakeAt+LIMITS.intakeMs)-Date.now();}
  check(ticket?:number){if(this.terminal)throw new StaleWork();if(this.remaining()<=0)throw new RunError('timeout',this.goalAcceptedAt?'task_deadline':'goal_intake_timeout');if(ticket!==undefined&&ticket!==this.epoch)throw new StaleWork();}
@@ -61,7 +70,7 @@ export class AgentRun {
  }
  spokenConfirmation?:string;
  private kick(){if(this.loopRunning||this.terminal||!this.goal)return;this.loopRunning=true;void this.loop().finally(()=>{this.loopRunning=false;if(!this.terminal&&!this.held&&this.phase!=='AWAITING_APPROVAL')this.kick();});}
- private async observe(){await this.checkpoint();const ticket=this.epoch;const o=await this.observer.observe();this.check(ticket);this.counters.observations++;this.evidence.add(o.facts);this.routes.remember(o);this.hooks.log('observation',{...this.envelope(),observation_id:o.id,snapshot:o.snapshot,facts:o.facts});return o;}
+ private async observe(){await this.checkpoint();const ticket=this.epoch;const o=await this.observer.observe();this.check(ticket);this.counters.observations++;this.evidence.add(o.facts);this.routes.remember(o);this.hooks.log('observation',{...this.envelope(),observation_id:o.id,snapshot:o.snapshot,tree:o.tree,facts:o.facts,evidence_state:this.goal?this.evidence.matrix(o.candidates,this.goal):{},probe_id:this.activeProbe,step:this.counters.probes});return o;}
  private async dispatch(step:RouteStep,o:Observation,probe:boolean,grant?:CartEffect){
   await this.checkpoint();const ticket=this.epoch;let control=this.observer.bind(step.target);const binding=await this.observer.validate(control);this.check(ticket);if(this.held)throw new StaleWork();
   if(this.counters.actions>=LIMITS.actions)throw new RunError('budget_exhausted','browser_actions');const forward=probe&&step.kind!=='RETURN';if(forward&&this.counters.probes>=LIMITS.probes)throw new RunError('budget_exhausted','probes');
@@ -92,7 +101,7 @@ export class AgentRun {
    const o=this.carried??await this.observe();this.carried=undefined;const g=this.goal,m=this.evidence.matrix(o.candidates,g);const active=o.candidates.filter(c=>!this.excluded.has(c.key));
    if(this.counters.probes===0)for(const c of o.candidates)for(const k of constraints(g))if(m[c.key][k]!=='UNKNOWN')this.acquired.add(`${g.revision}:${c.key}:${k}`);
    const selected=active.find(c=>feasible(m,c.key,g));
-   if(selected){this.counters.firstFeasibleProbe??=this.counters.probes;await this.prepare(selected,o);if((this.phase as Phase)==='AWAITING_APPROVAL')return;continue;}
+   if(selected){this.counters.firstFeasibleProbe??=this.counters.probes;this.counters.evidenceClosureProbe??=this.counters.probes;this.hooks.log('evidence_closure',{decision:'ACT',probe_count:this.counters.probes});await this.prepare(selected,o);if((this.phase as Phase)==='AWAITING_APPROVAL')return;continue;}
    if(o.candidates.every(c=>refuted(m,c.key,g))){await this.finish('no_feasible_in_scope');return;}
    if(!active.length||active.every(c=>refuted(m,c.key,g))){await this.finish('skipped','all_remaining_candidates_declined_or_refuted');return;}
    if(!this.conflictRead&&active.some(c=>this.evidence.conflict(c.key,g))){this.conflictRead=true;this.carried=await this.observe();continue;}
@@ -100,8 +109,9 @@ export class AgentRun {
    if(this.counters.probes>=LIMITS.probes||this.counters.actions>=LIMITS.actions||this.counters.llmCalls>=LIMITS.llmCalls||(!probes.eligible.length&&probes.all.length)){await this.finish('budget_exhausted',this.counters.probes>=LIMITS.probes?'probes':'route_or_call_budget');return;}
    const eligible=probes.eligible.filter(p=>!this.excluded.has(p.ownerKey));if(!eligible.length){await this.finish('insufficient_evidence','no_eligible_probe');return;}
    let annotations:Annotation[]=[],p=eligible[0];let comparison:{comparable:boolean;P:string|null;B1:string|null;diverged:boolean}={comparable:false,P:null,B1:null,diverged:false};
-   if(eligible.length>1){annotations=await this.planner.annotate(g,o,m,eligible,this.counters);await this.checkpoint();p=selectProbe(this.condition,eligible,annotations,m,active,g)!;const pChoice=selectProbe('P',eligible,annotations,m,active,g),bChoice=selectProbe('B1',eligible,annotations,m,active,g);const diverged=pChoice?.probeId!==bChoice?.probeId;this.counters.routerComparisons++;if(diverged)this.counters.routerDisagreements++;comparison={comparable:true,P:pChoice?.probeId??null,B1:bChoice?.probeId??null,diverged};}
-   this.hooks.log('planner_proposal',{...this.envelope(),annotations,selected_probe:p,router_comparison:comparison});
+   if(eligible.length>1){annotations=await this.planner.annotate(g,o,m,eligible,this.counters,this.probeHistory);await this.checkpoint();p=selectProbe(this.condition,eligible,annotations,m,active,g)!;const pChoice=selectProbe('P',eligible,annotations,m,active,g),bChoice=selectProbe('B1',eligible,annotations,m,active,g);const diverged=pChoice?.probeId!==bChoice?.probeId;this.counters.routerComparisons++;if(diverged)this.counters.routerDisagreements++;comparison={comparable:true,P:pChoice?.probeId??null,B1:bChoice?.probeId??null,diverged};}
+   this.hooks.log('planner_proposal',{...this.envelope(),annotations,eligible_probes:eligible,evidence_state:m,selected_probe:p,reason_code:eligible.length===1?'SINGLE_ELIGIBLE':this.condition==='P'?'UNKNOWN_CONSTRAINT_COVERAGE':'GENERIC_PROGRESS',router_comparison:comparison});
+   this.activeProbe=p.probeId;this.probeHistory.push({probe_id:p.probeId,control:p.controlDescriptor,step:this.counters.probes});
    // Restoration is deterministic. Rebind and verify every step, but call the model again only if evidence changes.
    let current=o,beforeFacts=this.evidence.facts.length;for(const step of p.route){current=await this.dispatch(step,current,true);if(this.evidence.facts.length!==beforeFacts&&step!==p.route[p.route.length-1])break;beforeFacts=this.evidence.facts.length;}this.carried=current;
   }catch(e){if(e instanceof StaleWork){if(this.terminal)return;continue;}await this.fail(e);return;}}

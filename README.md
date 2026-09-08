@@ -1,84 +1,69 @@
-# Ruang Akses — Constraint-Directed Computer-Use Agent
+# Constraint-Directed Computer-Use Agent
 
-Research MVP lokal berdasarkan PRD CUA v4 dan revisi metodologi 7 September 2026. Aplikasi menguji apakah constraint-directed evidence acquisition membantu agent memperoleh bukti yang tepat sebelum bertindak—atau abstain ketika solusi/bukti tidak tersedia—dibanding generic LLM progress-based exploration. Semua inferensi dirancang berjalan di komputer peneliti; tidak ada cloud inference, checkout, atau biaya API.
+Sistem eksperimen otomatis berdasarkan PRD lampiran pengguna, 8 September 2026. Membandingkan policy P yang memilih pemeriksaan berdasarkan constraint yang belum terbukti dengan baseline B1 yang meranking kemajuan task secara umum. Browser, model lokal, observasi semantic, eligible probes, executor, verifier, oracle, dan budget sama untuk kedua policy.
 
-**Status: MVP telah diperkeras dan diaudit end-to-end, tetapi belum siap pengambilan data manusia.** Unit/HTTP/browser synthetic dan UI demo nyata telah diuji; Ollama/STT/TTS/mikrofon/screen-reader pada perangkat studi tetap menjadi gate. Jangan menyamakan demo dengan bukti kelayakan penelitian. Lihat [audit](docs/AUDIT.md), [revisi PRD](docs/PRD-REVISION.md), dan [status verifikasi](docs/STATUS.md).
+**Jalur utama adalah CLI tanpa GUI.** Scope aktif adalah evaluasi teknis pada synthetic e-commerce; workflow studi manusia dan voice dari versi sebelumnya tidak diperlukan. PRD sumber tersedia di [PRD-AUTOMATED](docs/PRD-AUTOMATED.md), petunjuk operasional di [AUTOMATED-SETUP](docs/AUTOMATED-SETUP.md).
 
-## Mulai dari sini
+## Jalankan
 
-1. Ikuti [panduan instalasi dan konfigurasi](docs/SETUP.md).
-2. Coba demo teknis dengan `npm ci`, `npx playwright install chromium`, `npm run build`, lalu `npm run demo`.
-3. Buka `http://localhost:3050/study`. Demo menggunakan teks dan perencana simulasi; bukan benchmark penelitian.
-4. Untuk engine nyata, pasang Ollama, model qwen2.5:7b, faster-whisper small CPU INT8, serta eSpeak NG `id`. Kemudian `npm start` menjalankan pemeriksaan dan layanan lokal.
-5. Jalankan pilot, lengkapi checklist, baru freeze dan benchmark. Keunggulan P bukan syarat kelulusan pilot.
+```powershell
+npm ci
+npx playwright install chromium
+npm run experiment -- validate
+npm run experiment -- episode --demo --task development-01 --presentation EARLY --policy P
+npm run experiment -- main --demo
+```
 
-## Apa yang dibangun
+Node.js 24+ diperlukan. Port 3050 harus kosong. Runner membuka synthetic environment, menjalankan Chromium headless, dan menutupnya secara otomatis. Mode demo menggunakan planner simulasi berlabel; outputnya bukan hasil penelitian.
 
-| Komponen | Implementasi |
-| --- | --- |
-| Coordinator | React, consent, mic/VAD, half-duplex, Escape, halaman `/study` |
-| Peneliti | Readiness, hasil/timeline sederhana, export JSON/CSV, abort, hapus sesi |
-| Backend | Node.js 24+, TypeScript, HTTP dan satu WebSocket, SQLite lokal |
-| Agent | Observer ARIA, registry referensi, bukti bersumber, route historis, shared verifier |
-| Kebijakan | P constraint-directed dan B1 generic lookahead; hanya router yang bercabang |
-| Efek keranjang | Kelayakan penuh, state segar, approval terikat efek, sekali pakai |
-| Lingkungan | Tiga produk, EARLY/STAGED, empat variasi label/presentasi, state server privat |
-| Evaluasi | Oracle independen setelah outcome dibekukan; automatic task evaluation, structured session trace, dan manifest 64 episode |
-| Privasi | Tidak ada video/raw audio; audio hanya memori, retention 30/90 hari, bearer token dan origin/host guard |
+Untuk model nyata:
 
-P dan B1 menerima goal, observasi publik, evidence matrix, eligible probes, model, prompt/parser, tools, verifier, dan budget yang sama. `src/core/router.ts` adalah satu-satunya percabangan pemilihan probe berdasarkan kondisi. P mengurutkan jumlah constraint `SATISFIED`, coverage `UNKNOWN`, forward cost, lalu stable tie-break; B1 memakai `generic_progress_score` LLM tanpa dibatasi hanya pada sebagian constraint. Satu eligible probe dipilih deterministik pada kedua kondisi tanpa comparison. `may_answer` tidak pernah menjadi fakta. Agent tidak mengimpor fixture, reference evidence path, atau oracle.
+```powershell
+ollama pull qwen2.5:7b
+npm run experiment -- doctor
+npm run experiment -- repeatability --out exports/development-gate-v1
+npm run experiment -- freeze --gate exports/development-gate-v1 --out config/experiment-freeze-v1.json
+npm run experiment -- main --freeze config/experiment-freeze-v1.json --out exports/main-v1
+```
 
-## Perintah
+Ollama harus berjalan di localhost:11434, atau tentukan port melalui `--ollama`. Canonical goal dimuat langsung dari fixture dan tidak memakai LLM parser. Main nyata memerlukan gate baseline competence dan 24 episode repeatability yang lulus. Tidak ada gate peserta, mikrofon, atau TTS.
 
-| Perintah | Tujuan |
-| --- | --- |
-| `npm run build` | Typecheck dan build frontend |
-| `npm test` | Unit, lifecycle, dataset, SQLite, HTTP smoke |
-| `npm run test:integration` | Browser Chromium nyata dengan planner demo berlabel |
-| `npm run demo` | Coordinator demo teknis dengan input teks |
-| `npm start` | Build, jalankan Ollama milik aplikasi, gunakan preflight cache bila valid, backend, buka Coordinator |
-| `npm run start:full` | Paksa full preflight sebelum backend |
-| `npm run stop` | Shutdown melalui endpoint lokal terautentikasi |
-| `npm run preflight` | Pemeriksaan engine nyata; port 3050 harus kosong |
-| `npm run benchmark -- --development` | Mulai 12 episode development P/B1 melalui backend aktif |
-| `npm run freeze -- --pilot-approved` | Bekukan kode/config/model/dataset setelah pilot; perlu git bersih |
-| `npm run benchmark` | Mulai 64 episode main dari freeze; tidak boleh demo |
+## Implementasi
 
-Di demo, ketik `siap` setelah consent, lalu `lanjut`. Sistem membacakan task; peserta cukup mengetik/berkata `mulai` atau memberi koreksi singkat, lalu `ya` saat menyetujui proposal. Diam tidak berarti setuju. Mode nyata menggunakan mikrofon, bukan browser SpeechRecognition atau layanan suara internet.
+- 16 base task × EARLY/STAGED × P/B1 = 64 episode: 12 solvable, 2 no-solution, 2 unavailable-evidence.
+- Accessibility observation melalui Playwright ARIA snapshots, evidence SATISFIED/REFUTED/UNKNOWN dengan sumber publik, shared eligible probes, serta ranking P/B1.
+- ACT hanya setelah seluruh constraint terpenuhi; verifikasi memakai observasi baru. ABSTAIN membedakan no-solution dan insufficient evidence.
+- Outcome dibekukan dan browser ditutup sebelum oracle membaca reference goal dan final state privat.
+- Satu recovery teknis per episode, dipakai bersama oleh schema repair dan browser retry dengan budget yang tetap sama.
+- CLI untuk single episode, development, repeatability, freeze, main/per-policy, metrics, dan export.
+- Trace setiap episode, journal sebelum action, pemulihan attempt saat crash, dan output baru untuk setiap eksperimen.
+
+## Output dan analisis
+
+Setiap direktori ekspor berisi `episodes.jsonl`, `metrics.json`, `metrics.csv`, `failures.json`, dan `experiment-config.json`. Journal rinci berada di `events.jsonl`.
+
+Empat primary metrics: verified solvable success, ACT/ABSTAIN correctness, probes to evidence closure, dan informative probe rate. EARLY/STAGED dilaporkan terpisah; P/B1 dipasangkan per base task. Attempt gagal dan sel yang belum dicoba tetap terlihat. Data demo tidak dapat meluluskan gate penelitian.
+
+```powershell
+npm run experiment -- metrics --input exports/main-v1
+npm run experiment -- export --input exports/main-v1
+npm run experiment -- --help
+npm run build
+npm test
+npm run test:integration
+```
 
 ## Struktur
 
-- `src/core/`: kontrak, evidence, router, approval, batas runtime.
-- `src/agent/`: planner lokal, loop run, route, perencana demo terisolasi.
-- `src/browser/`: browser task, observer/registry, verifier deterministik.
-- `src/fixture/`: dataset dan dunia sintetis privat.
-- `src/evaluation/`: oracle independen, canonical research events, evaluasi task/sesi, dan analisis berpasangan.
-- `src/server.ts`, `src/storage.ts`, `src/voice.ts`: coordinator, data, worker adapter.
-- `web/`, `public/vad-worklet.js`: antarmuka dan VAD lokal.
-- `workers/`: STT/TTS Python melalui stdin/stdout, tanpa audio di disk.
-- `scripts/`: startup, preflight, freeze, benchmark.
-- `tests/`: unit/HTTP dan suite integrasi browser.
+| Direktori | Peran |
+| --- | --- |
+| `src/experiment` | Canonical task loader, validator, runner tanpa GUI, freeze identity, metrics |
+| `src/core` | Evidence, constraint, budget, policy selector, ACT guard |
+| `src/agent` | Shared agent loop, planner Ollama, public probe history |
+| `src/browser` | Chromium isolation, accessibility observer, fresh-state verifier |
+| `src/fixture` | Synthetic environment dan private dataset |
+| `src/evaluation` | Oracle independen dan utilitas evaluasi |
+| `scripts/experiment.ts` | Entrypoint CLI |
+| `tests` | Unit dan integrasi browser |
 
-## Reproduksibilitas dan batas klaim
-
-Main terdiri dari 16 base × 2 presentasi × 2 policy = 64 episode. Denominator solvable 24 per policy, atau 12 untuk setiap presentasi. Unit inferensi adalah base (12 solvable), bukan 64 sampel independen. Report memisahkan split, mode, config/prompt/dataset/freeze/model, serta planned, attempted, completed, infrastructure failure, oracle null, replacement, dan unattempted. Angka keberhasilan denominator penuh tetap `N/A` sampai cell original lengkap. Metadata demo tidak masuk ringkasan penelitian.
-
-Manifest, prompt, kode, lockfile, model digest, dan konfigurasi harus dibekukan setelah pilot. Main dapat dilanjutkan hanya pada cell original yang belum tercatat. Duplicate cell ditolak; hasil asli dan infrastructure failure tidak ditimpa. Replacement selalu berupa pasangan P/B1 dengan pair ID serta alasan eksplisit dan dianalisis terpisah.
-
-Tidak ada hasil benchmark main, data peserta, approval etik, atau klaim P lebih unggul yang disertakan dalam repo ini.
-
-## Automatic evaluation dan research recording
-
-Saat Task 1 dibuat, backend otomatis menandai `SESSION_RECORDING_STARTED`; tidak ada tombol tambahan untuk peserta. “Recording” pada MVP berarti structured session trace lokal—bukan rekaman layar atau audio mentah. Setiap task menyimpan waktu, status `SUCCESS/FAILED/ABORTED`, verdict `task_success` dari oracle ACT/ABSTAIN independen, action/retry/recovery/clarification/intervention, failure taxonomy, serta URL dan fingerprint accessibility state terakhir. Event mempunyai timestamp, session/task ID, canonical type, result, metadata, dan schema version.
-
-Setelah sesi ditutup, SQLite menyimpan session summary berisi task success rate, average/median completion time, action failure rate, recovery success rate, clarification, intervention/takeover, help, total action, dan hasil tiap task. JSON mempertahankan event mentah dan hasil turunan; CSV mengekspor field hasil task. Kegagalan telemetry opsional menandai recording `DEGRADED` tanpa menghentikan agent. Durable action intent tetap fail-closed karena dispatch tanpa audit trail akan merusak keselamatan dan validitas.
-
-## Dokumentasi
-
-- [SETUP](docs/SETUP.md): langkah konfigurasi yang harus dilakukan di komputer peneliti.
-- [STATUS](docs/STATUS.md): pengujian yang benar-benar dilakukan dan gap yang masih terbuka.
-- [ACCEPTANCE](docs/ACCEPTANCE.md): pemetaan AC-01–28 dan checklist manual.
-- [GITHUB](docs/GITHUB.md): membuat repository privat dan push tanpa membagikan token di chat.
-- [PRD asli](docs/PRD.md): sumber requirement; implementasi tidak menggantikan spesifikasi.
-
-Referensi teknis: [Playwright ARIA snapshots](https://playwright.dev/docs/aria-snapshots), [Ollama API chat](https://docs.ollama.com/api/chat), [faster-whisper](https://github.com/SYSTRAN/faster-whisper), [bahasa eSpeak NG](https://github.com/espeak-ng/espeak-ng/blob/master/docs/languages.md).
+Implementasi UI/voice terdahulu tetap tersimpan untuk kompatibilitas. Dokumentasinya berada di [arsip README](docs/LEGACY-README.md). Gunakan [status scope otomatis](docs/AUTOMATED-STATUS.md) untuk bukti pengujian terbaru. Tidak ada klaim P lebih unggul atau hasil penelitian model nyata yang disertakan.
