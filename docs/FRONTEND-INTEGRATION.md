@@ -1,4 +1,4 @@
-# Integrasi desain SNKRS
+# Integrasi desain LEUCO
 
 ## Audit sebelum implementasi
 
@@ -8,17 +8,17 @@ Desain aktif berada di `src/pages`, bukan layout absolut hasil impor di `src/imp
 
 | Halaman sumber | Fungsi                                  | Integrasi penelitian                                                                                            |
 | -------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| ProductList    | Kampanye dan tiga kartu sneaker         | Hero SNKRS dan tiga kandidat dari fixture; fakta awal hanya dari `task.initial`                                 |
+| ProductList    | Kampanye dan tiga kartu kaos             | Hero LEUCO dan tiga kandidat dari fixture; fakta awal hanya dari `task.initial`                                 |
 | ProductDetail  | Foto, pilihan ukuran, harga, lima panel | Tata letak gambar/informasi dan panel dipertahankan; menggunakan varian fixture dan tautan probe yang sudah ada |
 | CartPage       | Keranjang client-side, ringkasan, hapus | Keranjang server, jumlah 0/1, verifikasi harga/varian; tidak menambah aksi hapus                                |
 | Navbar / Root  | Identitas dan kategori                  | Wordmark dan gaya dipertahankan; navigasi hanya menuju fungsi yang tersedia                                     |
 
-Temuan: deskripsi sneaker membocorkan material, harga terlihat pada semua panel, tombol ukuran membocorkan stok lewat disabled state, panel memakai tombol sementara driver memerlukan tautan, dan cart React mengganti item tanpa POST. Pencarian/profil/filter/urutkan/lihat-semua belum memiliki handler nyata. Font Google dan gambar Unsplash membutuhkan internet yang diblokir browser penelitian. Prototipe juga memakai angka harga sneaker sebagai string; nilai tersebut bukan dataset penelitian.
+Temuan awal: deskripsi produk membocorkan material, harga terlihat pada semua panel, tombol ukuran membocorkan stok lewat disabled state, panel memakai tombol sementara driver memerlukan tautan, dan cart React mengganti item tanpa POST. Pencarian/profil/filter/urutkan/lihat-semua belum memiliki handler nyata. Font Google dan gambar Unsplash membutuhkan internet yang diblokir browser penelitian. Prototipe juga memakai angka harga sebagai string; nilai tersebut bukan dataset penelitian.
 
 ## Keputusan integrasi
 
-- Pertahankan server-rendered TypeScript di repo penelitian. Port komposisi visual dan aset, bukan state/cart/router React atau dataset sneaker. Tidak menambah React/Vite ke runtime eksperimen.
-- Dataset penelitian tetap kaos S/M/L/XL, empat constraint, 32 base task dan 64 run. Sneaker menjadi visual kampanye saja, tanpa harga yang bisa dianggap fakta kandidat. Kartu memakai ilustrasi kaos koleksi generik berlabel, sama untuk semua kandidat dan tidak diturunkan dari private attributes. Mengganti domain penelitian ke sneaker membutuhkan perubahan metodologi terpisah.
+- Pertahankan server-rendered TypeScript di repo penelitian. Port komposisi visual dan aset, bukan state/cart/router React. Tidak menambah React/Vite ke runtime eksperimen.
+- Dataset penelitian tetap kaos S/M/L/XL, empat constraint, 32 base task dan 64 run. Kartu memakai tiga ilustrasi desain kaos LEUCO yang tidak diturunkan dari private attributes dan tidak menyatakan fakta kandidat.
 - Deskripsi Indonesia bersifat editorial dan tidak mengandung bahan, ukuran, warna, harga atau stok tersembunyi. Informasi publik tetap melalui `publicLine` dan `visibleFields`.
 - Rute, urutan kandidat/probe, role group, nama kontrol, paragraph fakta, POST dan verifikasi tetap. Tidak menambah opsi varian yang tidak ada pada fixture.
 - Tidak menampilkan status evaluator atau mematikan tombol berdasarkan private stock/evidence. Penolakan POST diberi halaman Indonesia tanpa mengubah status/effect.

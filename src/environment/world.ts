@@ -1,8 +1,8 @@
+import { editorial } from "./catalog.ts";
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { panelNames, publicLine, visibleFields, type Task } from "./dataset.ts";
 import {
-  description,
   documentPage,
   escapeHtml as esc,
   hero,
@@ -27,20 +27,28 @@ export type World = {
 };
 export type Fault = "false-toast" | "fake-cart" | "wrong-price";
 const fact = (line: string) =>
-  `<p class="fact${line.endsWith("belum dipublikasikan") ? " missing" : ""}">${esc(line)}</p>`;
+  `<p class="fact${line.startsWith("Harga") ? " price-fact" : ""}${line.endsWith("belum dipublikasikan") ? " missing" : ""}">${esc(line)}</p>`;
+const backToCollection =
+  '<a class="back-link" href="/" data-collection><span aria-hidden="true">←</span> Kembali ke koleksi</a>';
 export function render(world: World, url: string, fault?: Fault) {
   const u = new URL(url, "http://fixture"),
     t = world.task;
   let body = "",
-    title = "Daftar produk";
+    title = "Koleksi kaos";
   if (u.pathname === "/") {
-    body = t.products
-      .map(
-        (p) =>
-          `<section class="product-card" role="group" aria-label="${esc(p.name)}">${productVisual()}<p class="eyebrow">SNKRS / Pakaian</p><h2>${esc(p.name)}</h2><p class="description">${description}</p>${t.initial.length ? `<div class="facts">${t.initial.map((k) => fact(publicLine(p, k))).join("")}</div>` : ""}<a class="inspect-link" href="/product/${p.id}">Varian dan bahan ${esc(p.name)}</a></section>`,
-      )
+    const cards = t.products
+      .map((p) => {
+        const copy = editorial(p.name);
+        return `<section class="product-card" role="group" aria-label="${esc(p.name)}">
+        <a class="image-link" href="/product/${p.id}" aria-label="Buka detail ${esc(p.name)}">${productVisual(p.name, false)}</a>
+        <div class="card-copy"><p class="eyebrow">LEUCO / Kaos</p><h3>${esc(p.name)}</h3>
+        <p class="description">${esc(copy.short)}</p>
+        ${t.initial.length ? `<div class="facts card-facts">${t.initial.map((k) => fact(publicLine(p, k))).join("")}</div>` : ""}
+        <a class="inspect-link" href="/product/${p.id}" aria-label="Lihat detail ${esc(p.name)}, varian dan bahan">Lihat detail <span aria-hidden="true">↗</span></a></div>
+      </section>`;
+      })
       .join("");
-    body = `${hero()}<section id="koleksi" class="collection"><div class="collection-head"><h1>${title}</h1><p>3 pilihan dalam koleksi ini</p></div><div class="product-grid">${body}</div></section>`;
+    body = `${hero()}<section id="koleksi" class="collection"><div class="collection-head"><div><p class="eyebrow">Koleksi LEUCO</p><h2>Temukan pilihanmu</h2><p>Kenali desainnya, lihat rinciannya, tentukan pilihanmu.</p></div><span class="collection-count">3 desain kaos</span></div><div class="product-grid">${cards}</div><p class="collection-note">Gambar menampilkan ilustrasi desain. Warna produk mengikuti informasi varian pada detail produk.</p></section>`;
   } else if (u.pathname === "/cart") {
     title = "Keranjang";
     let cart = world.cart;
@@ -57,42 +65,53 @@ export function render(world: World, url: string, fault?: Fault) {
         },
       ];
     }
-    body =
-      `<div class="page cart-page"><h1>Keranjang</h1><p class="cart-count">Jumlah barang: ${cart.length}</p><div class="cart-layout"><div>` +
-      cart
-        .map(
-          (item) =>
-            `<section class="cart-item" role="group" aria-label="${esc(t.products.find((p) => p.id === item.product)!.name)}">${productVisual()}<div><p class="eyebrow">SNKRS / Pakaian</p><h2>${esc(t.products.find((p) => p.id === item.product)!.name)}</h2><p>Varian: ${esc(item.size)} / ${esc(item.color)}</p><p>Harga satuan: Rp${item.price.toLocaleString("id-ID")}</p><p>Jumlah: ${item.quantity}</p><a href="/product/${item.product}">Produk</a></div></section>`,
-        )
-        .join("") +
-      (cart.length
-        ? `</div><aside class="cart-summary" aria-label="Ringkasan keranjang"><h2>Ringkasan keranjang</h2><div class="summary-total"><span>Total</span><strong>Rp${cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toLocaleString("id-ID")}</strong></div></aside></div></div>`
-        : `<div class="empty-cart"><h2>Belum ada pilihanmu.</h2><p>Jelajahi koleksi dan buka rincian produk untuk menemukan pilihanmu.</p></div></div></div></div>`);
+    const items = cart
+      .map((item) => {
+        const p = t.products.find((p) => p.id === item.product)!;
+        return `<section class="cart-item" role="group" aria-label="${esc(p.name)}">
+        ${productVisual(p.name, false)}<div><p class="eyebrow">LEUCO / Kaos</p><h2>${esc(p.name)}</h2>
+        <p>Varian: ${esc(item.size)} / ${esc(item.color)}</p>
+        <p>Harga satuan: Rp${item.price.toLocaleString("id-ID")}</p><p>Jumlah: ${item.quantity}</p>
+        <a class="text-link" href="/product/${item.product}">Lihat kembali produk</a></div></section>`;
+      })
+      .join("");
+    body = `<div class="page cart-page">${backToCollection}<div class="page-heading"><h1>Keranjang</h1><p class="cart-count">Jumlah barang: ${cart.length}</p></div>${
+      cart.length
+        ? `<p class="cart-message">Pilihanmu tersimpan di keranjang. Berikut rincian produknya.</p><div class="cart-layout"><div>${items}</div><aside class="cart-summary" aria-label="Ringkasan keranjang"><h2>Ringkasan keranjang</h2><div class="summary-row"><span>Subtotal produk</span><span>Rp${cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toLocaleString("id-ID")}</span></div><div class="summary-total"><span>Total</span><strong>Rp${cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toLocaleString("id-ID")}</strong></div><p>Rincian untuk produk di keranjang.</p></aside></div>`
+        : `<div class="empty-cart"><p class="eyebrow">Mulai dari pilihanmu</p><h2>Belum ada pilihanmu di sini.</h2><p>Jelajahi koleksi untuk menemukan kaos pilihanmu.</p><a class="button" href="/" data-collection>Jelajahi koleksi <span aria-hidden="true">↗</span></a></div>`
+    }</div>`;
   } else {
     const p = t.products.find((p) => u.pathname === `/product/${p.id}`);
     if (!p) return null;
     const panel = u.searchParams.get("panel") ?? "detail";
     if (!(panel in panelNames)) return null;
     title = p.name;
-    body = `<div class="page"><section class="product-layout" role="group" aria-label="${esc(p.name)}">${productVisual()}<div class="detail-copy"><p class="eyebrow">SNKRS / Pakaian</p><h1>${esc(p.name)}</h1><p class="description">${description}</p><div class="facts">${visibleFields(
-      t,
-      p,
-      url,
-    )
-      .map((k) => fact(publicLine(p, k)))
-      .join(
-        "",
-      )}</div><h2 class="panel-title">${esc(panelNames[panel])}</h2><nav class="panel-nav" aria-label="Informasi produk">${Object.entries(
-      panelNames,
-    )
-      .filter(([key]) => key !== "detail")
+    const copy = editorial(p.name),
+      allowed = visibleFields(t, p, url);
+    const primary = `<a href="/product/${p.id}" ${panel === "detail" ? 'aria-current="page"' : ""}>Ringkasan produk</a><a href="/product/${p.id}?panel=offer" ${panel === "offer" ? 'aria-current="page"' : ""}>Harga dan stok</a>`;
+    const secondary = Object.entries(panelNames)
+      .filter(([key]) => !["detail", "offer"].includes(key))
       .map(
         ([key, label]) =>
           `<a href="/product/${p.id}?panel=${key}" ${key === panel ? 'aria-current="page"' : ""}>${label}</a>`,
       )
-      .join(
-        "",
-      )}</nav><form class="add-form" method="post" action="/add/${p.id}"><button class="button">Tambah satu ke keranjang</button></form></div></section></div>`;
+      .join("");
+    const activeFields = allowed.filter((k) => !t.initial.includes(k));
+    body = `<div class="page product-page">${backToCollection}
+      <section class="product-layout" role="group" aria-label="${esc(p.name)}">
+        <div class="product-heading"><p class="eyebrow">LEUCO / Kaos</p><h1>${esc(p.name)}</h1><p class="product-subtitle">${esc(copy.short)}</p></div>
+        ${productVisual(p.name)}
+        <div class="detail-copy">
+          <section class="product-story" aria-labelledby="about-title"><h2 id="about-title">Tentang produk</h2><p class="description">${esc(copy.description)}</p><p class="design-note">${esc(copy.design)}</p></section>
+          ${t.initial.length ? `<div class="initial-details"><h2>Detail produk</h2><div class="facts">${t.initial.map((k) => fact(publicLine(p, k))).join("")}</div></div>` : ""}
+          <nav class="panel-nav" aria-label="Informasi produk"><div class="primary-panels">${primary}</div><div class="secondary-panels"><span>Lihat secara terpisah</span>${secondary}</div></nav>
+          <section class="panel-content" aria-labelledby="panel-title"><h2 id="panel-title">${panel === "detail" ? "Warna, ukuran, dan bahan" : esc(panelNames[panel])}</h2>
+          ${activeFields.length ? `<div class="facts">${activeFields.map((k) => fact(publicLine(p, k))).join("")}</div>` : '<p class="panel-hint">Warna, ukuran, dan bahan tercantum pada detail produk di atas.</p>'}
+          ${panel === "detail" ? '<p class="panel-hint">Lihat bagian Harga dan stok untuk rincian penawaran produk ini.</p>' : ""}
+          </section>
+          <form class="add-form" method="post" action="/add/${p.id}"><p class="quantity-note">Jumlah: 1 kaos</p><button class="button">Tambah satu ke keranjang <span aria-hidden="true">↗</span></button></form>
+        </div>
+      </section></div>`;
   }
   return documentPage(title, body, u.pathname === "/");
 }
@@ -178,7 +197,9 @@ export async function openWorld(task: Task, fault?: Fault) {
             ),
         );
     } catch {
-      res.writeHead(500).end("Environment error");
+      res
+        .writeHead(500, { "Content-Type": "text/plain; charset=utf-8" })
+        .end("Halaman belum dapat dimuat. Silakan coba kembali.");
     }
   });
   await new Promise<void>((resolve, reject) => {

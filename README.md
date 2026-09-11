@@ -22,7 +22,7 @@ npm run experiment -- main --demo --out exports/demo-main-v1
 
 Demo uses a deterministic test double and is **not research data**. Use a fresh output directory for each experiment.
 
-To inspect the redesigned storefront manually with an isolated development task:
+To inspect the redesigned LEUCO kaos storefront manually with an isolated development task:
 
 ```powershell
 npm run preview -- --task development-01 --port 4173

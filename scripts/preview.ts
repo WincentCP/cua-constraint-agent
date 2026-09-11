@@ -55,7 +55,7 @@ try {
   throw error;
 }
 console.log(
-  `Preview SNKRS: http://127.0.0.1:${port}\n${task.instruction}\nDevelopment saja, bukan hasil penelitian. Mulai ulang untuk mengosongkan keranjang.`,
+  `Preview LEUCO: http://127.0.0.1:${port}\n${task.instruction}\nDevelopment saja, bukan hasil penelitian. Mulai ulang untuk mengosongkan keranjang.`,
 );
 const close = async () => {
   server.closeAllConnections();

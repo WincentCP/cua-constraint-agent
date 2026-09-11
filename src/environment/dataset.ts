@@ -1,6 +1,7 @@
 // Private fixture module. Never import this module from agent/, browser/ or core/.
 import { fields, type Constraint, type Goal } from "../core/types.ts";
 import { hash, config } from "../core/config.ts";
+import { collection } from "./catalog.ts";
 
 export type TaskType = "solvable" | "no-solution" | "unavailable-evidence";
 export type Subtype = "single-feasible" | "multi-feasible" | null;
@@ -108,6 +109,10 @@ function generate(
     available: true,
     withheld: [],
   }));
+  // Preserve existing attribute RNG draws and order; branding is independent of truth.
+  products.forEach((product, j) => {
+    product.name = collection[j].name;
+  });
   const ordered = shuffle(products, random);
   const truthOrder = shuffle(
     [0, 1, 2],

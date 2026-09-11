@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
+import { editorial } from "./catalog.ts";
 
-// Visual adaptation of WincentCP/designskripsi, pinned in docs/FRONTEND-INTEGRATION.md.
-// Only public text is passed into these presentation helpers.
 export const escapeHtml = (value: string) =>
   value.replace(
     /[&<>"']/g,
@@ -11,41 +10,42 @@ export const escapeHtml = (value: string) =>
       ]!,
   );
 
-export const description =
-  "Bagian dari koleksi harian SNKRS. Padukan dengan gaya pilihanmu.";
-export const productVisual = () =>
-  `<figure class="product-visual"><img src="/assets/collection.png" width="1254" height="1254" alt="Ilustrasi koleksi kaos" /><figcaption>Ilustrasi koleksi. Rincian varian ada di informasi produk.</figcaption></figure>`;
+export function productVisual(name: string, caption = true) {
+  const product = editorial(name);
+  return `<figure class="product-visual"><img src="/assets/${product.image}" width="1254" height="1254" alt="Ilustrasi desain ${escapeHtml(name)}" />${caption ? "<figcaption>Ilustrasi desain. Warna mengikuti rincian varian produk.</figcaption>" : ""}</figure>`;
+}
 
 export function hero() {
   return `<section class="hero" aria-labelledby="campaign-heading">
-    <div class="hero-copy"><p class="eyebrow">Koleksi terbaru · 2026</p>
-      <h2 id="campaign-heading">Gaya jalanan.<br><span>Versi kamu.</span></h2>
-      <p class="hero-description">Dari sneaker favorit sampai kaos harian. Temukan pilihan untuk melengkapi gayamu.</p>
-      <a class="button" href="#koleksi">Jelajahi koleksi</a>
+    <div class="hero-copy"><p class="eyebrow">Koleksi kaos · 2026</p>
+      <h1 id="campaign-heading">Gaya harian.<br><span>Pilihan personal.</span></h1>
+      <p class="hero-description">Tiga karakter, banyak cara memadukan. Temukan kaos yang terasa paling kamu.</p>
+      <a class="button" href="#koleksi">Jelajahi koleksi <span aria-hidden="true">↗</span></a>
     </div>
-    <div class="hero-art"><img src="/assets/hero.jpg" width="900" height="900" alt="Visual kampanye sneaker SNKRS" /><span class="campaign-label">SNKRS / Koleksi 2026</span></div>
-  </section><div class="brand-strip" aria-hidden="true"><span>SNKRS</span><span>Gaya harian</span><span>Koleksi 2026</span><span>SNKRS</span><span>Gaya harian</span><span>Koleksi 2026</span></div>`;
+    <div class="hero-art"><img src="/assets/studio-edition.png" width="1254" height="1254" alt="Ilustrasi kaos Studio Edition dengan grafis tipografi LEUCO" /><span class="campaign-label">LEUCO / Studio Edition</span><span class="art-note">Ilustrasi desain koleksi</span></div>
+  </section><div class="brand-strip" aria-hidden="true"><span>LEUCO</span><span>Gaya harian</span><span>Pilihan personal</span><span>LEUCO</span><span>Gaya harian</span><span>Pilihan personal</span></div>`;
 }
 
 export function documentPage(title: string, body: string, home: boolean) {
-  // Navigation lives in main because the existing driver scopes global controls there.
-  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${escapeHtml(title)} | SNKRS</title><link rel="icon" href="data:,"><link rel="stylesheet" href="/assets/storefront.css"></head><body>
+  // Navigation remains in main to preserve the driver's global-control scope.
+  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${escapeHtml(title)} | LEUCO</title><link rel="icon" href="data:,"><link rel="stylesheet" href="/assets/storefront.css"><script src="/assets/storefront.js" defer></script></head><body>
     <a class="skip-link" href="#konten">Lewati navigasi</a><main>
-    <header class="site-header"><span class="wordmark">SNKRS</span><nav aria-label="Navigasi utama"><span class="nav-current">Pakaian</span>${!home ? '<a href="/">Kembali ke daftar</a>' : ""}<a class="cart-link" href="/cart">Buka keranjang</a></nav></header>
+    <header class="site-header"><a class="wordmark" href="/" aria-label="LEUCO, beranda">LEUCO</a><nav aria-label="Navigasi utama"><a href="/" data-collection ${home ? 'aria-current="page"' : ""}>Koleksi kaos</a><a class="cart-link" href="/cart" ${title === "Keranjang" ? 'aria-current="page"' : ""}>Keranjang</a></nav></header>
     <div id="konten">${body}</div></main>
-    <footer class="site-footer"><span class="wordmark">SNKRS</span><span>Gaya pilihanmu, setiap hari.</span><span>© 2026 SNKRS</span></footer></body></html>`;
+    <footer class="site-footer"><span class="wordmark">LEUCO</span><span>Pilihan personal untuk setiap hari.</span><span>© 2026 LEUCO</span></footer></body></html>`;
 }
 
 const assetTypes: Record<string, string> = {
   "storefront.css": "text/css; charset=utf-8",
+  "storefront.js": "text/javascript; charset=utf-8",
   "collection.png": "image/png",
-  "campaign.png": "image/png",
-  "hero.jpg": "image/jpeg",
+  "after-hours.png": "image/png",
+  "studio-edition.png": "image/png",
   "display.ttf": "font/ttf",
   "body.ttf": "font/ttf",
   "body-semibold.ttf": "font/ttf",
 };
-// No directory traversal or server-side fixture files can be requested as assets.
+// Assets are public, local and explicitly allowlisted. No fixture data is served.
 const assets = new Map(
   Object.entries(assetTypes).map(([name, type]) => [
     `/assets/${name}`,

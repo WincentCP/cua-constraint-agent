@@ -43,7 +43,7 @@ test("Brand presentation does not reveal private fields on catalog or informatio
   }
 });
 
-test("SNKRS renders offline, exposes exact panel evidence and stays usable at desktop/mobile widths", async () => {
+test("LEUCO renders offline, exposes exact panel evidence and stays usable at desktop/mobile widths", async () => {
   const task = developmentTasks.find((t) => t.unknown === 4)!;
   const world = await openWorld(task);
   let external = 0;
@@ -64,7 +64,7 @@ test("SNKRS renders offline, exposes exact panel evidence and stays usable at de
     await page.evaluate(() => document.fonts.ready);
     assert(
       await page.evaluate(() =>
-        document.fonts.check('900 20px "SNKRS Display"'),
+        document.fonts.check('900 20px "LEUCO Display"'),
       ),
     );
     assert(
