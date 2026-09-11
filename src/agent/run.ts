@@ -1,156 +1,321 @@
-import {randomUUID} from 'node:crypto';
-import type {Browser,BrowserServer,Page} from 'playwright';
-import {LIMITS} from '../core/config.ts';
-import {Approval,effectFor,type CartEffect} from '../core/policy.ts';
-import {EvidenceStore,feasible,refuted} from '../core/evidence.ts';
-import {constraints,GoalSchema,RunError,StaleWork,type Annotation,type Candidate,type Check,type Counters,type Goal,type Observation,type Phase,type Reason,type RouteStep,type Condition} from '../core/types.ts';
-import {Observer} from '../browser/observer.ts';
-import {expectedBefore,verifyEffect,verifyCart,verifyFreshCandidate} from '../browser/verifier.ts';
-import {Planner,type LocalModel} from './planner.ts';
-import {Routes} from './routes.ts';
-import {selectProbe} from '../core/router.ts';
-export type AgentOutcome={run_id:string;goal:Goal|null;goal_history:Goal[];selected_product:{key:string;title:string}|null;agent_claimed_success:boolean;agent_termination_reason:Reason;detail:string;counters:Counters;goal_intake_ms:number;task_wall_ms:number;cleanup_ms:number;public_refutations:boolean;completion_audio_delivered:boolean|null;verification_status:'PASS'|'FAIL'|'UNKNOWN';final_url:string|null;final_state:{view_key:string;heading:string;observation_id:string;accessibility_fingerprint:string}|null};
-export type RunHooks={log:(type:string,payload:unknown,sensitive?:boolean)=>void;status:(phase:Phase,text?:string)=>void;ask:(text:string,confirmation?:string)=>void;ack?:(text:string)=>void;finished:(outcome:AgentOutcome,quiescent:boolean)=>Promise<void>};
-export class AgentRun {
- id:string;epoch=0;phase:Phase='STARTING';goal?:Goal;goalAcceptedAt?:number;intakeAt=Date.now();
- counters:Counters={probes:0,actions:0,observations:0,llmCalls:0,inputTokens:0,outputTokens:0,recoveries:0,informativeProbes:0,evidenceAcquired:0,firstFeasibleProbe:null,evidenceClosureProbe:null,routerComparisons:0,routerDisagreements:0};
- observer:Observer;planner:Planner;evidence=new EvidenceStore();routes=new Routes();approval=new Approval();
- private probeHistory:unknown[]=[];private activeProbe:string|null=null;
- held=false;terminal=false;effectDispatched=false;private lastVerification:Check='UNKNOWN';private aborts=new Set<AbortController>();private waiter?:()=>void;private inputTimer?:NodeJS.Timeout;private deadline?:NodeJS.Timeout;private intakeTimer:NodeJS.Timeout;private loopRunning=false;private clarificationCount=0;private terminalPromise?:Promise<void>;private approvedEffect?:CartEffect;private proposalEffect?:CartEffect;private acquired=new Set<string>();private conflictRead=false;private excluded=new Set<string>();private carried?:Observation;private goalHistory:Goal[]=[];
- done:Promise<void>;private resolveDone!:()=>void;private pendingGoalText='';
- constructor(public page:Page,private browser:Browser,private server:BrowserServer|undefined,private condition:Condition,model:LocalModel,private hooks:RunHooks,private autoApprove=false,private publicInstruction='',id=randomUUID()){
-  this.id=id;
-  this.observer=new Observer(page);this.planner=new Planner(model,work=>this.llm(work),hooks.log,()=>{if(this.counters.recoveries>=LIMITS.recoveries)return false;this.counters.recoveries++;hooks.log('structured_recovery',{attempt:this.counters.recoveries,result:'ATTEMPTED'});return true;});this.done=new Promise(r=>{this.resolveDone=r;});
-  this.intakeTimer=setTimeout(()=>{void this.finish('timeout','goal_intake_timeout');},LIMITS.intakeMs);
- }
- envelope(){return {run_id:this.id,epoch:this.epoch,goal_revision:this.goal?.revision??0};}
- // Automated experiments pass only the public goal, never the fixture or reference path.
- async startCanonical(value:Goal){
-  if(this.goal||this.terminal||this.phase!=='STARTING')throw Error('canonical_goal_already_started');
-  const goal=GoalSchema.parse(structuredClone(value));
-  this.goal=goal;this.goalHistory.push(structuredClone(goal));this.goalAcceptedAt=Date.now();clearTimeout(this.intakeTimer);
-  this.deadline=setTimeout(()=>{void this.finish('timeout','task_deadline');},LIMITS.taskMs);
-  try{this.hooks.log('goal_accepted',{goal,source:'canonical_fixture',...this.envelope()});this.setPhase('EXPLORING');this.kick();}catch(e){await this.fail(e);}
- }
- private setPhase(phase:Phase,text?:string){this.phase=phase;this.hooks.status(phase,text);}
- private remaining(){return (this.goalAcceptedAt?this.goalAcceptedAt+LIMITS.taskMs:this.intakeAt+LIMITS.intakeMs)-Date.now();}
- check(ticket?:number){if(this.terminal)throw new StaleWork();if(this.remaining()<=0)throw new RunError('timeout',this.goalAcceptedAt?'task_deadline':'goal_intake_timeout');if(ticket!==undefined&&ticket!==this.epoch)throw new StaleWork();}
- private async checkpoint(){this.check();while(this.held){await new Promise<void>(r=>{this.waiter=r;});this.check();}}
- hold(){if(this.terminal)return;this.held=true;this.epoch++;for(const c of this.aborts)c.abort();this.approval.invalidate();this.approvedEffect=undefined;clearTimeout(this.inputTimer);this.inputTimer=setTimeout(()=>{void this.finish('infrastructure_failed','input_processing_timeout');},LIMITS.sttMs*2+2000);}
- resume(){if(this.terminal)return;this.held=false;clearTimeout(this.inputTimer);this.waiter?.();this.waiter=undefined;this.kick();}
- private async llm<T>(work:(signal:AbortSignal)=>Promise<T>){
-  this.check();if(this.counters.llmCalls>=LIMITS.llmCalls)throw new RunError('budget_exhausted','llm_calls');this.counters.llmCalls++;
-  const ticket=this.epoch,abort=new AbortController();this.aborts.add(abort);const timer=setTimeout(()=>abort.abort(),Math.min(LIMITS.llmMs,this.remaining()));
-  try{const result=await work(abort.signal);this.check(ticket);const r=result as any;this.counters.inputTokens+=r.inputTokens??0;this.counters.outputTokens+=r.outputTokens??0;return result;}
-  catch(e){this.check(ticket);if(e instanceof RunError)throw e;throw new RunError('infrastructure_failed',abort.signal.aborted?'model_timeout':'model_unavailable');}
-  finally{clearTimeout(timer);this.aborts.delete(abort);}
- }
- async input(text:string){
-  if(this.terminal)return;if(this.effectDispatched){await this.finish('execution_failed','correction_after_commit');return;}
-  if(!this.held)this.hold();const ticket=this.epoch,previousGoal=this.goal;
-  try{const normalized=text.trim().toLocaleLowerCase('id'),inputKind=previousGoal?'correction':text.trim()===this.publicInstruction.trim()?'system_goal':/^mulai[.!]?$/i.test(normalized)?'task_start':'initial_correction';this.hooks.log('transcript',{text,kind:inputKind,takeover:false,...this.envelope()},true);this.pendingGoalText=this.pendingGoalText?`${this.pendingGoalText}\nKlarifikasi: ${text}`:text;const result=await this.planner.parseGoal(this.publicInstruction,this.pendingGoalText,this.goal);this.check(ticket);
-   if(result.type==='UNSUPPORTED'){await this.finish('unsupported_goal','parser_unsupported');return;}
-   if(result.type==='ASK_CLARIFICATION'){if(++this.clarificationCount>2){await this.finish('unsupported_goal','goal_clarification_limit');return;}clearTimeout(this.inputTimer);this.hooks.log('clarification',{...this.envelope(),question:result.question,result:'REQUESTED'});this.hooks.ask(result.question);return;}
-   this.goal=result.goal;this.goalHistory.push(structuredClone(this.goal));this.pendingGoalText='';if(!this.goalAcceptedAt){this.goalAcceptedAt=Date.now();clearTimeout(this.intakeTimer);this.deadline=setTimeout(()=>{void this.finish('timeout','task_deadline');},LIMITS.taskMs);}
-   this.approval.invalidate();this.proposalEffect=undefined;this.approvedEffect=undefined;this.setPhase('EXPLORING','Saya sedang memeriksa pilihan yang memenuhi syaratmu.');this.hooks.log('goal_accepted',{goal:this.goal,...this.envelope()});
-   const summary=previousGoal?this.describeChanges(previousGoal,this.goal):`ukuran ${this.goal.size}, warna ${this.goal.color}, maksimal ${this.goal.maxPriceIdr.toLocaleString('id-ID')} rupiah${this.goal.material?`, bahan ${this.goal.material}`:''}`;
-   if(this.hooks.ack)this.hooks.ack(previousGoal?`Baik, ${summary}. Saya lanjut memeriksa.`:`Baik, ${summary}. Saya periksa sekarang.`);else this.resume();
-  }catch(e){if(!(e instanceof StaleWork))await this.fail(e);}
- }
- private describeChanges(before:Goal,after:Goal){const changes:string[]=[];if(before.size!==after.size)changes.push(`ukuran menjadi ${after.size}`);if(before.color!==after.color)changes.push(`warna menjadi ${after.color}`);if(before.maxPriceIdr!==after.maxPriceIdr)changes.push(`batas harga menjadi ${after.maxPriceIdr.toLocaleString('id-ID')} rupiah`);if(before.material!==after.material)changes.push(after.material?`bahan menjadi ${after.material}`:'syarat bahan dihapus');return changes.length?changes.join(', '):'tujuannya tetap sama';}
- rejectProposal(){
-  if(this.terminal||this.phase!=='AWAITING_APPROVAL'||!this.proposalEffect)return false;this.hold();const product=this.proposalEffect.product;const title=this.observer.known.find(c=>c.key===product)?.title??'pilihan itu';this.excluded.add(product);this.approval.invalidate();this.proposalEffect=undefined;this.approvedEffect=undefined;this.setPhase('EXPLORING','Saya mencari pilihan lain.');this.hooks.log('candidate_declined',{...this.envelope(),candidate_key:product});if(this.hooks.ack)this.hooks.ack(`Baik, ${title} tidak saya masukkan. Saya cari pilihan lain.`);else this.resume();return true;
- }
- async approve(confirmationId:string){
-  if(this.terminal||this.phase!=='AWAITING_APPROVAL'||!this.proposalEffect)return;
-  const effect=this.proposalEffect;this.approval.propose(effect);const p=this.approval.proposal!;
-  // The proposal ID supplied by the UI must match the currently spoken proposal.
-  if(confirmationId!==this.spokenConfirmation){await this.finish('execution_failed','confirmation_mismatch');return;}
-  this.approval.approve(p.id,effect);this.approvedEffect=effect;this.phase='COMMIT_PREPARE';this.held=false;clearTimeout(this.inputTimer);this.waiter?.();this.waiter=undefined;this.kick();
- }
- spokenConfirmation?:string;
- private kick(){if(this.loopRunning||this.terminal||!this.goal)return;this.loopRunning=true;void this.loop().finally(()=>{this.loopRunning=false;if(!this.terminal&&!this.held&&this.phase!=='AWAITING_APPROVAL')this.kick();});}
- private async observe(){await this.checkpoint();const ticket=this.epoch;const o=await this.observer.observe();this.check(ticket);this.counters.observations++;this.evidence.add(o.facts);this.routes.remember(o);this.hooks.log('observation',{...this.envelope(),observation_id:o.id,snapshot:o.snapshot,tree:o.tree,facts:o.facts,evidence_state:this.goal?this.evidence.matrix(o.candidates,this.goal):{},probe_id:this.activeProbe,step:this.counters.probes});return o;}
- private async dispatch(step:RouteStep,o:Observation,probe:boolean,grant?:CartEffect){
-  await this.checkpoint();const ticket=this.epoch;let control=this.observer.bind(step.target);const binding=await this.observer.validate(control);this.check(ticket);if(this.held)throw new StaleWork();
-  if(this.counters.actions>=LIMITS.actions)throw new RunError('budget_exhausted','browser_actions');const forward=probe&&step.kind!=='RETURN';if(forward&&this.counters.probes>=LIMITS.probes)throw new RunError('budget_exhausted','probes');
-  if(step.kind==='ADD_CART'){if(!grant||!this.goal||this.phase!=='COMMITTING')throw new RunError('execution_failed','illegal_cart_effect');this.approval.consume(grant);}
-  const expected=expectedBefore(step,o),actionAttemptId=randomUUID();this.hooks.log('action_intent',{...this.envelope(),action_attempt_id:actionAttemptId,attempt_kind:'initial',action_type:step.kind,result:'ATTEMPTED',expected,target:control,probe:forward});
-  // No await between the final gate, durable intent and dispatch.
-  this.check(ticket);if(this.held)throw new StaleWork();this.counters.actions++;if(forward){this.counters.probes++;this.routes.mark(control,this.goal!);}if(step.kind==='ADD_CART')this.effectDispatched=true;
-  let actionSuccess=true,actionError:string|null=null;
-  try{if(step.kind==='SET_VARIANT')await binding.handle.selectOption({label:step.optionLabel!},{timeout:Math.min(LIMITS.actionMs,this.remaining())});else await binding.handle.click({timeout:Math.min(LIMITS.actionMs,this.remaining())});}catch(e){actionSuccess=false;actionError=e instanceof Error?e.name:'browser_dispatch_failed';}
-  this.check(ticket);this.hooks.log('action_return',{...this.envelope(),action_attempt_id:actionAttemptId,attempt_kind:'initial',action_type:step.kind,action_success:actionSuccess,result:actionSuccess?'SUCCESS':'FAILED',error_type:actionError});
-  // Never retry a cart effect. Reconciliation is performed by reading the cart.
-  if(step.kind==='ADD_CART')return await this.observe();
-  let after=await this.observe(),status=verifyEffect(expected,after);
-  // One bounded settle read handles delayed rendering without turning verification into an observation loop.
-  if(status!=='PASS'){await new Promise(r=>setTimeout(r,Math.min(LIMITS.pollMs,this.remaining())));after=await this.observe();status=verifyEffect(expected,after);}
-  // Navigation and selecting the same option are idempotent. Retry them once after rebinding; cart effects are never retried.
-  if(status!=='PASS'&&this.counters.recoveries<LIMITS.recoveries&&this.counters.actions<LIMITS.actions&&(!forward||this.counters.probes<LIMITS.probes)){this.counters.recoveries++;const recoveryId=randomUUID();this.hooks.log('recovery',{...this.envelope(),recovery_id:recoveryId,action_type:step.kind,attempt:1,result:'ATTEMPTED'});let retrySuccess=true,retryError:string|null=null;try{control=this.observer.bind(step.target);const rebound=await this.observer.validate(control);this.check(ticket);const retryAttemptId=randomUUID();this.hooks.log('action_retry_intent',{...this.envelope(),action_attempt_id:retryAttemptId,parent_action_attempt_id:actionAttemptId,recovery_id:recoveryId,attempt_kind:'retry',action_type:step.kind,result:'ATTEMPTED',probe:forward});this.counters.actions++;if(forward)this.counters.probes++;try{if(step.kind==='SET_VARIANT')await rebound.handle.selectOption({label:step.optionLabel!},{timeout:Math.min(LIMITS.actionMs,this.remaining())});else await rebound.handle.click({timeout:Math.min(LIMITS.actionMs,this.remaining())});}catch(e){retrySuccess=false;retryError=e instanceof Error?e.name:'browser_dispatch_failed';}this.hooks.log('action_retry',{...this.envelope(),action_attempt_id:retryAttemptId,parent_action_attempt_id:actionAttemptId,recovery_id:recoveryId,attempt_kind:'retry',action_type:step.kind,action_success:retrySuccess,result:retrySuccess?'SUCCESS':'FAILED',error_type:retryError});}catch(e){retrySuccess=false;retryError=e instanceof Error?e.name:'binding_failed';}after=await this.observe();status=verifyEffect(expected,after);this.hooks.log('recovery_result',{...this.envelope(),recovery_id:recoveryId,action_type:step.kind,retry_dispatch_succeeded:retrySuccess,verification_status:status,result:status==='PASS'?'SUCCESS':'FAILED',error_type:retryError});}
-  this.hooks.log('verification',{...this.envelope(),action_attempt_id:actionAttemptId,action_type:step.kind,verification_status:status,action_success:actionSuccess,result:status});
-  if(status!=='PASS'){this.lastVerification=status;throw new RunError('execution_failed','postcondition_unverified');}
-  if(forward){const matrix=this.evidence.matrix(after.candidates,this.goal!);let acquired=0;for(const c of after.candidates)for(const k of constraints(this.goal!)){const key=`${this.goal!.revision}:${c.key}:${k}`;if(matrix[c.key][k]!=='UNKNOWN'&&!this.acquired.has(key)){this.acquired.add(key);acquired++;}}if(acquired){this.counters.informativeProbes++;this.counters.evidenceAcquired+=acquired;}this.hooks.log('probe_evidence',{...this.envelope(),new_constraint_evidence:acquired,verification_status:status});}
-  return after;
- }
- private async loop(){
-  while(!this.terminal){try{
-   await this.checkpoint();if(!this.goal)return;
-   if(this.approvedEffect){const effect=this.approvedEffect;this.approvedEffect=undefined;await this.commit(effect);return;}
-   if(this.phase==='AWAITING_APPROVAL')return;
-   const o=this.carried??await this.observe();this.carried=undefined;const g=this.goal,m=this.evidence.matrix(o.candidates,g);const active=o.candidates.filter(c=>!this.excluded.has(c.key));
-   if(this.counters.probes===0)for(const c of o.candidates)for(const k of constraints(g))if(m[c.key][k]!=='UNKNOWN')this.acquired.add(`${g.revision}:${c.key}:${k}`);
-   const selected=active.find(c=>feasible(m,c.key,g));
-   if(selected){this.counters.firstFeasibleProbe??=this.counters.probes;this.counters.evidenceClosureProbe??=this.counters.probes;this.hooks.log('evidence_closure',{decision:'ACT',probe_count:this.counters.probes});await this.prepare(selected,o);if((this.phase as Phase)==='AWAITING_APPROVAL')return;continue;}
-   if(o.candidates.every(c=>refuted(m,c.key,g))){await this.finish('no_feasible_in_scope');return;}
-   if(!active.length||active.every(c=>refuted(m,c.key,g))){await this.finish('skipped','all_remaining_candidates_declined_or_refuted');return;}
-   if(!this.conflictRead&&active.some(c=>this.evidence.conflict(c.key,g))){this.conflictRead=true;this.carried=await this.observe();continue;}
-   const probes=this.routes.enumerate(o,g,m,{probes:LIMITS.probes-this.counters.probes,actions:LIMITS.actions-this.counters.actions});
-   if(this.counters.probes>=LIMITS.probes||this.counters.actions>=LIMITS.actions||this.counters.llmCalls>=LIMITS.llmCalls||(!probes.eligible.length&&probes.all.length)){await this.finish('budget_exhausted',this.counters.probes>=LIMITS.probes?'probes':'route_or_call_budget');return;}
-   const eligible=probes.eligible.filter(p=>!this.excluded.has(p.ownerKey));if(!eligible.length){await this.finish('insufficient_evidence','no_eligible_probe');return;}
-   let annotations:Annotation[]=[],p=eligible[0];let comparison:{comparable:boolean;P:string|null;B1:string|null;diverged:boolean}={comparable:false,P:null,B1:null,diverged:false};
-   if(eligible.length>1){annotations=await this.planner.annotate(g,o,m,eligible,this.counters,this.probeHistory);await this.checkpoint();p=selectProbe(this.condition,eligible,annotations,m,active,g)!;const pChoice=selectProbe('P',eligible,annotations,m,active,g),bChoice=selectProbe('B1',eligible,annotations,m,active,g);const diverged=pChoice?.probeId!==bChoice?.probeId;this.counters.routerComparisons++;if(diverged)this.counters.routerDisagreements++;comparison={comparable:true,P:pChoice?.probeId??null,B1:bChoice?.probeId??null,diverged};}
-   this.hooks.log('planner_proposal',{...this.envelope(),annotations,eligible_probes:eligible,evidence_state:m,selected_probe:p,reason_code:eligible.length===1?'SINGLE_ELIGIBLE':this.condition==='P'?'UNKNOWN_CONSTRAINT_COVERAGE':'GENERIC_PROGRESS',router_comparison:comparison});
-   this.activeProbe=p.probeId;this.probeHistory.push({probe_id:p.probeId,control:p.controlDescriptor,step:this.counters.probes});
-   // Restoration is deterministic. Rebind and verify every step, but call the model again only if evidence changes.
-   let current=o,beforeFacts=this.evidence.facts.length;for(const step of p.route){current=await this.dispatch(step,current,true);if(this.evidence.facts.length!==beforeFacts&&step!==p.route[p.route.length-1])break;beforeFacts=this.evidence.facts.length;}this.carried=current;
-  }catch(e){if(e instanceof StaleWork){if(this.terminal)return;continue;}await this.fail(e);return;}}
- }
- private async prepare(c:Candidate,o:Observation){
-  this.setPhase('COMMIT_PREPARE');let current=o;
-  if(current.heading!==c.title){if(current.heading!=='Daftar produk'){const back=current.controls.find(x=>x.kind==='RETURN');if(!back)throw new RunError('execution_failed','return_missing');current=await this.dispatch({target:back,kind:'RETURN'},current,false);}current=await this.dispatch({target:c.detail,kind:'OPEN_DETAIL'},current,false);}
-  const g=this.goal!;const selector=current.controls.find(x=>x.kind==='SET_VARIANT'&&x.ownerKey===c.key);const option=selector?.options.find(x=>x.toLowerCase()===`${g.size} / ${g.color}`.toLowerCase());if(!selector||!option)throw new RunError('execution_failed','commit_variant_missing');
-  if(selector.selected!==option)current=await this.dispatch({target:selector,kind:'SET_VARIANT',optionLabel:option},current,false);
-  if(!verifyFreshCandidate(current,c.key,g)){this.approval.invalidate();this.setPhase('EXPLORING');if(this.evidence.conflict(c.key,g))throw new RunError('execution_failed','fresh_evidence_conflict');throw new RunError('execution_failed','fresh_commit_evidence_missing');}
-  const price=current.facts.find(f=>f.candidateKey===c.key&&f.field==='variantPrice'&&f.variantScope?.size.toLowerCase()===g.size.toLowerCase()&&f.variantScope?.color.toLowerCase()===g.color.toLowerCase())?.value;
-  if(typeof price!=='number')throw new RunError('execution_failed','fresh_price_missing');
-  const effect=effectFor(this.id,g,c.key,price);const proposal=this.approval.propose(effect);this.proposalEffect=effect;this.spokenConfirmation=proposal.id;
-  this.setPhase('AWAITING_APPROVAL');this.hooks.ask(`${c.title}, warna ${g.color}, ukuran ${g.size}, harga ${price.toLocaleString('id-ID')} rupiah. Masukkan satu barang ke keranjang penelitian?`,proposal.id);
-  if(this.autoApprove)await this.approve(proposal.id);
- }
- private async commit(effect:CartEffect){
-  let current=await this.observe();const g=this.goal!;
-  if(effect.goalRevision!==g.revision||!verifyFreshCandidate(current,effect.product,g))throw new RunError('execution_failed','approval_state_changed');
-  const freshPrice=current.facts.find(f=>f.candidateKey===effect.product&&f.field==='variantPrice'&&f.variantScope?.size===g.size&&f.variantScope?.color===g.color)?.value;
-  if(freshPrice!==effect.price)throw new RunError('execution_failed','approval_price_changed');
-  this.setPhase('COMMITTING');const add=current.controls.find(c=>c.kind==='ADD_CART'&&c.ownerKey===effect.product);if(!add)throw new RunError('execution_failed','add_control_missing');
-  current=await this.dispatch({target:add,kind:'ADD_CART'},current,false,effect);this.setPhase('VERIFYING');
-  if(current.heading!=='Keranjang penelitian'){const cart=current.controls.find(c=>c.kind==='OPEN_CART');if(!cart)throw new RunError('execution_failed','cart_navigation_missing');current=await this.dispatch({target:cart,kind:'OPEN_CART'},current,false);}
-  const status=verifyCart(current,effect.product,g,effect.price,true);this.lastVerification=status;this.hooks.log('final_verification',{...this.envelope(),verification_status:status});
-  await this.finish(status==='PASS'?'verified_complete':'execution_failed',status==='PASS'?'':'cart_unverified');
- }
- private fail(e:unknown){return this.finish(e instanceof RunError?e.reason:'infrastructure_failed',e instanceof Error?e.message:'unknown_error');}
- finish(reason:Reason,detail=''):Promise<void>{
-  if(this.terminalPromise)return this.terminalPromise;
-  this.terminal=true;this.epoch++;this.held=true;for(const a of this.aborts)a.abort();this.waiter?.();clearTimeout(this.deadline);clearTimeout(this.inputTimer);clearTimeout(this.intakeTimer);this.approval.invalidate();
-  const terminalAt=Date.now();const matrix=this.goal?this.evidence.matrix(this.observer.known,this.goal):{};
-  if(this.goal&&['verified_complete','no_feasible_in_scope','insufficient_evidence'].includes(reason))this.counters.evidenceClosureProbe??=this.counters.probes;
-   const current=this.observer.current;let finalUrl:string|null=null;try{finalUrl=this.page.url();}catch{}
-   const outcome:AgentOutcome={run_id:this.id,selected_product:this.proposalEffect?this.observer.known.find(c=>c.key===this.proposalEffect!.product)??null:null,goal:this.goal?structuredClone(this.goal):null,goal_history:structuredClone(this.goalHistory),agent_claimed_success:reason==='verified_complete',agent_termination_reason:reason,detail,counters:structuredClone(this.counters),goal_intake_ms:(this.goalAcceptedAt??terminalAt)-this.intakeAt,task_wall_ms:this.goalAcceptedAt?terminalAt-this.goalAcceptedAt:0,cleanup_ms:0,public_refutations:Boolean(this.goal&&this.observer.known.length===3&&this.observer.known.every(c=>refuted(matrix,c.key,this.goal!))),completion_audio_delivered:null,verification_status:this.lastVerification,final_url:finalUrl,final_state:current?{view_key:current.viewKey,heading:current.heading,observation_id:current.id,accessibility_fingerprint:current.fingerprint}:null};
-  try{this.hooks.log('agent_outcome_frozen',{...this.envelope(),outcome});this.setPhase('TERMINAL');}catch{/* Gate is already closed if storage failed. */}
-  this.terminalPromise=(async()=>{let quiescent=false;let timer:NodeJS.Timeout|undefined;
-   try{this.setPhase('CLEANUP');await Promise.race([this.browser.close().then(()=>this.server?.close()),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('cleanup_timeout')),LIMITS.cleanupMs);})]);quiescent=true;}catch{if(this.server){await this.server.kill().catch(()=>{});quiescent=this.server.process().exitCode!==null;}}finally{clearTimeout(timer);}
-   outcome.cleanup_ms=Date.now()-terminalAt;try{await this.hooks.finished(Object.freeze(outcome),quiescent);}finally{this.resolveDone();}
-  })();return this.terminalPromise;
- }
+import { type Config } from "../core/config.ts";
+import {
+  GoalSchema,
+  emptyCounters,
+  fields,
+  RunFailure,
+  type Goal,
+  type Policy,
+  type Log,
+  type Control,
+  type Observation,
+  type Probe,
+  type AgentOutcome,
+} from "../core/types.ts";
+import {
+  Evidence,
+  satisfied,
+  refuted,
+  evidenceUnavailable,
+} from "../core/evidence.ts";
+import { selectProbe } from "../core/policy.ts";
+import { coverage } from "../browser/semantic.ts";
+import { type Driver, verifyCart } from "../browser/session.ts";
+import { type Model, sharedInput, scoreProbes } from "./planner.ts";
+
+export async function runAgent(
+  driver: Driver,
+  publicGoal: Goal,
+  policy: Policy,
+  model: Model,
+  config: Config,
+  log: Log,
+  externalSignal?: AbortSignal,
+): Promise<AgentOutcome> {
+  const goal = GoalSchema.parse(structuredClone(publicGoal)),
+    started = Date.now(),
+    counters = emptyCounters(),
+    evidence = new Evidence(),
+    known = new Map<string, Control>(),
+    visited = new Set<string>(),
+    history: { probe_id: string; name: string }[] = [];
+  const deadline = AbortSignal.timeout(config.budget.deadline_ms),
+    signal = externalSignal
+      ? AbortSignal.any([externalSignal, deadline])
+      : deadline;
+  let selected: string | null = null,
+    verification: AgentOutcome["verification"] = "NOT_RUN";
+  const interrupt = () => {
+    void driver.close().catch(() => {});
+  };
+  signal.addEventListener("abort", interrupt, { once: true });
+  const check = () => {
+    if (deadline.aborted)
+      throw new RunFailure("BUDGET_EXHAUSTED", "run_deadline");
+    if (externalSignal?.aborted)
+      throw new RunFailure("INFRASTRUCTURE_FAILURE", "process_interrupted");
+  };
+  const capture = async () => {
+    check();
+    const o = await driver.observe(counters.probes);
+    check();
+    counters.observations++;
+    evidence.add(o.facts);
+    for (const c of o.controls)
+      if (c.kind === "probe" && !known.has(c.url)) known.set(c.url, c);
+    log("EVIDENCE_STATE", {
+      observation: o.id,
+      ledger: evidence.ledger(o.candidates, goal),
+    });
+    return o;
+  };
+  const action = async (control: Control, exploratory: boolean) => {
+    check();
+    if (
+      counters.actions >= config.budget.actions ||
+      (exploratory && counters.probes >= config.budget.probes)
+    )
+      throw new RunFailure("BUDGET_EXHAUSTED", "interaction_limit");
+    log(control.kind === "act" ? "ACT_INTENT" : "ACTION_INTENT", {
+      control,
+      exploratory,
+      step: counters.probes,
+    });
+    // Durable intent above must succeed before an action is dispatched.
+    counters.actions++;
+    if (exploratory) counters.probes++;
+    await driver.click(
+      control,
+      Math.max(
+        1,
+        Math.min(
+          config.budget.action_ms,
+          config.budget.deadline_ms - (Date.now() - started),
+        ),
+      ),
+    );
+    check();
+  };
+  const navigate = async (
+    target: Control,
+    o: Observation,
+  ): Promise<Observation> => {
+    if (o.controls.some((c) => c.url === target.url && c.kind === target.kind))
+      return o;
+    if (o.url !== "/") {
+      const back = o.controls.find((c) => c.url === "/");
+      if (!back)
+        throw new RunFailure(
+          "EXECUTION_OR_VERIFICATION_FAILURE",
+          "missing_return",
+        );
+      await action(back, false);
+      o = await capture();
+    }
+    if (target.url.includes("?") || target.kind === "act") {
+      const detail = o.controls.find(
+        (c) => c.url === `/product/${target.candidate}`,
+      );
+      if (!detail)
+        throw new RunFailure(
+          "EXECUTION_OR_VERIFICATION_FAILURE",
+          "missing_restore",
+        );
+      await action(detail, false);
+      o = await capture();
+    }
+    return o;
+  };
+  const finish = (
+    terminal: AgentOutcome["terminal"],
+    detail = "",
+  ): AgentOutcome => ({
+    terminal,
+    detail,
+    selected,
+    verification,
+    counters: structuredClone(counters),
+    started: new Date(started).toISOString(),
+    ended: new Date().toISOString(),
+    wall_ms: Date.now() - started,
+  });
+  try {
+    let o = await capture();
+    if (o.candidates.length !== 3)
+      throw new RunFailure(
+        "EXECUTION_OR_VERIFICATION_FAILURE",
+        "three_candidates_required",
+      );
+    for (;;) {
+      check();
+      const ledger = evidence.ledger(o.candidates, goal),
+        ready = o.candidates.find((c) => satisfied(ledger, c.id));
+      if (ready) {
+        selected = ready.id;
+        o = await navigate(
+          {
+            candidate: ready.id,
+            name: "Tambah satu ke keranjang",
+            role: "button",
+            url: `/add/${ready.id}`,
+            kind: "act",
+          },
+          o,
+        );
+        const fresh = evidence.ledger(o.candidates, goal);
+        if (!satisfied(fresh, ready.id))
+          throw new RunFailure(
+            "EXECUTION_OR_VERIFICATION_FAILURE",
+            "act_guard_rejected",
+          );
+        const add = o.controls.find(
+          (c) => c.kind === "act" && c.candidate === ready.id,
+        );
+        if (!add)
+          throw new RunFailure(
+            "EXECUTION_OR_VERIFICATION_FAILURE",
+            "missing_act_control",
+          );
+        const price = fresh[ready.id].price.sources.find(
+          (f) => typeof f.value === "number",
+        )!.value as number;
+        log("PRE_ACT_EVIDENCE", {
+          candidate: ready.id,
+          ledger: fresh[ready.id],
+          observation: o.id,
+          step: counters.probes,
+        });
+        await action(add, false);
+        o = await capture();
+        verification = verifyCart(o, ready.id, goal.size, goal.color, price)
+          ? "PASS"
+          : "FAIL";
+        if (verification === "FAIL") {
+          o = await capture();
+          verification = verifyCart(o, ready.id, goal.size, goal.color, price)
+            ? "PASS"
+            : "FAIL";
+        }
+        log("VERIFICATION", { status: verification });
+        return finish(
+          verification === "PASS" ? "ACT" : "EXECUTION_OR_VERIFICATION_FAILURE",
+          verification === "PASS" ? "" : "cart_postcondition_failed",
+        );
+      }
+      const viable = o.candidates.filter((c) => !refuted(ledger, c.id));
+      if (!viable.length) return finish("NO_SOLUTION");
+      if (viable.every((c) => evidenceUnavailable(ledger, c.id)))
+        return finish("INSUFFICIENT_EVIDENCE");
+      const probes: Probe[] = [...known.values()]
+        .map((c, order) => {
+          const cost = o.controls.some((x) => x.url === c.url)
+            ? 1
+            : (o.url === "/" ? 0 : 1) + (c.url.includes("?") ? 2 : 1);
+          return {
+            id: c.url,
+            candidate: c.candidate,
+            name: c.name,
+            url: c.url,
+            may_answer: coverage(c.name),
+            forward_cost: cost,
+            action_cost: cost,
+            order,
+          };
+        })
+        .filter((p) => !visited.has(p.id) && !refuted(ledger, p.candidate));
+      const eligible = probes.filter(
+        (p) =>
+          p.action_cost <= config.budget.actions - counters.actions &&
+          counters.probes < config.budget.probes,
+      );
+      if (!eligible.length) {
+        if (probes.length)
+          throw new RunFailure("BUDGET_EXHAUSTED", "interaction_limit");
+        return finish("INSUFFICIENT_EVIDENCE", "supported_routes_exhausted");
+      }
+      const input = sharedInput(goal, o, ledger, eligible, history, {
+        probes: config.budget.probes - counters.probes,
+        actions: config.budget.actions - counters.actions,
+        model_calls: config.budget.model_calls - counters.model_calls,
+      });
+      const scores =
+        eligible.length === 1
+          ? { [eligible[0].id]: 0 }
+          : await scoreProbes(model, input, counters, config, signal, log);
+      const probe = selectProbe(policy, eligible, ledger, scores);
+      log("PROBE_SELECTION", {
+        input,
+        scores,
+        selected: probe,
+        reason:
+          eligible.length === 1
+            ? "SINGLE_ELIGIBLE"
+            : policy === "Proposed"
+              ? "UNKNOWN_COVERAGE"
+              : "GENERIC_PROGRESS",
+      });
+      const target = known.get(probe.id)!;
+      o = await navigate(target, o);
+      let failed: unknown;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (attempt) {
+          if (counters.recoveries >= config.budget.recoveries) break;
+          counters.recoveries++;
+          log("BROWSER_RECOVERY", { probe: probe.id });
+          o = await capture();
+        }
+        try {
+          const live = o.controls.find((c) => c.url === target.url);
+          if (!live)
+            throw new RunFailure(
+              "EXECUTION_OR_VERIFICATION_FAILURE",
+              "stale_probe",
+            );
+          await action(live, true);
+          o = await capture();
+          if (o.url !== target.url)
+            throw new RunFailure(
+              "EXECUTION_OR_VERIFICATION_FAILURE",
+              "probe_postcondition_failed",
+            );
+          failed = undefined;
+          break;
+        } catch (e) {
+          check();
+          if (e instanceof RunFailure && e.terminal === "BUDGET_EXHAUSTED")
+            throw e;
+          failed = e;
+        }
+      }
+      if (failed) throw failed;
+      visited.add(probe.id);
+      history.push({ probe_id: probe.id, name: probe.name });
+      const after = evidence.ledger(o.candidates, goal);
+      if (
+        o.candidates.some((c) =>
+          fields.some(
+            (k) =>
+              ledger[c.id][k].state === "UNKNOWN" &&
+              after[c.id][k].state !== "UNKNOWN",
+          ),
+        )
+      )
+        counters.informative_probes++;
+    }
+  } catch (e) {
+    if (deadline.aborted) return finish("BUDGET_EXHAUSTED", "run_deadline");
+    if (externalSignal?.aborted)
+      return finish("INFRASTRUCTURE_FAILURE", "process_interrupted");
+    const detail = e instanceof Error ? e.message : String(e);
+    return finish(
+      e instanceof RunFailure
+        ? e.terminal
+        : /closed|crash|connect|storage/i.test(detail)
+          ? "INFRASTRUCTURE_FAILURE"
+          : "EXECUTION_OR_VERIFICATION_FAILURE",
+      detail,
+    );
+  } finally {
+    signal.removeEventListener("abort", interrupt);
+  }
 }

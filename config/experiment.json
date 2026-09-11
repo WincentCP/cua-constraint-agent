@@ -1,0 +1,21 @@
+{
+  "version": "final-2026-09-10",
+  "model": {
+    "name": "qwen2.5:7b",
+    "temperature": 0,
+    "seed": 42,
+    "num_ctx": 8192,
+    "num_predict": 1536
+  },
+  "budget": {
+    "probes": 12,
+    "actions": 40,
+    "model_calls": 12,
+    "deadline_ms": 240000,
+    "action_ms": 5000,
+    "model_ms": 60000,
+    "recoveries": 1
+  },
+  "order_seed": 20260910,
+  "reporting": { "screenshots": true }
+}

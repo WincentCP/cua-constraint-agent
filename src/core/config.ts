@@ -1,6 +1,58 @@
-import { createHash } from 'node:crypto';
-export const LIMITS = Object.freeze({candidates:3,depth:2,probes:4,actions:18,llmCalls:12,recoveries:1,taskMs:180000,intakeMs:60000,llmMs:60000,actionMs:5000,verifyMs:3000,pollMs:250,approvalMs:30000,answerMs:8000,reprompts:2,utteranceMs:20000,silenceMs:1200,ringMs:500,sttMs:20000,ttsMs:10000,workFirstMs:5000,workRepeatMs:8000,heartbeatMs:1000,disconnectMs:3000,cleanupMs:5000,sessionMs:1200000,snapshotNodes:160,snapshotChars:12000,maxProbes:12,context:8192,outputTokens:1024});
-export const MODEL = Object.freeze({name:'qwen2.5:7b',temperature:0,seed:42,num_ctx:LIMITS.context,num_predict:LIMITS.outputTokens});
-export const hash = (v:unknown) => createHash('sha256').update(typeof v==='string'?v:JSON.stringify(v)).digest('hex');
-export const CONFIG_HASH = hash({version:4,limits:LIMITS,model:MODEL});
-export const ORIGIN='http://localhost:3050';
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { z } from "zod";
+
+export const ConfigSchema = z
+  .object({
+    version: z.literal("final-2026-09-10"),
+    model: z
+      .object({
+        name: z.string().min(1),
+        temperature: z.literal(0),
+        seed: z.number().int(),
+        num_ctx: z.number().int().positive(),
+        num_predict: z.number().int().positive(),
+      })
+      .strict(),
+    budget: z
+      .object({
+        probes: z.number().int().positive(),
+        actions: z.number().int().positive(),
+        model_calls: z.number().int().positive(),
+        deadline_ms: z.number().int().positive(),
+        action_ms: z.number().int().positive(),
+        model_ms: z.number().int().positive(),
+        recoveries: z.literal(1),
+      })
+      .strict(),
+    order_seed: z.number().int(),
+    reporting: z.object({ screenshots: z.boolean() }).strict(),
+  })
+  .strict();
+export type Config = z.infer<typeof ConfigSchema>;
+export const config = ConfigSchema.parse(
+  JSON.parse(
+    readFileSync(
+      new URL("../../config/experiment.json", import.meta.url),
+      "utf8",
+    ),
+  ),
+);
+export const hash = (value: unknown) =>
+  createHash("sha256")
+    .update(typeof value === "string" ? value : JSON.stringify(value))
+    .digest("hex");
+export function localEndpoint(value: string) {
+  const u = new URL(value);
+  if (
+    u.protocol !== "http:" ||
+    !["127.0.0.1", "localhost", "[::1]"].includes(u.hostname) ||
+    u.username ||
+    u.password ||
+    u.pathname !== "/" ||
+    u.search ||
+    u.hash
+  )
+    throw Error("Model endpoint must be a local HTTP origin");
+  return u.origin;
+}

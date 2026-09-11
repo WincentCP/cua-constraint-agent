@@ -1,69 +1,82 @@
 # Constraint-Directed Computer-Use Agent
 
-Sistem eksperimen otomatis berdasarkan PRD lampiran pengguna, 8 September 2026. Membandingkan policy P yang memilih pemeriksaan berdasarkan constraint yang belum terbukti dengan baseline B1 yang meranking kemajuan task secara umum. Browser, model lokal, observasi semantic, eligible probes, executor, verifier, oracle, dan budget sama untuk kedua policy.
+Controlled research system comparing **Baseline generic probe selection** with **Proposed UNKNOWN-coverage selection**. Both receive the same goal, public Accessibility Tree, evidence ledger, eligible probes, model, budget, executor and verifier. Only the probe-selection rule differs.
 
-**Jalur utama adalah CLI tanpa GUI.** Scope aktif adalah evaluasi teknis pada synthetic e-commerce; workflow studi manusia dan voice dari versi sebelumnya tidak diperlukan. PRD sumber tersedia di [PRD-AUTOMATED](docs/PRD-AUTOMATED.md), petunjuk operasional di [AUTOMATED-SETUP](docs/AUTOMATED-SETUP.md).
+The approved methodology is [PRD-FINAL](docs/PRD-FINAL.md). Main evaluation contains **32 base tasks × 2 policies = 64 runs**: 16 solvable (8 single-feasible, 8 multi-feasible), 8 no-solution, and 8 unavailable-evidence. Initial information is grouped into U2/U3/U4 (11/10/11 tasks).
 
-## Jalankan
+This is a local CLI research tool with a synthetic website in isolated Chromium. It does not include a participant study, voice interface, payment flow, or production deployment.
+
+## Setup and engineering checks
+
+Requires Node.js 24+, npm and Git. Real-model runs additionally require Ollama with `qwen2.5:7b`.
 
 ```powershell
 npm ci
 npx playwright install chromium
+npm run build
+npm test
+npm run test:integration
 npm run experiment -- validate
-npm run experiment -- episode --demo --task development-01 --presentation EARLY --policy P
-npm run experiment -- main --demo
+npm run experiment -- main --demo --out exports/demo-main-v1
 ```
 
-Node.js 24+ diperlukan. Port 3050 harus kosong. Runner membuka synthetic environment, menjalankan Chromium headless, dan menutupnya secara otomatis. Mode demo menggunakan planner simulasi berlabel; outputnya bukan hasil penelitian.
+Demo uses a deterministic test double and is **not research data**. Use a fresh output directory for each experiment.
 
-Untuk model nyata:
+To inspect the redesigned storefront manually with an isolated development task:
+
+```powershell
+npm run preview -- --task development-01 --port 4173
+```
+
+Open `http://127.0.0.1:4173`. This preview is for UI inspection only and is not research data.
+
+## Research workflow
+
+Start Ollama, then:
 
 ```powershell
 ollama pull qwen2.5:7b
 npm run experiment -- doctor
-npm run experiment -- repeatability --out exports/development-gate-v1
-npm run experiment -- freeze --gate exports/development-gate-v1 --out config/experiment-freeze-v1.json
-npm run experiment -- main --freeze config/experiment-freeze-v1.json --out exports/main-v1
+npm run experiment -- development --out exports/development-v1
+npm run experiment -- repeatability --out exports/repeatability-v1
+npm run experiment -- gate --input exports/repeatability-v1
 ```
 
-Ollama harus berjalan di localhost:11434, atau tentukan port melalui `--ollama`. Canonical goal dimuat langsung dari fixture dan tidak memakai LLM parser. Main nyata memerlukan gate baseline competence dan 24 episode repeatability yang lulus. Tidak ada gate peserta, mikrofon, atau TTS.
-
-## Implementasi
-
-- 16 base task × EARLY/STAGED × P/B1 = 64 episode: 12 solvable, 2 no-solution, 2 unavailable-evidence.
-- Accessibility observation melalui Playwright ARIA snapshots, evidence SATISFIED/REFUTED/UNKNOWN dengan sumber publik, shared eligible probes, serta ranking P/B1.
-- ACT hanya setelah seluruh constraint terpenuhi; verifikasi memakai observasi baru. ABSTAIN membedakan no-solution dan insufficient evidence.
-- Outcome dibekukan dan browser ditutup sebelum oracle membaca reference goal dan final state privat.
-- Satu recovery teknis per episode, dipakai bersama oleh schema repair dan browser retry dengan budget yang tetap sama.
-- CLI untuk single episode, development, repeatability, freeze, main/per-policy, metrics, dan export.
-- Trace setiap episode, journal sebelum action, pemulihan attempt saat crash, dan output baru untuk setiap eksperimen.
-
-## Output dan analisis
-
-Setiap direktori ekspor berisi `episodes.jsonl`, `metrics.json`, `metrics.csv`, `failures.json`, dan `experiment-config.json`. Journal rinci berada di `events.jsonl`.
-
-Empat primary metrics: verified solvable success, ACT/ABSTAIN correctness, probes to evidence closure, dan informative probe rate. EARLY/STAGED dilaporkan terpisah; P/B1 dipasangkan per base task. Attempt gagal dan sel yang belum dicoba tetap terlihat. Data demo tidak dapat meluluskan gate penelitian.
+After the gate passes, commit the validated source/configuration/tests, freeze, then collect main data:
 
 ```powershell
-npm run experiment -- metrics --input exports/main-v1
+npm run experiment -- freeze --gate exports/repeatability-v1 --out exports/freeze-v1.json
+npm run experiment -- main --freeze exports/freeze-v1.json --out exports/main-v1
 npm run experiment -- export --input exports/main-v1
-npm run experiment -- --help
-npm run build
-npm test
-npm run test:integration
 ```
 
-## Struktur
+See [SETUP](docs/SETUP.md), [EXPERIMENT](docs/EXPERIMENT.md), and [STATUS](docs/STATUS.md) for prerequisites, interpretation and observed validation evidence.
 
-| Direktori | Peran |
-| --- | --- |
-| `src/experiment` | Canonical task loader, validator, runner tanpa GUI, freeze identity, metrics |
-| `src/core` | Evidence, constraint, budget, policy selector, ACT guard |
-| `src/agent` | Shared agent loop, planner Ollama, public probe history |
-| `src/browser` | Chromium isolation, accessibility observer, fresh-state verifier |
-| `src/fixture` | Synthetic environment dan private dataset |
-| `src/evaluation` | Oracle independen dan utilitas evaluasi |
-| `scripts/experiment.ts` | Entrypoint CLI |
-| `tests` | Unit dan integrasi browser |
+## Evaluation and outputs
 
-Implementasi UI/voice terdahulu tetap tersimpan untuk kompatibilitas. Dokumentasinya berada di [arsip README](docs/LEGACY-README.md). Gunakan [status scope otomatis](docs/AUTOMATED-STATUS.md) untuk bukti pengujian terbaru. Tidak ada klaim P lebih unggul atau hasil penelitian model nyata yang disertakan.
+The independent evaluator runs after the agent outcome and browser world are frozen. Successful ACT requires a correct final cart **and valid public evidence for all four constraints before dispatch**. Correct abstentions require public support. Healthy budget exhaustion counts as failure; infrastructure failures are recorded separately.
+
+Each experiment writes `experiment.json`, `journal.jsonl`, `events.jsonl`, `episodes.jsonl`, `episodes.csv`, `metrics.json`, `metrics.csv`, `paired-probes.csv`, and `failures.json`. On completion or a handled interruption it also writes `report.html` and `report.md`. Public UI screenshots are stored under `screenshots/<attempt-id>/`. Original attempts are retained. Primary comparison uses the earliest complete infrastructure-free pair, and probe efficiency uses only jointly correct pairs.
+
+Open `report.html` in a browser for the tables and screenshot gallery. Regenerate a report from existing final-contract data with:
+
+```powershell
+npm run experiment -- report --input exports/demo-main-v1
+```
+
+Demo reports are explicitly labeled and can illustrate implementation in a thesis, but their metrics must not be presented as real-model research findings. Keep the whole output directory together so image links remain valid.
+
+## Code boundaries
+
+| Directory               | Responsibility                                                        |
+| ----------------------- | --------------------------------------------------------------------- |
+| `src/environment`       | Private fixture generator and isolated synthetic HTTP world           |
+| `src/browser`           | Public Accessibility Tree observation, controls and cart verifier     |
+| `src/core`              | Goal schema, evidence, common budget and policy selection             |
+| `src/agent`             | Shared execution loop and Ollama structured-output planner            |
+| `src/evaluation`        | Offline oracle validating observations against private specifications |
+| `src/experiment`        | Manifest, recorder, paired metrics, development gate and freeze       |
+| `scripts/experiment.ts` | CLI entry point                                                       |
+| `tests`                 | Unit, browser integration and research-invariant tests                |
+
+Generated artifacts, dependencies and models are excluded from Git. Existing ignored outputs from older designs are not evidence for this PRD.
