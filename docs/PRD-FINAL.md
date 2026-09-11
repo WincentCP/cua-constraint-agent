@@ -1,6 +1,6 @@
 # PRD Final — Constraint-Directed Probe Selection untuk Computer-Use Agent
 
-**Status:** Approved research design — implementation/refactor pending  
+**Status:** Approved research contract — implementation integrated; empirical evaluation pending  
 **Versi:** Final research contract, 10 September 2026  
 **Repository:** `WincentCP/cua-constraint-agent`  
 **Primary audience:** GPT Astra / coding agent, peneliti, dosen pembimbing  
