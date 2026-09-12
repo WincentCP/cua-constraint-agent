@@ -61,24 +61,36 @@ test("LEUCO shopping flow: card, information, return, cart and rejected second i
         .getByRole("link", { name: `Buka detail ${product.name}`, exact: true })
         .click();
       assert.equal(new URL(page.url()).pathname, `/product/${product.id}`);
+      await page
+        .locator('#product-information[aria-busy="true"]')
+        .waitFor({ state: "detached" });
       assert.equal(
         await page.getByRole("heading", { level: 1 }).innerText(),
         product.name,
       );
       await capture("detail");
+      const documentStarted = await page.evaluate(() => performance.timeOrigin);
       await page
-        .getByRole("link", { name: "Harga dan stok", exact: true })
+        .getByRole("link", { name: "Harga & stok", exact: true })
         .click();
+      await page
+        .locator('#product-information[aria-busy="true"]')
+        .waitFor({ state: "detached" });
       assert.equal(
         await page
-          .getByRole("link", { name: "Harga dan stok", exact: true })
+          .getByRole("link", { name: "Harga & stok", exact: true })
           .getAttribute("aria-current"),
         "page",
       );
+      assert.equal(
+        await page.evaluate(() => performance.timeOrigin),
+        documentStarted,
+      );
       await capture("offer");
+      await page.getByRole("link", { name: "Ringkasan", exact: true }).click();
       await page
-        .getByRole("link", { name: "Ringkasan produk", exact: true })
-        .click();
+        .locator('#product-information[aria-busy="true"]')
+        .waitFor({ state: "detached" });
       assert.equal(new URL(page.url()).search, "");
       await page
         .getByRole("link", { name: "Kembali ke koleksi", exact: true })

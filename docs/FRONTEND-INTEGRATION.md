@@ -8,7 +8,7 @@ Desain aktif berada di `src/pages`, bukan layout absolut hasil impor di `src/imp
 
 | Halaman sumber | Fungsi                                  | Integrasi penelitian                                                                                            |
 | -------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| ProductList    | Kampanye dan tiga kartu kaos             | Hero LEUCO dan tiga kandidat dari fixture; fakta awal hanya dari `task.initial`                                 |
+| ProductList    | Kampanye dan tiga kartu kaos            | Hero LEUCO dan tiga kandidat dari fixture; fakta awal hanya dari `task.initial`                                 |
 | ProductDetail  | Foto, pilihan ukuran, harga, lima panel | Tata letak gambar/informasi dan panel dipertahankan; menggunakan varian fixture dan tautan probe yang sudah ada |
 | CartPage       | Keranjang client-side, ringkasan, hapus | Keranjang server, jumlah 0/1, verifikasi harga/varian; tidak menambah aksi hapus                                |
 | Navbar / Root  | Identitas dan kategori                  | Wordmark dan gaya dipertahankan; navigasi hanya menuju fungsi yang tersedia                                     |
@@ -20,7 +20,7 @@ Temuan awal: deskripsi produk membocorkan material, harga terlihat pada semua pa
 - Pertahankan server-rendered TypeScript di repo penelitian. Port komposisi visual dan aset, bukan state/cart/router React. Tidak menambah React/Vite ke runtime eksperimen.
 - Dataset penelitian tetap kaos S/M/L/XL, empat constraint, 32 base task dan 64 run. Kartu memakai tiga ilustrasi desain kaos LEUCO yang tidak diturunkan dari private attributes dan tidak menyatakan fakta kandidat.
 - Deskripsi Indonesia bersifat editorial dan tidak mengandung bahan, ukuran, warna, harga atau stok tersembunyi. Informasi publik tetap melalui `publicLine` dan `visibleFields`.
-- Rute, urutan kandidat/probe, role group, nama kontrol, paragraph fakta, POST dan verifikasi tetap. Tidak menambah opsi varian yang tidak ada pada fixture.
+- Rute, urutan kandidat/probe, role group, isi fakta, POST dan verifikasi tetap. Label navigasi dipersingkat; paragraf fakta memisahkan label/nilai secara visual dan parser membaca teks publik gabungannya. Tidak menambah opsi varian yang tidak ada pada fixture.
 - Tidak menampilkan status evaluator atau mematikan tombol berdasarkan private stock/evidence. Penolakan POST diberi halaman Indonesia tanpa mengubah status/effect.
 - Aset disajikan lokal dari allowlist, tanpa request internet, cookie baru, analytics atau localStorage. Font/gambar/CSS berada dalam cakupan freeze.
 - Preview manual memakai development task terisolasi; reset tidak tersedia dalam halaman yang dilihat agent. Preview bukan hasil eksperimen.
@@ -28,3 +28,11 @@ Temuan awal: deskripsi produk membocorkan material, harga terlihat pada semua pa
 ## Validasi dan penggunaan
 
 Lihat bagian akhir dokumen untuk hasil validasi integrasi. Perubahan UI mengubah source identity: gate/freeze lama tidak dapat dipakai untuk pengumpulan main baru. Demo hanya bukti engineering.
+
+## Revisi detail produk, 12 September 2026
+
+Navigasi diringkas menjadi Ringkasan, Harga & stok, Harga, Bahan, dan Stok. Halaman menampilkan fakta publik sekali, dengan nilai harga lebih menonjol. Fakta awal tetap tersedia sesuai kontrak `initial ∪ panelFields`; panel lain tidak diprefetch atau disimpan tersembunyi dalam DOM.
+
+Tautan tetap memiliki tujuan server yang sama. JavaScript mengambil HTML publik hanya setelah klik, mengganti bagian informasi tanpa memuat ulang gambar/halaman, dan memperbarui URL setelah respons siap. Back/Forward mengambil ulang panel yang sesuai. Kegagalan permintaan beralih ke navigasi biasa; tautan tetap bekerja tanpa JavaScript.
+
+Selama permintaan berlangsung, isi lama disembunyikan dan tombol tambah sementara dinonaktifkan berdasarkan status jaringan publik. Driver menunggu `aria-busy` selesai sebelum merekam observasi. Ini tidak bergantung pada stok, kecocokan produk, atau informasi evaluator. Permintaan yang digantikan dibatalkan agar respons lama tidak menimpa pilihan terbaru.

@@ -90,6 +90,11 @@ export class Driver {
           "changed_destination",
         );
       await handle.click({ timeout });
+      // Public busy state marks an in-place panel navigation. Capture only after
+      // the UI has committed both the requested evidence and its URL.
+      await this.page
+        .locator('#product-information[aria-busy="true"]')
+        .waitFor({ state: "detached", timeout });
     } finally {
       await handle.dispose();
     }

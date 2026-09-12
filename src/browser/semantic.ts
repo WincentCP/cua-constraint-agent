@@ -116,7 +116,13 @@ export function observationFrom(
             kind: "act",
           });
         if (node.role !== "paragraph") continue;
-        const text = node.text || node.name;
+        const text =
+          node.text ||
+          node.name ||
+          flatten(node.children)
+            .filter((child) => child.role === "text")
+            .map((child) => child.text || child.name)
+            .join(" ");
         let constraint: Constraint | undefined,
           value: Fact["value"] = null,
           scope: Fact["scope"];

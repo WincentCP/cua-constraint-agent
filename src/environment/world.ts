@@ -26,8 +26,10 @@ export type World = {
   requests: string[];
 };
 export type Fault = "false-toast" | "fake-cart" | "wrong-price";
-const fact = (line: string) =>
-  `<p class="fact${line.startsWith("Harga") ? " price-fact" : ""}${line.endsWith("belum dipublikasikan") ? " missing" : ""}">${esc(line)}</p>`;
+const fact = (line: string) => {
+  const separator = line.indexOf(": ");
+  return `<p class="fact${line.startsWith("Harga") ? " price-fact" : ""}${line.endsWith("belum dipublikasikan") ? " missing" : ""}"><span class="fact-label">${esc(line.slice(0, separator + 1))} </span><span class="fact-value">${esc(line.slice(separator + 2))}</span></p>`;
+};
 const backToCollection =
   '<a class="back-link" href="/" data-collection><span aria-hidden="true">←</span> Kembali ke koleksi</a>';
 export function render(world: World, url: string, fault?: Fault) {
@@ -84,31 +86,34 @@ export function render(world: World, url: string, fault?: Fault) {
     const p = t.products.find((p) => u.pathname === `/product/${p.id}`);
     if (!p) return null;
     const panel = u.searchParams.get("panel") ?? "detail";
-    if (!(panel in panelNames)) return null;
+    if (!Object.hasOwn(panelNames, panel)) return null;
     title = p.name;
     const copy = editorial(p.name),
       allowed = visibleFields(t, p, url);
-    const primary = `<a href="/product/${p.id}" ${panel === "detail" ? 'aria-current="page"' : ""}>Ringkasan produk</a><a href="/product/${p.id}?panel=offer" ${panel === "offer" ? 'aria-current="page"' : ""}>Harga dan stok</a>`;
-    const secondary = Object.entries(panelNames)
-      .filter(([key]) => !["detail", "offer"].includes(key))
+    const labels = {
+      detail: "Ringkasan",
+      offer: "Harga & stok",
+      price: "Harga",
+      material: "Bahan",
+      stock: "Stok",
+    };
+    const tabs = Object.entries(labels)
       .map(
         ([key, label]) =>
-          `<a href="/product/${p.id}?panel=${key}" ${key === panel ? 'aria-current="page"' : ""}>${label}</a>`,
+          `<a data-panel-link href="/product/${p.id}${key === "detail" ? "" : `?panel=${key}`}" ${key === panel ? 'aria-current="page"' : ""}>${esc(label)}</a>`,
       )
       .join("");
-    const activeFields = allowed.filter((k) => !t.initial.includes(k));
     body = `<div class="page product-page">${backToCollection}
       <section class="product-layout" role="group" aria-label="${esc(p.name)}">
         <div class="product-heading"><p class="eyebrow">LEUCO / Kaos</p><h1>${esc(p.name)}</h1><p class="product-subtitle">${esc(copy.short)}</p></div>
         ${productVisual(p.name)}
         <div class="detail-copy">
           <section class="product-story" aria-labelledby="about-title"><h2 id="about-title">Tentang produk</h2><p class="description">${esc(copy.description)}</p><p class="design-note">${esc(copy.design)}</p></section>
-          ${t.initial.length ? `<div class="initial-details"><h2>Detail produk</h2><div class="facts">${t.initial.map((k) => fact(publicLine(p, k))).join("")}</div></div>` : ""}
-          <nav class="panel-nav" aria-label="Informasi produk"><div class="primary-panels">${primary}</div><div class="secondary-panels"><span>Lihat secara terpisah</span>${secondary}</div></nav>
-          <section class="panel-content" aria-labelledby="panel-title"><h2 id="panel-title">${panel === "detail" ? "Warna, ukuran, dan bahan" : esc(panelNames[panel])}</h2>
-          ${activeFields.length ? `<div class="facts">${activeFields.map((k) => fact(publicLine(p, k))).join("")}</div>` : '<p class="panel-hint">Warna, ukuran, dan bahan tercantum pada detail produk di atas.</p>'}
-          ${panel === "detail" ? '<p class="panel-hint">Lihat bagian Harga dan stok untuk rincian penawaran produk ini.</p>' : ""}
-          </section>
+          <div id="product-information" aria-busy="false">
+            <nav class="panel-nav" aria-label="Informasi produk">${tabs}</nav>
+            <section class="panel-content" aria-label="${esc(labels[panel as keyof typeof labels])}"><div class="facts">${allowed.map((k) => fact(publicLine(p, k))).join("")}</div></section>
+          </div>
+          <p class="panel-status" role="status"></p>
           <form class="add-form" method="post" action="/add/${p.id}"><p class="quantity-note">Jumlah: 1 kaos</p><button class="button">Tambah satu ke keranjang <span aria-hidden="true">↗</span></button></form>
         </div>
       </section></div>`;
