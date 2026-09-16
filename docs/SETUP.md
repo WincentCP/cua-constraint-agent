@@ -1,8 +1,14 @@
 # Setup
 
-Run commands from the repository root. On the original workstation:
+Run commands from the repository root. On the current Windows workstation:
 
-`C:\Users\User\Documents\ChatGPT\skripsi\cua-constraint-agent`
+`C:\Users\User\Documents\skripsi\cua-constraint-agent`
+
+Confirm the active repository root with:
+
+```powershell
+git rev-parse --show-toplevel
+```
 
 ## Dependencies
 
