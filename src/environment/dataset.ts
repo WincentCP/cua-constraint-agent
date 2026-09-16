@@ -55,33 +55,6 @@ export function shuffle<T>(items: T[], random: () => number) {
   }
   return a;
 }
-const names = [
-  "Aruna",
-  "Pesisir",
-  "Rimba",
-  "Embun",
-  "Nusa",
-  "Telaga",
-  "Bayu",
-  "Laut",
-  "Taman",
-  "Jingga",
-  "Hujan",
-  "Kebun",
-  "Fajar",
-  "Akar",
-  "Daun",
-  "Pasir",
-  "Kabut",
-  "Bumi",
-  "Sore",
-  "Langit",
-  "Bukit",
-  "Purnama",
-  "Teduh",
-  "Batu",
-];
-
 function generate(
   split: Task["split"],
   index: number,
@@ -98,20 +71,20 @@ function generate(
     maxPrice: 130000 + Math.floor(random() * 5) * 10000,
     quantity: 1,
   };
-  // Product identifiers/names/order are generated independently of truth assignment.
-  const products: Product[] = Array.from({ length: 3 }, (_, j) => ({
-    id: hash(`public:${identity}:${j}`).slice(0, 12),
-    name: `Kaos ${names[Math.floor(random() * names.length)]} ${["Pagi", "Sore", "Malam"][j]}`,
-    size: goal.size,
-    color: goal.color,
-    material: goal.material,
-    price: goal.maxPrice - 5000 - 1000 * j,
-    available: true,
-    withheld: [],
-  }));
-  // Preserve existing attribute RNG draws and order; branding is independent of truth.
-  products.forEach((product, j) => {
-    product.name = collection[j].name;
+  // Keep one draw per product so existing task generation remains reproducible;
+  // public names come directly from the LEUCO collection.
+  const products: Product[] = Array.from({ length: 3 }, (_, j) => {
+    random();
+    return {
+      id: hash(`public:${identity}:${j}`).slice(0, 12),
+      name: collection[j].name,
+      size: goal.size,
+      color: goal.color,
+      material: goal.material,
+      price: goal.maxPrice - 5000 - 1000 * j,
+      available: true,
+      withheld: [],
+    };
   });
   const ordered = shuffle(products, random);
   const truthOrder = shuffle(
