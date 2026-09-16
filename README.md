@@ -50,7 +50,7 @@ npm run experiment -- main --freeze exports/freeze-v1.json --out exports/main-v1
 npm run experiment -- export --input exports/main-v1
 ```
 
-See [SETUP](docs/SETUP.md), [EXPERIMENT](docs/EXPERIMENT.md), and [STATUS](docs/STATUS.md) for prerequisites, interpretation and observed validation evidence.
+See [SETUP](docs/SETUP.md), [EXPERIMENT](docs/EXPERIMENT.md), [FRONTEND-INTEGRATION](docs/FRONTEND-INTEGRATION.md), and [STATUS](docs/STATUS.md) for prerequisites, experiment procedures, interface integration decisions, and observed validation evidence.
 
 ## Evaluation and outputs
 

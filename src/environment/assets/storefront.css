@@ -542,6 +542,9 @@ button:focus-visible {
   border-block: 1px solid var(--line);
   padding-block: 24px;
 }
+.cart-item > * {
+  min-width: 0;
+}
 .cart-item h2 {
   font-family: var(--body);
   font-size: 23px;
@@ -550,6 +553,7 @@ button:focus-visible {
 .cart-item p:not(.eyebrow) {
   font-size: 14px;
   margin-top: 4px;
+  overflow-wrap: anywhere;
 }
 .text-link {
   display: inline-block;
@@ -560,6 +564,7 @@ button:focus-visible {
 .cart-summary {
   padding: 26px;
   background: var(--soft);
+  min-width: 0;
 }
 .cart-summary h2 {
   font-family: var(--body);
@@ -571,6 +576,11 @@ button:focus-visible {
   display: flex;
   justify-content: space-between;
   gap: 18px;
+}
+.summary-row > *,
+.summary-total > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .summary-row {
   font-size: 14px;
