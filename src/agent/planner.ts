@@ -49,7 +49,17 @@ export interface Model {
   complete(
     input: unknown,
     signal: AbortSignal,
-  ): Promise<{ text: string; input_tokens: number; output_tokens: number }>;
+  ): Promise<{
+    text: string;
+    input_tokens: number;
+    output_tokens: number;
+    timing_ms?: {
+      total: number | null;
+      load: number | null;
+      prompt_eval: number | null;
+      eval: number | null;
+    };
+  }>;
 }
 export class OllamaModel implements Model {
   readonly demo = false;
@@ -61,10 +71,11 @@ export class OllamaModel implements Model {
     this.endpoint = localEndpoint(endpoint);
   }
   async complete(input: unknown, signal: AbortSignal) {
-    const { name, ...options } = this.config.model;
+    const { name, think, ...options } = this.config.model;
     const body = {
       model: name,
       stream: false,
+      think,
       format: "json",
       options,
       messages: [
@@ -100,13 +111,25 @@ export class OllamaModel implements Model {
       message?: { content?: string };
       prompt_eval_count?: number;
       eval_count?: number;
+      total_duration?: number;
+      load_duration?: number;
+      prompt_eval_duration?: number;
+      eval_duration?: number;
     };
     if (typeof data.message?.content !== "string")
       throw new RunFailure("INFRASTRUCTURE_FAILURE", "invalid_model_transport");
+    const toMs = (value: number | undefined) =>
+      typeof value === "number" ? value / 1_000_000 : null;
     return {
       text: data.message.content,
       input_tokens: data.prompt_eval_count ?? 0,
       output_tokens: data.eval_count ?? 0,
+      timing_ms: {
+        total: toMs(data.total_duration),
+        load: toMs(data.load_duration),
+        prompt_eval: toMs(data.prompt_eval_duration),
+        eval: toMs(data.eval_duration),
+      },
     };
   }
 }
