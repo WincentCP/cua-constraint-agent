@@ -8,6 +8,7 @@ export const ConfigSchema = z
     model: z
       .object({
         name: z.string().min(1),
+        think: z.literal(false),
         temperature: z.literal(0),
         seed: z.number().int(),
         num_ctx: z.number().int().positive(),
