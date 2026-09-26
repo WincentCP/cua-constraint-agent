@@ -1,6 +1,6 @@
 # Experiment protocol
 
-The methodology is fixed by [PRD-FINAL](PRD-FINAL.md). These operational rules are declared before data collection.
+The methodology is fixed by [PRD-FINAL](PRD-FINAL.md). These operational rules are declared before data collection. The pre-main LLM model-selection procedure is fixed separately in [LLM-BENCHMARK](LLM-BENCHMARK.md); it uses development tasks only and must not use the Proposed-minus-Baseline effect to choose a model.
 
 ## Conditions and dataset
 
