@@ -45,6 +45,8 @@ export function sourceIdentity() {
     "package-lock.json",
     "tsconfig.json",
     "docs/PRD-FINAL.md",
+    "docs/EXPERIMENT.md",
+    "docs/LLM-BENCHMARK.md",
   ])
     files.push(join(rootPath, path));
   const sources = Object.fromEntries(
@@ -229,6 +231,8 @@ export function makeFreeze(gateOut: string, out: string, identity: Identity) {
       "package-lock.json",
       "tsconfig.json",
       "docs/PRD-FINAL.md",
+      "docs/EXPERIMENT.md",
+      "docs/LLM-BENCHMARK.md",
     ],
     { encoding: "utf8" },
   ).trim();
