@@ -1,10 +1,5 @@
 import { parseArgs } from "node:util";
-import {
-  existsSync,
-  readFileSync,
-  readdirSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
 const { values } = parseArgs({
@@ -42,11 +37,7 @@ function csv(rows: AnyRecord[]) {
   const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))];
   const q = (v: unknown) => {
     const s =
-      v == null
-        ? ""
-        : typeof v === "object"
-          ? JSON.stringify(v)
-          : String(v);
+      v == null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v);
     return '"' + s.replaceAll('"', '""') + '"';
   };
   return (
@@ -116,9 +107,8 @@ for (const episodesPath of findFiles(root, "episodes.jsonl")) {
       wall_ms: row.outcome.wall_ms,
       median_eval_ms: median(evalMs),
       median_total_model_ms: median(totalMs),
-      screenshots: row.events.filter(
-        (e: AnyRecord) => e.type === "SCREENSHOT",
-      ).length,
+      screenshots: row.events.filter((e: AnyRecord) => e.type === "SCREENSHOT")
+        .length,
       screenshot_failures: row.events.filter(
         (e: AnyRecord) => e.type === "SCREENSHOT_FAILURE",
       ).length,
@@ -162,10 +152,9 @@ for (const model of [...new Set(runs.map((r) => r.model))]) {
     healthy_runs: healthy.length,
     infrastructure_failures: rs.length - healthy.length,
     correct_runs: healthy.filter((r) => r.vda === 1).length,
-    healthy_vda:
-      healthy.length
-        ? healthy.filter((r) => r.vda === 1).length / healthy.length
-        : null,
+    healthy_vda: healthy.length
+      ? healthy.filter((r) => r.vda === 1).length / healthy.length
+      : null,
     invalid_outputs: rs.reduce((s, r) => s + r.invalid_outputs, 0),
     first_pass_invalid: rs.reduce((s, r) => s + r.first_pass_invalid, 0),
     repairs: rs.reduce((s, r) => s + r.repairs, 0),
@@ -176,10 +165,12 @@ for (const model of [...new Set(runs.map((r) => r.model))]) {
     complete_task_triples: completeTriples,
     outcome_repeatable_tasks: outcomeRepeatable,
     trajectory_repeatable_tasks: trajectoryRepeatable,
-    outcome_repeatability:
-      completeTriples ? outcomeRepeatable / completeTriples : null,
-    trajectory_repeatability:
-      completeTriples ? trajectoryRepeatable / completeTriples : null,
+    outcome_repeatability: completeTriples
+      ? outcomeRepeatable / completeTriples
+      : null,
+    trajectory_repeatability: completeTriples
+      ? trajectoryRepeatable / completeTriples
+      : null,
     median_eval_ms: median(evalTimes),
     median_total_model_ms: median(totalTimes),
     median_wall_ms: median(rs.map((r) => r.wall_ms)),
