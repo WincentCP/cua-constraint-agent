@@ -42,7 +42,11 @@ function csv(rows: AnyRecord[]) {
   const keys = [...new Set(rows.flatMap((r) => Object.keys(r)))];
   const q = (v: unknown) => {
     const s =
-      v == null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v);
+      v == null
+        ? ""
+        : typeof v === "object"
+          ? JSON.stringify(v)
+          : String(v);
     return '"' + s.replaceAll('"', '""') + '"';
   };
   return (
