@@ -49,7 +49,7 @@ function Warm-Model {
     prompt = "Return exactly OK."
     stream = $false
     think = $false
-    keep_alive = "15m"
+    keep_alive = "5m"
     options = @{
       temperature = 0
       seed = 42
@@ -74,7 +74,7 @@ function Warm-Model {
       ended_utc = [DateTime]::UtcNow.ToString("o")
       error = $_.Exception.Message
     } | ConvertTo-Json -Depth 20 | Set-Content -Encoding utf8 $Destination
-    throw "Warm-up failed for $Name. See $Destination"
+    Write-Warning "Warm-up failed for $Name. The failure is preserved in $Destination; benchmark episodes will still be attempted."
   }
 }
 
@@ -197,6 +197,9 @@ try {
         }
       }
     }
+
+    Write-Host "==> Unload $($model.name)" -ForegroundColor Cyan
+    & ollama stop $model.name 2>$null | Out-Null
   }
 }
 finally {
