@@ -2,7 +2,8 @@ param(
   [Parameter(Mandatory = $true)]
   [ValidateSet("pilot", "full")]
   [string]$Mode,
-  [string]$Out = ""
+  [string]$Out = "",
+  [switch]$Resume
 )
 
 $ErrorActionPreference = "Stop"
@@ -104,8 +105,8 @@ function Capture-Environment {
 
 Set-Location $RepoRoot
 
-if (Test-Path $Out) {
-  throw "Output already exists: $Out. Use a new -Out path; benchmark outputs are never overwritten."
+if ((Test-Path $Out) -and -not $Resume) {
+  throw "Output already exists: $Out. Use -Resume to continue without overwriting completed runs, or choose a new -Out path."
 }
 
 $researchStatus = & git status --porcelain -- src scripts tests config package.json package-lock.json tsconfig.json docs/PRD-FINAL.md docs/EXPERIMENT.md docs/LLM-BENCHMARK.md
@@ -138,9 +139,15 @@ foreach ($model in $models) {
   }
 }
 
-New-Item -ItemType Directory -Path $Out -Force | Out-Null
-$plan | ConvertTo-Json -Depth 10 | Set-Content -Encoding utf8 (Join-Path $Out "benchmark-plan.json")
-Capture-Environment (Join-Path $Out "environment.txt")
+if (-not (Test-Path $Out)) {
+  New-Item -ItemType Directory -Path $Out -Force | Out-Null
+}
+if (-not $Resume) {
+  $plan | ConvertTo-Json -Depth 10 | Set-Content -Encoding utf8 (Join-Path $Out "benchmark-plan.json")
+  Capture-Environment (Join-Path $Out "environment.txt")
+} else {
+  Write-Host "==> Resuming existing benchmark output: $Out" -ForegroundColor Cyan
+}
 
 try {
   Invoke-Checked "npm ci" { npm ci }
@@ -172,10 +179,15 @@ try {
     foreach ($task in $tasks) {
       foreach ($repeat in 1..$repetitions) {
         $runOut = Join-Path $modelRoot (Join-Path $task ("r" + $repeat))
+        $episodesPath = Join-Path $runOut "episodes.jsonl"
+        if ($Resume -and (Test-Path $episodesPath)) {
+          Write-Host "-- SKIP existing $($model.label) / $task / repetition $repeat" -ForegroundColor DarkGray
+          continue
+        }
         Write-Host "-- $($model.label) / $task / repetition $repeat" -ForegroundColor Green
         & node --import tsx scripts/experiment.ts episode --task $task --policy Baseline --out $runOut
         if ($LASTEXITCODE -ne 0) {
-          throw "Benchmark stopped at $($model.name) / $task / repetition $repeat. Preserve $runOut and inspect the infrastructure failure before continuing."
+          Write-Warning "Recorded failure at $($model.name) / $task / repetition $repeat. Preserving the attempt and continuing so deployment reliability remains part of the benchmark."
         }
       }
     }
