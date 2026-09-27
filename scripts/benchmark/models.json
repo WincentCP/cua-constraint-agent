@@ -1,0 +1,18 @@
+[
+  {
+    "label": "qwen3.5-9b",
+    "name": "qwen3.5:9b-q4_K_M"
+  },
+  {
+    "label": "ministral3-8b",
+    "name": "ministral-3:8b-instruct-2512-q4_K_M"
+  },
+  {
+    "label": "granite4.2-8b",
+    "name": "granite4.2:8b-q4_K_M"
+  },
+  {
+    "label": "gemma2-9b",
+    "name": "gemma2:9b-instruct-q4_K_M"
+  }
+]
