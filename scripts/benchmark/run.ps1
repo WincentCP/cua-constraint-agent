@@ -199,7 +199,13 @@ try {
     }
 
     Write-Host "==> Unload $($model.name)" -ForegroundColor Cyan
-    & ollama stop $model.name 2>$null | Out-Null
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+      $ErrorActionPreference = "Continue"
+      & ollama stop $model.name *> $null
+    } finally {
+      $ErrorActionPreference = $previousErrorActionPreference
+    }
   }
 }
 finally {
