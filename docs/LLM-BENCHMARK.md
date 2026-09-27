@@ -43,9 +43,9 @@ Use Baseline only on:
 - development-02 (U3)
 - development-03 (U4)
 
-Run every model/task combination three times. With four primary candidates this is 36 pilot episodes.
+Run every model/task combination once. With four primary candidates this is 12 pilot episodes.
 
-The pilot is a pipeline/feasibility gate, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling, repeatability measurement and resource suitability before the full benchmark.
+The pilot is a pipeline/feasibility gate, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. Repeatability is assessed in the full Phase 1 benchmark, where every development task is repeated three times.
 
 ## Full Phase 1 benchmark
 
