@@ -25,6 +25,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot
 
 The runner performs build/tests/validation, captures the machine environment and Git commit, checks each installed model, runs the declared episodes, preserves automatic screenshots/raw traces, restores `config/experiment.json` exactly, and generates `summary.csv`, `runs.csv` and `summary.json`.
 
+Before timed benchmark episodes for each candidate, the runner performs one identical unscored warm-up inference and keeps the model resident briefly. This removes first-load latency from the 60-second per-call research timeout. Warm-up output and timing are written to `warmup.json`; warm-up is not included in VDA, repeatability, token, or latency summaries.
+
 After the pilot is reviewed and accepted, run the full Phase 1 benchmark:
 
 ```powershell
