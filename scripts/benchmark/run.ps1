@@ -184,6 +184,12 @@ try {
           Write-Host "-- SKIP existing $($model.label) / $task / repetition $repeat" -ForegroundColor DarkGray
           continue
         }
+        if ($Resume -and (Test-Path $runOut)) {
+          $stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ")
+          $interrupted = "$runOut-interrupted-$stamp"
+          Move-Item -Path $runOut -Destination $interrupted
+          Write-Warning "Preserved incomplete external interruption at $interrupted; rerunning this cell cleanly."
+        }
         Write-Host "-- $($model.label) / $task / repetition $repeat" -ForegroundColor Green
         & node --import tsx scripts/experiment.ts episode --task $task --policy Baseline --out $runOut
         if ($LASTEXITCODE -ne 0) {
