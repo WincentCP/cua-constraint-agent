@@ -121,10 +121,12 @@ $tasks =
     1..12 | ForEach-Object { "development-{0:D2}" -f $_ }
   }
 
+$repetitions = if ($Mode -eq "pilot") { 1 } else { 3 }
+
 $plan = @()
 foreach ($model in $models) {
   foreach ($task in $tasks) {
-    foreach ($repeat in 1..3) {
+    foreach ($repeat in 1..$repetitions) {
       $plan += [PSCustomObject]@{
         model = $model.name
         model_label = $model.label
@@ -168,7 +170,7 @@ try {
     Warm-Model $model.name (Join-Path $modelRoot "warmup.json")
 
     foreach ($task in $tasks) {
-      foreach ($repeat in 1..3) {
+      foreach ($repeat in 1..$repetitions) {
         $runOut = Join-Path $modelRoot (Join-Path $task ("r" + $repeat))
         Write-Host "-- $($model.label) / $task / repetition $repeat" -ForegroundColor Green
         & node --import tsx scripts/experiment.ts episode --task $task --policy Baseline --out $runOut
