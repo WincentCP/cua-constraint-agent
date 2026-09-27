@@ -13,6 +13,26 @@ Primary pilot candidates use the same Ollama runtime and the same Q4_K_M quantiz
 
 `nvidia/Nemotron-Cascade-8B` is an optional deployment-gate candidate. It may enter the full benchmark only if it can be served with a reproducible local setup that is comparable to the primary candidates; otherwise runtime differences would become an additional experimental variable.
 
+## Repository runner
+
+The benchmark is executed from the committed repository scripts; no chat-provided ZIP or external helper is part of the research workflow.
+
+From a clean checkout with all four models already installed and Ollama running:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot
+```
+
+The runner performs build/tests/validation, captures the machine environment and Git commit, checks each installed model, runs the declared episodes, preserves automatic screenshots/raw traces, restores `config/experiment.json` exactly, and generates `summary.csv`, `runs.csv` and `summary.json`.
+
+After the pilot is reviewed and accepted, run the full Phase 1 benchmark:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full
+```
+
+Default outputs are `exports/llm-benchmark-pilot-v1` and `exports/llm-benchmark-full-v1`. Existing output directories are never overwritten. The exact candidate list is versioned in `scripts/benchmark/models.json`.
+
 ## Pilot
 
 Use Baseline only on:
