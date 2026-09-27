@@ -27,7 +27,7 @@ The runner performs build/tests/validation, captures the machine environment and
 
 Before timed benchmark episodes for each candidate, the runner performs one identical unscored warm-up inference and keeps the model resident briefly. This removes first-load latency from the 60-second per-call research timeout. Warm-up output and timing are written to `warmup.json`; warm-up is not included in VDA, repeatability, token, or latency summaries.
 
-After the pilot is reviewed and accepted, run the full Phase 1 benchmark:
+The pilot is an optional feasibility check and is not used for model selection. If compute time or venue cost is constrained, it may be skipped after the common preflight checks and equal per-model warm-up are in place. The full Phase 1 benchmark remains mandatory and unchanged:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full
@@ -45,7 +45,7 @@ Use Baseline only on:
 
 Run every model/task combination once. With four primary candidates this is 12 pilot episodes.
 
-The pilot is a pipeline/feasibility gate, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. Repeatability is assessed in the full Phase 1 benchmark, where every development task is repeated three times.
+The pilot is a pipeline/feasibility check, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. Repeatability is assessed in the full Phase 1 benchmark, where every development task is repeated three times.
 
 ## Full Phase 1 benchmark
 
