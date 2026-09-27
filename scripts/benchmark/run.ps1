@@ -36,6 +36,47 @@ function Set-ConfiguredModel {
   [IO.File]::WriteAllText($ConfigPath, $json + [Environment]::NewLine, $Utf8NoBom)
 }
 
+function Warm-Model {
+  param(
+    [string]$Name,
+    [string]$Destination
+  )
+
+  Write-Host "==> Warm-up $Name" -ForegroundColor Cyan
+  $body = @{
+    model = $Name
+    prompt = "Return exactly OK."
+    stream = $false
+    think = $false
+    keep_alive = "15m"
+    options = @{
+      temperature = 0
+      seed = 42
+      num_ctx = 8192
+      num_predict = 8
+    }
+  } | ConvertTo-Json -Depth 10
+
+  $started = [DateTime]::UtcNow
+  try {
+    $response = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/generate" -Method Post -ContentType "application/json" -Body $body -TimeoutSec 300
+    [PSCustomObject]@{
+      model = $Name
+      started_utc = $started.ToString("o")
+      ended_utc = [DateTime]::UtcNow.ToString("o")
+      response = $response
+    } | ConvertTo-Json -Depth 20 | Set-Content -Encoding utf8 $Destination
+  } catch {
+    [PSCustomObject]@{
+      model = $Name
+      started_utc = $started.ToString("o")
+      ended_utc = [DateTime]::UtcNow.ToString("o")
+      error = $_.Exception.Message
+    } | ConvertTo-Json -Depth 20 | Set-Content -Encoding utf8 $Destination
+    throw "Warm-up failed for $Name. See $Destination"
+  }
+}
+
 function Capture-Environment {
   param([string]$Destination)
   $lines = New-Object System.Collections.Generic.List[string]
@@ -123,6 +164,8 @@ try {
       throw "Doctor failed for $($model.name)"
     }
     $doctorOutput | Set-Content -Encoding utf8 (Join-Path $modelRoot "doctor.json")
+
+    Warm-Model $model.name (Join-Path $modelRoot "warmup.json")
 
     foreach ($task in $tasks) {
       foreach ($repeat in 1..3) {
