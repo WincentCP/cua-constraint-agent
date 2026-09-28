@@ -36,6 +36,7 @@ const { values, positionals } = parseArgs({
     ollama: { type: "string", default: "http://127.0.0.1:11434" },
     task: { type: "string" },
     policy: { type: "string", default: "Baseline" },
+    repeat: { type: "string" },
     freeze: { type: "string" },
     gate: { type: "string" },
     pair: { type: "string" },
@@ -53,7 +54,7 @@ const required = (key: keyof typeof values) => {
 async function main() {
   if (command === "help" || values.help) {
     console.log(
-      `Constraint-directed CUA — PRD FINAL\n\nCommands:\n  validate\n  doctor [--demo]\n  episode --task development-01 --policy Baseline [--demo] --out DIR\n  development | repeatability [--demo] --out DIR\n  gate --input DIR\n  freeze --gate DIR --out FILE\n  main --freeze FILE --out DIR\n  main --demo --out DIR                  (engineering only)\n  resume --input DIR [--freeze FILE]\n  rerun --input DIR --pair BASE:r1 --reason TEXT [--freeze FILE]\n  metrics | export --input DIR\n\nCommon: --ollama http://127.0.0.1:11434\nReal main requires a passing development gate and immutable freeze.\n`,
+      `Constraint-directed CUA — PRD FINAL\n\nCommands:\n  validate\n  doctor [--demo]\n  episode --task development-01 --policy Baseline [--repeat N] [--demo] --out DIR\n  development | repeatability [--demo] --out DIR\n  gate --input DIR\n  freeze --gate DIR --out FILE\n  main --freeze FILE --out DIR\n  main --demo --out DIR                  (engineering only)\n  resume --input DIR [--freeze FILE]\n  rerun --input DIR --pair BASE:r1 --reason TEXT [--freeze FILE]\n  metrics | export --input DIR\n\nCommon: --ollama http://127.0.0.1:11434\nReal main requires a passing development gate and immutable freeze.\n`,
     );
     console.log(
       "  report --input DIR                    (HTML/Markdown with screenshot references)",
@@ -153,8 +154,19 @@ async function main() {
     const policy = values.policy;
     if (policy !== "Baseline" && policy !== "Proposed")
       throw Error("Policy must be Baseline or Proposed");
+    const repeat = values.repeat ? Number(values.repeat) : 1;
+    if (!Number.isInteger(repeat) || repeat < 1)
+      throw Error("--repeat must be a positive integer");
     // Single episodes remain diagnostic; paired metrics require both conditions.
-    plan = [{ base: task.id, policy, pair: `${task.id}:r1`, repeat: 1 }];
+    // Benchmark wrappers pass --repeat so raw episode metadata matches r1/r2/r3.
+    plan = [
+      {
+        base: task.id,
+        policy,
+        pair: `${task.id}:r${repeat}`,
+        repeat,
+      },
+    ];
   } else
     plan =
       previous?.plan ?? manifest(command as "development" | "repeatability");
