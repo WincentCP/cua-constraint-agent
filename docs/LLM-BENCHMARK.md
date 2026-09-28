@@ -27,7 +27,7 @@ The runner performs build/tests/validation, captures the machine environment and
 
 Before timed benchmark episodes for each candidate, the runner performs one identical unscored warm-up inference and keeps the model resident briefly. This removes first-load latency from the 60-second per-call research timeout. Warm-up output and timing are written to `warmup.json`; warm-up is not included in VDA, repeatability, token, or latency summaries.
 
-The pilot is an optional feasibility check and is not used for model selection. If compute time or venue cost is constrained, it may be skipped after the common preflight checks and equal per-model warm-up are in place. The full Phase 1 benchmark remains mandatory and unchanged:
+The pilot is the recommended one-time feasibility/preflight check on a new benchmark machine and is not used for model selection. If all 12 pilot episodes are healthy and the machine, driver, Ollama version, repository revision and configuration remain unchanged, do not add repeated manual per-model smoke tests or repeat the pilot without a documented reason. A healthy pilot reduces infrastructure risk but does not guarantee that the longer full benchmark cannot encounter a later infrastructure failure. The full Phase 1 benchmark remains mandatory and unchanged:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full
@@ -45,7 +45,7 @@ Use Baseline only on:
 
 Run every model/task combination once. With four primary candidates this is 12 pilot episodes.
 
-The pilot is a pipeline/feasibility check, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. Repeatability is assessed in the full Phase 1 benchmark, where every development task is repeated three times.
+The pilot is a pipeline/feasibility check, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. The preferred go/no-go condition is 12/12 healthy pilot episodes with zero recorded infrastructure failures. If an infrastructure failure occurs, preserve it, diagnose the environment, and start a fresh pilot output after any environment change. Repeatability is assessed in the full Phase 1 benchmark, where every development task is repeated three times.
 
 ## Full Phase 1 benchmark
 
@@ -103,14 +103,23 @@ Use a gated/lexicographic rule rather than a post-hoc weighted score:
 
 Do **not** select a model using the size of the Proposed-minus-Baseline effect. Model selection must be independent of the later treatment effect.
 
-## Phase 2 and Phase 3
+## Efficient end-to-end workflow
 
-After selection, freeze the exact model name/digest, quantization, prompt, inference settings, source revision, dependencies, browser/runtime, budget, dataset and evaluator.
+Use the shortest workflow that preserves the predeclared controls:
 
-Then run the existing repeatability gate and, only after it passes, collect the main paired experiment:
+1. machine/environment check;
+2. one pilot: 4 models × 3 development tasks × 1 run = 12 episodes;
+3. full Phase 1 model benchmark: 4 models × 12 development tasks × 3 repetitions = 144 episodes;
+4. select one model using the predeclared lexicographic rule and lock its configuration against further tuning;
+5. run the repeatability gate on the selected model: first 6 development tasks × 2 policies × 3 repetitions = 36 runs;
+6. after the gate passes, create the formal experiment freeze;
+7. collect the main paired experiment: 32 base tasks × 2 policies = 64 planned main episodes;
+8. perform the predeclared offline statistical analysis and report the results.
 
-- 32 base tasks;
-- Baseline and Proposed for each task;
-- 64 planned main episodes.
+The full model benchmark and the repeatability gate answer different questions and are not duplicates. Phase 1 asks which LLM is sufficiently reliable and competent under one shared Baseline policy. The gate asks whether the final selected model plus both experimental policies produce a stable system before main data collection.
 
-Primary inference remains exact McNemar analysis for paired VDA. Probe-count comparison is restricted to jointly correct pairs and uses paired nonparametric analysis as specified in the thesis analysis plan.
+Do not repeat the 64-run main experiment three times: the task is the statistical unit and Baseline/Proposed are paired within each of the 32 tasks. Infrastructure reruns follow the separate documented rerun rule and are not additional experimental repetitions.
+
+After model selection, keep the exact model name/digest, quantization, prompt, inference settings, source revision, dependencies, browser/runtime, budget, dataset and evaluator fixed while running the gate. The formal freeze is created only after the gate passes.
+
+Primary inference is the exact two-sided McNemar test for paired VDA. Probe-count comparison is restricted to jointly correct pairs and uses the paired Wilcoxon signed-rank analysis specified in the thesis plan; U2/U3/U4 are descriptive/exploratory mechanism strata rather than the primary treatment variable.
