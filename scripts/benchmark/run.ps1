@@ -191,7 +191,7 @@ try {
           Write-Warning "Preserved incomplete external interruption at $interrupted; rerunning this cell cleanly."
         }
         Write-Host "-- $($model.label) / $task / repetition $repeat" -ForegroundColor Green
-        & node --import tsx scripts/experiment.ts episode --task $task --policy Baseline --out $runOut
+        & node --import tsx scripts/experiment.ts episode --task $task --policy Baseline --repeat $repeat --out $runOut
         if ($LASTEXITCODE -ne 0) {
           Write-Warning "Recorded failure at $($model.name) / $task / repetition $repeat. Preserving the attempt and continuing so deployment reliability remains part of the benchmark."
         }
