@@ -12,10 +12,15 @@ ACT/abstention rules, evidence updates, recovery and verification are shared. A 
 
 ## Development and gate
 
-1. Run build, unit tests, integration tests and dataset validation.
-2. Run `development` with the fixed real model on all 12 development tasks.
+The selected LLM arrives from the separate Phase 1 model-selection benchmark, which has already exercised all 12 development tasks under Baseline. Do not add a redundant standalone 12-task development batch solely to repeat that evidence.
+
+1. Lock the selected model/configuration against further tuning.
+2. Run build, unit tests, integration tests and dataset validation.
 3. Run `repeatability`: first six development tasks, three repetitions, both policies (36 runs). These cover U2/U3/U4 and both solvable subtypes.
 4. Run `gate --input DIR` on that repeatability directory.
+5. Only after the gate passes, create the formal freeze and proceed to main.
+
+The standalone `development` command remains available for engineering diagnostics when a code or dataset change needs investigation, but it is not an additional mandatory batch after a completed Phase 1 model benchmark.
 
 The gate requires real-model records bound to the current source/config/dataset/model/runtime, all 18 healthy complete pairs, Baseline correct on at least three distinct tasks requiring two or more probes, identical outcomes and selected-probe trajectories across three repetitions per task/policy, and no budget exhaustion or structured-output repair in selected gate runs.
 
@@ -73,5 +78,7 @@ Reports choose the first recorded attempt per policy and task type (including fa
 Run `npm run experiment -- report --input DIR` to regenerate HTML/Markdown after an interrupted process. The HTML is printable from a browser; keep the report beside its `screenshots` directory. The generator creates tables and captions, not unsupported scientific conclusions.
 
 Verified ACT and correct abstentions score one; other healthy outcomes score zero. Probe comparison includes only jointly correct pairs. Negative delta favors Proposed. Report exclusions and original infrastructure failures. Single episodes are diagnostics, not paired comparisons.
+
+For confirmatory analysis of the 32 paired main tasks, use an exact two-sided McNemar test on paired VDA. For probe efficiency, use a paired Wilcoxon signed-rank analysis only on jointly correct Baseline/Proposed pairs, with zero-difference/tie handling documented in the analysis implementation. U2/U3/U4 summaries are descriptive/exploratory mechanism analyses rather than separate primary treatment tests.
 
 Claims apply to this controlled task set and model. They do not establish live-website generalization, usability for blind users, or superiority of Accessibility Trees over other representations.
