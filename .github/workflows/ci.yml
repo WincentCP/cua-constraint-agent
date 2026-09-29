@@ -16,6 +16,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
+      - name: Validate benchmark model manifest
+        run: >-
+          node -e "const m=require('./scripts/benchmark/models.json');
+          if(m.length!==4) throw new Error('expected exactly 4 benchmark candidates');
+          const bad=m.filter(x=>!x.name.endsWith('q4_K_M'));
+          if(bad.length) throw new Error('non-Q4_K_M candidates: '+bad.map(x=>x.name).join(', '));"
+      - name: Parse benchmark PowerShell
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("scripts/benchmark/run.ps1", [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
       - run: npm run format:check
       - run: npm run build
       - run: npm test
