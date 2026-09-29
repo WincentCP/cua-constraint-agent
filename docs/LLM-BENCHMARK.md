@@ -8,10 +8,10 @@ Primary pilot candidates use the same Ollama runtime and the same Q4_K_M quantiz
 
 - `qwen3.5:9b-q4_K_M`
 - `ministral-3:8b-instruct-2512-q4_K_M`
-- `granite4.2:8b-q4_K_M`
-- `gemma2:9b-instruct-q4_K_M`
+- `granite4.1:8b-q4_K_M`
+- `rnj-1:8b-instruct-q4_K_M`
 
-`nvidia/Nemotron-Cascade-8B` is an optional deployment-gate candidate. It may enter the full benchmark only if it can be served with a reproducible local setup that is comparable to the primary candidates; otherwise runtime differences would become an additional experimental variable.
+RNJ-1 requires Ollama 0.13.3 or newer, so the committed benchmark runner enforces that minimum runtime version before collection. Granite 3.3 8B Instruct Q4_K_M is a **predeclared deployment fallback only**: if Granite 4.1 cannot complete a clean pilot because of a reproducible infrastructure/deployment incompatibility, preserve the failed pilot, replace the candidate with `granite3.3:8b-instruct-q4_K_M` in a committed revision, and start a fresh pilot output. Do not switch candidates during the full Phase 1 benchmark.
 
 ## Repository runner
 
@@ -23,7 +23,7 @@ From a clean checkout with all four models already installed and Ollama running:
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot
 ```
 
-The runner performs build/tests/validation, captures the machine environment and Git commit, checks each installed model, runs the declared episodes, preserves automatic screenshots/raw traces, restores `config/experiment.json` exactly, and generates `summary.csv`, `runs.csv` and `summary.json`.
+The runner rejects Ollama older than 0.13.3, verifies the four committed candidates use Q4_K_M tags, performs build/tests/validation, captures the machine environment and Git commit, checks that every candidate is installed before model episodes begin, runs the declared episodes, preserves automatic screenshots/raw traces, restores `config/experiment.json` exactly, and generates `summary.csv`, `runs.csv` and `summary.json`.
 
 Before timed benchmark episodes for each candidate, the runner performs one identical unscored warm-up inference and keeps the model resident briefly. This removes first-load latency from the 60-second per-call research timeout. Warm-up output and timing are written to `warmup.json`; warm-up is not included in VDA, repeatability, token, or latency summaries.
 
@@ -120,6 +120,6 @@ The full model benchmark and the repeatability gate answer different questions a
 
 Do not repeat the 64-run main experiment three times: the task is the statistical unit and Baseline/Proposed are paired within each of the 32 tasks. Infrastructure reruns follow the separate documented rerun rule and are not additional experimental repetitions.
 
-After model selection, keep the exact model name/digest, quantization, prompt, inference settings, source revision, dependencies, browser/runtime, budget, dataset and evaluator fixed while running the gate. The formal freeze is created only after the gate passes.
+After model selection, set `config/experiment.json` to the exact selected model tag, commit that selection, and keep the exact model name/digest, quantization, prompt, inference settings, source revision, dependencies, browser/runtime, budget, dataset and evaluator fixed while running the gate. The bootstrap model in the repository is not evidence of model selection. The formal freeze is created only after the gate passes.
 
 Primary inference is the exact two-sided McNemar test for paired VDA. Probe-count comparison is restricted to jointly correct pairs and uses the paired Wilcoxon signed-rank analysis specified in the thesis plan; U2/U3/U4 are descriptive/exploratory mechanism strata rather than the primary treatment variable.

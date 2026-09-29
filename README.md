@@ -8,7 +8,7 @@ This is a local CLI research tool with a synthetic website in isolated Chromium.
 
 ## Setup and engineering checks
 
-Requires Node.js 24+, npm and Git. Real-model runs additionally require Ollama with `qwen2.5:7b`.
+Requires Node.js 24+, npm, Git and Ollama **0.13.3 or newer**. The Phase 1 benchmark uses four committed Q4_K_M candidates: Qwen3.5 9B, Ministral-3 8B Instruct, Granite 4.1 8B and RNJ-1 8B Instruct.
 
 ```powershell
 npm ci
@@ -32,23 +32,33 @@ Open `http://127.0.0.1:4173`. This preview is for UI inspection only and is not 
 
 ## Research workflow
 
-Start Ollama, then:
+Start Ollama and install the exact committed benchmark candidates:
 
 ```powershell
-ollama pull qwen2.5:7b
-npm run experiment -- doctor
-npm run experiment -- development --out exports/development-v1
-npm run experiment -- repeatability --out exports/repeatability-v1
-npm run experiment -- gate --input exports/repeatability-v1
+ollama pull qwen3.5:9b-q4_K_M
+ollama pull ministral-3:8b-instruct-2512-q4_K_M
+ollama pull granite4.1:8b-q4_K_M
+ollama pull rnj-1:8b-instruct-q4_K_M
+powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-v1
 ```
 
-After the gate passes, commit the validated source/configuration/tests, freeze, then collect main data:
+The pilot is a feasibility check only. On an unchanged machine, continue to the Baseline-only Phase 1 model-selection benchmark only after a clean 12/12 pilot:
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v1
+```
+
+Select one model using the predeclared lexicographic rule in [LLM-BENCHMARK](docs/LLM-BENCHMARK.md), set `config/experiment.json` to that exact winning model tag without changing the other inference settings, and commit the selection before the repeatability gate:
+
+```powershell
+npm run experiment -- repeatability --out exports/repeatability-v1
+npm run experiment -- gate --input exports/repeatability-v1
 npm run experiment -- freeze --gate exports/repeatability-v1 --out exports/freeze-v1.json
 npm run experiment -- main --freeze exports/freeze-v1.json --out exports/main-v1
 npm run experiment -- export --input exports/main-v1
 ```
+
+Do not run the old standalone 12-task `development` batch after a completed Phase 1 benchmark solely to duplicate the same development evidence.
 
 See [SETUP](docs/SETUP.md), [EXPERIMENT](docs/EXPERIMENT.md), [LLM-BENCHMARK](docs/LLM-BENCHMARK.md), [FRONTEND-INTEGRATION](docs/FRONTEND-INTEGRATION.md), and [STATUS](docs/STATUS.md) for prerequisites, experiment procedures, interface integration decisions, and observed validation evidence.
 

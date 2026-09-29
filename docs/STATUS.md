@@ -1,9 +1,11 @@
 # Implementation status
 
-Final-contract refactor is in validation. This file will be updated with observed checks and artifact paths after validation.
+The controlled Baseline-versus-Proposed experiment contract is implemented and validation-ready.
 
-Implemented: final 32-task dataset; shared browser agent and evidence ledger; Baseline/Proposed selection; independent pre-ACT evaluator; durable recording; paired metrics; development/repeatability/freeze/main CLI; interrupted-attempt recovery and paired infrastructure reruns.
+Implemented: final 32-task dataset; shared browser agent and evidence ledger; Baseline/Proposed selection; independent pre-ACT evaluator; durable recording; paired metrics; development/repeatability/freeze/main CLI; interrupted-attempt recovery and paired infrastructure reruns; Baseline-only four-model Phase 1 benchmark runner with pilot/full modes, repetition identity, environment capture and summary export.
 
-Observed: unit tests and browser integration pass, including exact initial U-levels for all 32 tasks and all 64 deterministic policy runs. The LEUCO visual language is integrated into the local controlled world with three local kaos design assets, Indonesian copy, 2026 dates, responsive desktop/mobile layout, exact semantic probe labels, public-only fact visibility and empty/single-item cart states. The dedicated storefront integration checks pass, including a real card-to-detail-to-cart flow and rejected duplicate add. Demo is engineering evidence, not research data.
+Current Phase 1 candidate set: Qwen3.5 9B Q4_K_M, Ministral-3 8B Instruct Q4_K_M, Granite 4.1 8B Q4_K_M and RNJ-1 8B Instruct Q4_K_M. Granite 3.3 8B Instruct Q4_K_M is the predeclared deployment fallback if Granite 4.1 cannot complete a clean pilot on the fixed benchmark machine. The runner requires Ollama 0.13.3+ because RNJ-1 requires that runtime generation.
 
-Pending: real-model competence/repeatability, freeze and main data collection. Older ignored outputs are not evidence for this PRD.
+Observed engineering evidence: unit tests and browser integration have passed in prior validation, including exact initial U-levels for all 32 tasks and all 64 deterministic demo policy runs. The LEUCO visual language is integrated into the local controlled world with three local kaos design assets, Indonesian copy, responsive layout, exact semantic probe labels, public-only fact visibility and empty/single-item cart states. Demo is engineering evidence, not research data.
+
+Pending research evidence: fresh four-model pilot on the final benchmark machine, full Phase 1 model selection, selected-model repeatability gate, formal freeze and main data collection. Older pilot outputs remain diagnostic history and do not replace the new committed candidate protocol.

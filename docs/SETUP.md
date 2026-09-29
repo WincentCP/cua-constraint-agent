@@ -1,53 +1,99 @@
 # Setup
 
-Run commands from the repository root. On the original workstation:
-
-`C:\Users\User\Documents\ChatGPT\skripsi\cua-constraint-agent`
+Run commands from the repository root on the benchmark machine.
 
 ## Dependencies
 
+- Windows with a working NVIDIA driver for the selected benchmark GPU.
 - Node.js 24 or newer, with npm.
-- Git for version identity and freeze.
-- Playwright's managed Chromium (separate from the npm package).
-- Ollama serving the model in `config/experiment.json` (`qwen2.5:7b`).
+- Git for source identity and freeze.
+- Playwright's managed Chromium (installed by the repository command below).
+- Ollama 0.13.3 or newer. RNJ-1 requires 0.13.3+, so the benchmark runner rejects an older runtime.
+- The four Phase 1 candidates from `scripts/benchmark/models.json`, all using the Q4_K_M quantization class.
 
 ```powershell
 npm ci
 npx playwright install chromium
-ollama pull qwen2.5:7b
+ollama pull qwen3.5:9b-q4_K_M
+ollama pull ministral-3:8b-instruct-2512-q4_K_M
+ollama pull granite4.1:8b-q4_K_M
+ollama pull rnj-1:8b-instruct-q4_K_M
 ```
 
-Ollama stores its model outside the repository, normally in `%USERPROFILE%\.ollama\models` on Windows. Start the Ollama desktop application, or run `ollama serve` in a separate terminal if it is not already serving. The default endpoint is `http://127.0.0.1:11434`.
+Ollama stores models outside the repository, normally in `%USERPROFILE%\.ollama\models` on Windows. Start the Ollama desktop application, or run `ollama serve` in a separate terminal if it is not already serving. The default endpoint is `http://127.0.0.1:11434`.
+
+Before research collection, verify the machine and repository:
 
 ```powershell
-npm run experiment -- doctor
-npm run experiment -- validate
+nvidia-smi
+git status --short
+node -v
+npm -v
+ollama --version
+ollama list
 npm run build
 npm test
 npm run test:integration
+npm run experiment -- validate
 ```
 
-`doctor` checks browser startup, model digest and Ollama version. It does not establish model competence. Use `doctor --demo` for browser-only readiness.
-
-The original workstation exposes about 6 GiB RAM and CPU inference. A real Qwen2.5 7B smoke attempt timed out during model loading; use demo for engineering checks on this machine. Run the real-model gate and main collection on a machine with sufficient available memory. An installed model is not proof that inference can run reliably. The doctor output includes total/free RAM and explicitly marks inference as untested.
-
-The PRD permits choosing one capable model before freeze. A smaller model may be considered only through a new development cycle with the same model for both policies and a passing competence gate; do not mix model sizes in an experiment. Context and budget changes also require revalidation before freeze.
+`git status --short` should be empty. The benchmark runner repeats dependency installation, build, tests, formatting and dataset validation before dispatching research episodes. It also captures the Git commit, OS, RAM, GPU information, NVIDIA driver/VRAM when `nvidia-smi` is available, Ollama version and installed model list.
 
 No Python, database server, API key, microphone or cloud service is required. JSONL is the persistent record format. The synthetic server binds an ephemeral loopback port per attempt and closes afterward.
 
+## Phase 1 benchmark
+
+Run the one-time preflight on a new benchmark machine:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-v1
+```
+
+The declared pilot is 4 models × 3 development tasks × 1 run = 12 episodes. Preferred go/no-go is 12/12 healthy with zero infrastructure failures. A clean pilot is not the final model-selection result.
+
+If the machine, driver, Ollama version, repository revision and configuration remain unchanged, run the full model-selection benchmark:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v1
+```
+
+Full Phase 1 is 4 models × 12 development tasks × 3 repetitions = 144 Baseline-only episodes. The runner checks that all four model tags exist before starting model episodes, so a missing late candidate cannot create an avoidable partial benchmark.
+
+If Granite 4.1 cannot complete a clean pilot because of a reproducible deployment/infrastructure incompatibility, preserve that pilot. The predeclared fallback is `granite3.3:8b-instruct-q4_K_M`. Changing to the fallback requires updating and committing `scripts/benchmark/models.json`, then starting a fresh pilot output. Never switch candidates in the middle of the full Phase 1 benchmark.
+
+## Selected model, gate and freeze
+
+`config/experiment.json` currently carries Qwen3.5 9B only as the bootstrap real-model configuration. During Phase 1 the benchmark runner swaps the model field for each candidate and restores the file exactly afterward.
+
+After Phase 1, select one model using the rule in `docs/LLM-BENCHMARK.md`. Set `config/experiment.json` to the exact selected model tag and commit the change before the repeatability gate. Do not tune the prompt, budget, context, temperature or seed after seeing the benchmark result.
+
+```powershell
+npm run experiment -- doctor
+npm run experiment -- repeatability --out exports/repeatability-v1
+npm run experiment -- gate --input exports/repeatability-v1
+npm run experiment -- freeze --gate exports/repeatability-v1 --out exports/freeze-v1.json
+npm run experiment -- main --freeze exports/freeze-v1.json --out exports/main-v1
+npm run experiment -- export --input exports/main-v1
+```
+
+The repeatability gate is 6 development tasks × 2 policies × 3 repetitions = 36 runs. The main experiment is 32 base tasks × 2 policies = 64 planned policy executions. The standalone `development` command remains available for engineering diagnostics, but it is not an additional mandatory 12-task batch after a completed Phase 1 benchmark.
+
 ## Configuration
 
-`config/experiment.json` is the only research configuration. It contains model options, common budgets and run-order seed. A different local Ollama origin may be passed with `--ollama`. Remote model endpoints are rejected.
+`config/experiment.json` is the single research configuration. It contains model options, common budgets and run-order seed. A different local Ollama origin may be passed with `--ollama`. Remote model endpoints are rejected.
 
 Optional `CHROMIUM_PATH` selects an explicitly installed Chromium executable. Its path and version are included in runtime identity. Normally omit it and use the managed browser. `.env` files are not loaded.
 
-Changing model digest, runtime, code, tests, configuration or dependencies requires a new development cycle and freeze. Do not upgrade them during main collection.
+Changing model digest, runtime, code, tests, configuration or dependencies after the gate requires a new development cycle and freeze. Do not upgrade them during main collection.
 
 ## Troubleshooting
 
+- Ollama version rejected: upgrade Ollama to 0.13.3 or newer before starting a new pilot.
 - `fetch failed`: start Ollama, check `ollama list`, then rerun `doctor`.
+- Missing model: install the exact tag from `scripts/benchmark/models.json`; do not silently substitute another quantization.
 - Missing browser executable: `npx playwright install chromium`.
-- Output already exists: choose a new directory or follow the resume/rerun protocol.
-- Source identity differs: create a new development cycle; do not patch the old freeze.
-- Model timeouts/browser crashes: preserve original records and follow paired infrastructure reruns.
-- Ctrl+C stops the active attempt and retains its record. After a forced termination, `resume` marks unfinished journal entries as infrastructure failures.
+- Output already exists: choose a new directory or follow the documented resume/rerun protocol.
+- Environment changed after an infrastructure failure: preserve the old output and start a fresh pilot/full output rather than resuming across environments.
+- Source identity differs: create a new development cycle; do not patch an old freeze.
+- Model timeouts/browser crashes: preserve original records and diagnose them as infrastructure evidence.
+- Ctrl+C stops the active attempt and retains its record. The benchmark `-Resume` option skips completed cells and preserves interrupted directories before rerunning an incomplete cell.

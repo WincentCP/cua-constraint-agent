@@ -12,6 +12,7 @@ $ConfigPath = Join-Path $RepoRoot "config\experiment.json"
 $ModelsPath = Join-Path $PSScriptRoot "models.json"
 $OriginalConfig = [IO.File]::ReadAllText($ConfigPath)
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+$MinimumOllamaVersion = [version]"0.13.3"
 
 if (-not $Out) {
   $Out = Join-Path $RepoRoot "exports\llm-benchmark-$Mode-v1"
@@ -27,6 +28,23 @@ function Invoke-Checked {
   if ($LASTEXITCODE -ne 0) {
     throw "$Description failed with exit code $LASTEXITCODE"
   }
+}
+
+function Get-OllamaVersion {
+  $raw = ((& ollama --version 2>&1) | Out-String).Trim()
+  $match = [regex]::Match($raw, '\d+\.\d+\.\d+')
+  if (-not $match.Success) {
+    throw "Could not parse Ollama version from: $raw"
+  }
+  return [version]$match.Value
+}
+
+function Assert-OllamaVersion {
+  $installed = Get-OllamaVersion
+  if ($installed -lt $MinimumOllamaVersion) {
+    throw "Ollama $installed is too old. This benchmark requires Ollama $MinimumOllamaVersion or newer because RNJ-1 requires 0.13.3+."
+  }
+  Write-Host "==> Ollama version $installed (minimum $MinimumOllamaVersion)" -ForegroundColor Cyan
 }
 
 function Set-ConfiguredModel {
@@ -92,8 +110,19 @@ function Capture-Environment {
     $gpus = Get-CimInstance Win32_VideoController
     $lines.Add("os=$($os.Caption) $($os.Version)")
     $lines.Add("ram_gib=$([Math]::Round($os.TotalVisibleMemorySize / 1MB, 1))")
+    $lines.Add("ram_free_gib=$([Math]::Round($os.FreePhysicalMemory / 1MB, 1))")
     $lines.Add("cpu=$($cpu.Name)")
     foreach ($gpu in $gpus) { $lines.Add("gpu=$($gpu.Name)") }
+    try {
+      $nvidia = & nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader 2>&1
+      if ($LASTEXITCODE -eq 0) {
+        foreach ($line in $nvidia) { $lines.Add("nvidia_smi=$line") }
+      } else {
+        $lines.Add("nvidia_smi_warning=$($nvidia -join ' ')")
+      }
+    } catch {
+      $lines.Add("nvidia_smi_warning=$($_.Exception.Message)")
+    }
   } catch {
     $lines.Add("hardware_capture_warning=$($_.Exception.Message)")
   }
@@ -104,6 +133,7 @@ function Capture-Environment {
 }
 
 Set-Location $RepoRoot
+Assert-OllamaVersion
 
 if ((Test-Path $Out) -and -not $Resume) {
   throw "Output already exists: $Out. Use -Resume to continue without overwriting completed runs, or choose a new -Out path."
@@ -114,7 +144,122 @@ if ($researchStatus) {
   throw ("Research files are not clean. Commit/stash changes before benchmarking. " + ($researchStatus -join "; "))
 }
 
-$models = Get-Content -Raw $ModelsPath | ConvertFrom-Json
+$models = @(Get-Content -Raw $ModelsPath | ConvertFrom-Json)
+if ($models.Count -ne 4) {
+  throw "Benchmark protocol expects exactly four primary candidates; found $($models.Count). Commit an intentional protocol change before collection."
+}
+$nonQ4 = @($models | Where-Object { $_.name -notmatch 'q4_K_M
+  if ($Mode -eq "pilot") {
+    @("development-01", "development-02", "development-03")
+  } else {
+    1..12 | ForEach-Object { "development-{0:D2}" -f $_ }
+  }
+
+$repetitions = if ($Mode -eq "pilot") { 1 } else { 3 }
+
+$plan = @()
+foreach ($model in $models) {
+  foreach ($task in $tasks) {
+    foreach ($repeat in 1..$repetitions) {
+      $plan += [PSCustomObject]@{
+        model = $model.name
+        model_label = $model.label
+        task = $task
+        repetition = $repeat
+        policy = "Baseline"
+      }
+    }
+  }
+}
+
+if (-not (Test-Path $Out)) {
+  New-Item -ItemType Directory -Path $Out -Force | Out-Null
+}
+if (-not $Resume) {
+  $plan | ConvertTo-Json -Depth 10 | Set-Content -Encoding utf8 (Join-Path $Out "benchmark-plan.json")
+  Capture-Environment (Join-Path $Out "environment.txt")
+} else {
+  Write-Host "==> Resuming existing benchmark output: $Out" -ForegroundColor Cyan
+}
+
+try {
+  Invoke-Checked "npm ci" { npm ci }
+  Invoke-Checked "Playwright Chromium install" { npx playwright install chromium }
+  Invoke-Checked "TypeScript build" { npm run build }
+  Invoke-Checked "Unit tests" { npm test }
+  Invoke-Checked "Integration tests" { npm run test:integration }
+  Invoke-Checked "Formatting check" { npm run format:check }
+  Invoke-Checked "Dataset validation" { npm run experiment -- validate }
+
+  foreach ($model in $models) {
+    Invoke-Checked "Preflight installed model $($model.name)" { ollama show $model.name | Out-Null }
+  }
+
+  foreach ($model in $models) {
+    Write-Host ""
+    Write-Host "===== MODEL: $($model.name) =====" -ForegroundColor Yellow
+    Set-ConfiguredModel $model.name
+
+    $modelRoot = Join-Path $Out $model.label
+    New-Item -ItemType Directory -Path $modelRoot -Force | Out-Null
+
+    $doctorOutput = & node --import tsx scripts/experiment.ts doctor 2>&1
+    if ($LASTEXITCODE -ne 0) {
+      $doctorOutput | Set-Content -Encoding utf8 (Join-Path $modelRoot "doctor-error.txt")
+      throw "Doctor failed for $($model.name)"
+    }
+    $doctorOutput | Set-Content -Encoding utf8 (Join-Path $modelRoot "doctor.json")
+
+    Warm-Model $model.name (Join-Path $modelRoot "warmup.json")
+
+    foreach ($task in $tasks) {
+      foreach ($repeat in 1..$repetitions) {
+        $runOut = Join-Path $modelRoot (Join-Path $task ("r" + $repeat))
+        $episodesPath = Join-Path $runOut "episodes.jsonl"
+        if ($Resume -and (Test-Path $episodesPath)) {
+          Write-Host "-- SKIP existing $($model.label) / $task / repetition $repeat" -ForegroundColor DarkGray
+          continue
+        }
+        if ($Resume -and (Test-Path $runOut)) {
+          $stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ")
+          $interrupted = "$runOut-interrupted-$stamp"
+          Move-Item -Path $runOut -Destination $interrupted
+          Write-Warning "Preserved incomplete external interruption at $interrupted; rerunning this cell cleanly."
+        }
+        Write-Host "-- $($model.label) / $task / repetition $repeat" -ForegroundColor Green
+        & node --import tsx scripts/experiment.ts episode --task $task --policy Baseline --repeat $repeat --out $runOut
+        if ($LASTEXITCODE -ne 0) {
+          Write-Warning "Recorded failure at $($model.name) / $task / repetition $repeat. Preserving the attempt and continuing so deployment reliability remains part of the benchmark."
+        }
+      }
+    }
+
+    Write-Host "==> Unload $($model.name)" -ForegroundColor Cyan
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+      $ErrorActionPreference = "Continue"
+      & ollama stop $model.name *> $null
+    } finally {
+      $ErrorActionPreference = $previousErrorActionPreference
+    }
+  }
+}
+finally {
+  [IO.File]::WriteAllText($ConfigPath, $OriginalConfig, $Utf8NoBom)
+}
+
+Invoke-Checked "Benchmark analysis" {
+  node --import tsx scripts/benchmark/analyze.ts --root $Out
+}
+
+Write-Host ""
+Write-Host "Benchmark complete: $Out" -ForegroundColor Cyan
+Write-Host "Share summary.csv, runs.csv, summary.json, environment.txt, and the full output directory/archive for audit."
+ })
+if ($nonQ4.Count) {
+  throw "All primary candidates must use Q4_K_M tags. Invalid: $($nonQ4.name -join ', ')"
+}
+
 $tasks =
   if ($Mode -eq "pilot") {
     @("development-01", "development-02", "development-03")
