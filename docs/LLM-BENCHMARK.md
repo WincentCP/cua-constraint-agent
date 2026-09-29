@@ -8,10 +8,10 @@ Primary pilot candidates use the same Ollama runtime and the same Q4_K_M quantiz
 
 - `qwen3.5:9b-q4_K_M`
 - `ministral-3:8b-instruct-2512-q4_K_M`
-- `granite4.2:8b-q4_K_M`
-- `gemma2:9b-instruct-q4_K_M`
+- `granite4.1:8b-q4_K_M`
+- `rnj-1:8b-instruct-q4_K_M`
 
-`nvidia/Nemotron-Cascade-8B` is an optional deployment-gate candidate. It may enter the full benchmark only if it can be served with a reproducible local setup that is comparable to the primary candidates; otherwise runtime differences would become an additional experimental variable.
+The four-model set is fixed for the next clean pilot/full cycle. `granite3.3:8b` (the official Ollama 8B tag is Q4_K_M) is a predeclared fallback only if Granite 4.1 shows a reproducible deployment incompatibility during the fresh pilot. Changing a candidate after any environment/model change requires a new pilot output. RNJ-1 requires Ollama 0.13.3 or newer.
 
 ## Repository runner
 
@@ -27,7 +27,7 @@ The runner performs build/tests/validation, captures the machine environment and
 
 Before timed benchmark episodes for each candidate, the runner performs one identical unscored warm-up inference and keeps the model resident briefly. This removes first-load latency from the 60-second per-call research timeout. Warm-up output and timing are written to `warmup.json`; warm-up is not included in VDA, repeatability, token, or latency summaries.
 
-The pilot is the recommended one-time feasibility/preflight check on a new benchmark machine and is not used for model selection. If all 12 pilot episodes are healthy and the machine, driver, Ollama version, repository revision and configuration remain unchanged, do not add repeated manual per-model smoke tests or repeat the pilot without a documented reason. A healthy pilot reduces infrastructure risk but does not guarantee that the longer full benchmark cannot encounter a later infrastructure failure. The full Phase 1 benchmark remains mandatory and unchanged:
+The pilot is the recommended one-time feasibility/preflight check on a new benchmark machine and is not used for model selection. The pilot runner exits nonzero unless all 12 pilot episodes are healthy. If all 12 are healthy and the machine, driver, Ollama version, repository revision and configuration remain unchanged, do not add repeated manual per-model smoke tests or repeat the pilot without a documented reason. A healthy pilot reduces infrastructure risk but does not guarantee that the longer full benchmark cannot encounter a later infrastructure failure. The full Phase 1 benchmark remains mandatory and unchanged:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full
@@ -45,7 +45,7 @@ Use Baseline only on:
 
 Run every model/task combination once. With four primary candidates this is 12 pilot episodes.
 
-The pilot is a pipeline/feasibility check, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. The preferred go/no-go condition is 12/12 healthy pilot episodes with zero recorded infrastructure failures. If an infrastructure failure occurs, preserve it, diagnose the environment, and start a fresh pilot output after any environment change. Repeatability is assessed in the full Phase 1 benchmark, where every development task is repeated three times.
+The pilot is a pipeline/feasibility check, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. The go/no-go condition is 12/12 healthy pilot episodes with zero recorded infrastructure failures. If an infrastructure failure occurs, preserve it, diagnose the environment, and start a fresh pilot output after any environment change. Repeatability is assessed in the full Phase 1 benchmark, where every development task is repeated three times.
 
 ## Full Phase 1 benchmark
 

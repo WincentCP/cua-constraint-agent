@@ -1,7 +1,7 @@
 {
-  "version": "final-2026-09-10",
+  "version": "final-2026-09-29",
   "model": {
-    "name": "qwen2.5:7b",
+    "name": "qwen3.5:9b-q4_K_M",
     "think": false,
     "temperature": 0,
     "seed": 42,
@@ -12,11 +12,13 @@
     "probes": 12,
     "actions": 40,
     "model_calls": 12,
-    "deadline_ms": 240000,
+    "deadline_ms": 360000,
     "action_ms": 5000,
-    "model_ms": 60000,
+    "model_ms": 120000,
     "recoveries": 1
   },
   "order_seed": 20260910,
-  "reporting": { "screenshots": true }
+  "reporting": {
+    "screenshots": true
+  }
 }

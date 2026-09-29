@@ -6,57 +6,61 @@ The approved methodology is [PRD-FINAL](docs/PRD-FINAL.md). Main evaluation cont
 
 This is a local CLI research tool with a synthetic website in isolated Chromium. It does not include a participant study, voice interface, payment flow, or production deployment.
 
-## Setup and engineering checks
+## Setup and research workflow
 
-Requires Node.js 24+, npm and Git. Real-model runs additionally require Ollama with `qwen2.5:7b`.
+Requires Node.js 24+, npm, Git, Ollama 0.13.3+ and Playwright Chromium. Phase 1 compares four local Q4_K_M candidates:
 
 ```powershell
+ollama pull qwen3.5:9b-q4_K_M
+ollama pull ministral-3:8b-instruct-2512-q4_K_M
+ollama pull granite4.1:8b-q4_K_M
+ollama pull rnj-1:8b-instruct-q4_K_M
+
 npm ci
 npx playwright install chromium
+npm run format:check
 npm run build
 npm test
 npm run test:integration
 npm run experiment -- validate
-npm run experiment -- main --demo --out exports/demo-main-v1
 ```
 
-Demo uses a deterministic test double and is **not research data**. Use a fresh output directory for each experiment.
-
-To inspect the redesigned LEUCO kaos storefront manually with an isolated development task:
+Run one clean-machine pilot first, then the full Baseline-only model-selection benchmark:
 
 ```powershell
-npm run preview -- --task development-01 --port 4173
+powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-final-v1
+powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-final-v1
 ```
 
-Open `http://127.0.0.1:4173`. This preview is for UI inspection only and is not research data.
+Pilot = 4 models × 3 development tasks × 1 run = 12 episodes. Full Phase 1 = 4 × 12 × 3 = 144 episodes. The model-selection stage never uses the Proposed-minus-Baseline effect.
 
-## Research workflow
-
-Start Ollama, then:
+After selecting one model by the predeclared lexicographic rule, set that exact model in `config/experiment.json`, commit the validated configuration, then run the selected-model repeatability gate and freeze:
 
 ```powershell
-ollama pull qwen2.5:7b
-npm run experiment -- doctor
-npm run experiment -- development --out exports/development-v1
 npm run experiment -- repeatability --out exports/repeatability-v1
 npm run experiment -- gate --input exports/repeatability-v1
-```
-
-After the gate passes, commit the validated source/configuration/tests, freeze, then collect main data:
-
-```powershell
 npm run experiment -- freeze --gate exports/repeatability-v1 --out exports/freeze-v1.json
 npm run experiment -- main --freeze exports/freeze-v1.json --out exports/main-v1
 npm run experiment -- export --input exports/main-v1
 ```
 
-See [SETUP](docs/SETUP.md), [EXPERIMENT](docs/EXPERIMENT.md), [LLM-BENCHMARK](docs/LLM-BENCHMARK.md), [FRONTEND-INTEGRATION](docs/FRONTEND-INTEGRATION.md), and [STATUS](docs/STATUS.md) for prerequisites, experiment procedures, interface integration decisions, and observed validation evidence.
+The repeatability gate is 6 development tasks × 2 policies × 3 repetitions = 36 runs. Main is 32 base tasks × 2 policies = 64 planned episodes.
+
+Demo uses a deterministic test double and is **not research data**. To inspect the LEUCO storefront manually:
+
+```powershell
+npm run preview -- --task development-01 --port 4173
+```
+
+Open `http://127.0.0.1:4173`. Preview is for UI inspection only.
+
+See [SETUP](docs/SETUP.md), [EXPERIMENT](docs/EXPERIMENT.md), [LLM-BENCHMARK](docs/LLM-BENCHMARK.md), [FRONTEND-INTEGRATION](docs/FRONTEND-INTEGRATION.md), and [STATUS](docs/STATUS.md).
 
 ## Evaluation and outputs
 
 The independent evaluator runs after the agent outcome and browser world are frozen. Successful ACT requires a correct final cart **and valid public evidence for all four constraints before dispatch**. Correct abstentions require public support. Healthy budget exhaustion counts as failure; infrastructure failures are recorded separately.
 
-Each experiment writes `experiment.json`, `journal.jsonl`, `events.jsonl`, `episodes.jsonl`, `episodes.csv`, `metrics.json`, `metrics.csv`, `paired-probes.csv`, and `failures.json`. On completion or a handled interruption it also writes `report.html` and `report.md`. Public UI screenshots are stored under `screenshots/<attempt-id>/`. Original attempts are retained. Primary comparison uses the earliest complete infrastructure-free pair, and probe efficiency uses only jointly correct pairs.
+Each experiment writes `experiment.json`, `journal.jsonl`, `events.jsonl`, `episodes.jsonl`, `episodes.csv`, `metrics.json`, `metrics.csv`, `statistics.csv`, `paired-probes.csv`, and `failures.json`. On completion or a handled interruption it also writes `report.html` and `report.md`. Public UI screenshots are stored under `screenshots/<attempt-id>/`. Original attempts are retained. Primary comparison uses the earliest complete infrastructure-free pair, and probe efficiency uses only jointly correct pairs.
 
 Open `report.html` in a browser for the tables and screenshot gallery. Regenerate a report from existing final-contract data with:
 

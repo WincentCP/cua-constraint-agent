@@ -97,13 +97,39 @@ function Capture-Environment {
   } catch {
     $lines.Add("hardware_capture_warning=$($_.Exception.Message)")
   }
-  $lines.Add("")
-  $lines.Add("ollama_list:")
-  $lines.Add(($(& ollama list 2>&1) -join [Environment]::NewLine))
+  try {
+    if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
+      $gpuRows = & nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader,nounits 2>&1
+      foreach ($row in $gpuRows) { $lines.Add("nvidia_gpu=$row") }
+    }
+  } catch {
+    $lines.Add("nvidia_capture_warning=$($_.Exception.Message)")
+  }
+  try {
+    $tags = Invoke-RestMethod -Uri "http://127.0.0.1:11434/api/tags" -Method Get -TimeoutSec 10
+    foreach ($m in ($tags.models | Sort-Object name)) {
+      $lines.Add("ollama_model=$($m.name)|$($m.digest)")
+    }
+  } catch {
+    $lines.Add("ollama_tags_warning=$($_.Exception.Message)")
+  }
   [IO.File]::WriteAllLines($Destination, $lines, $Utf8NoBom)
 }
 
+function Stable-EnvironmentText {
+  param([string]$Path)
+  return ((Get-Content $Path | Where-Object { $_ -notmatch "^captured_utc=" }) -join [Environment]::NewLine)
+}
+
 Set-Location $RepoRoot
+
+$ollamaVersionText = ((& ollama --version 2>&1) | Out-String).Trim()
+if ($ollamaVersionText -notmatch "(\d+\.\d+\.\d+)") {
+  throw "Unable to parse Ollama version: $ollamaVersionText"
+}
+if ([version]$Matches[1] -lt [version]"0.13.3") {
+  throw "Ollama 0.13.3 or newer is required; found $($Matches[1])."
+}
 
 if ((Test-Path $Out) -and -not $Resume) {
   throw "Output already exists: $Out. Use -Resume to continue without overwriting completed runs, or choose a new -Out path."
@@ -114,7 +140,13 @@ if ($researchStatus) {
   throw ("Research files are not clean. Commit/stash changes before benchmarking. " + ($researchStatus -join "; "))
 }
 
-$models = Get-Content -Raw $ModelsPath | ConvertFrom-Json
+$models = @(Get-Content -Raw $ModelsPath | ConvertFrom-Json)
+if ($models.Count -ne 4) {
+  throw "Expected exactly 4 locked benchmark candidates; found $($models.Count)."
+}
+if (($models.name | Select-Object -Unique).Count -ne $models.Count) {
+  throw "Benchmark model names must be unique."
+}
 $tasks =
   if ($Mode -eq "pilot") {
     @("development-01", "development-02", "development-03")
@@ -146,7 +178,17 @@ if (-not $Resume) {
   $plan | ConvertTo-Json -Depth 10 | Set-Content -Encoding utf8 (Join-Path $Out "benchmark-plan.json")
   Capture-Environment (Join-Path $Out "environment.txt")
 } else {
-  Write-Host "==> Resuming existing benchmark output: $Out" -ForegroundColor Cyan
+  $originalEnvironment = Join-Path $Out "environment.txt"
+  if (-not (Test-Path $originalEnvironment)) {
+    throw "Cannot resume: original environment.txt is missing."
+  }
+  $resumeEnvironment = Join-Path $Out "environment-resume-check.txt"
+  Capture-Environment $resumeEnvironment
+  if ((Stable-EnvironmentText $originalEnvironment) -ne (Stable-EnvironmentText $resumeEnvironment)) {
+    throw "Cannot resume: stable machine/runtime/model environment differs from the original benchmark. Preserve this output and start a fresh -Out directory."
+  }
+  Remove-Item $resumeEnvironment -Force
+  Write-Host "==> Resuming existing benchmark output with matching environment: $Out" -ForegroundColor Cyan
 }
 
 try {
@@ -161,11 +203,19 @@ try {
   foreach ($model in $models) {
     Write-Host ""
     Write-Host "===== MODEL: $($model.name) =====" -ForegroundColor Yellow
-    Invoke-Checked "Check installed model $($model.name)" { ollama show $model.name | Out-Null }
-    Set-ConfiguredModel $model.name
-
     $modelRoot = Join-Path $Out $model.label
     New-Item -ItemType Directory -Path $modelRoot -Force | Out-Null
+    $showOutput = & ollama show $model.name 2>&1
+    if ($LASTEXITCODE -ne 0) {
+      $showOutput | Set-Content -Encoding utf8 (Join-Path $modelRoot "ollama-show-error.txt")
+      throw "Check installed model $($model.name) failed."
+    }
+    $showOutput | Set-Content -Encoding utf8 (Join-Path $modelRoot "ollama-show.txt")
+    $showText = ($showOutput -join [Environment]::NewLine)
+    if ($showText -notmatch "(?im)^\s*quantization\s+Q4_K_M\s*$") {
+      throw "Model $($model.name) is not Q4_K_M according to ollama show. See $modelRoot\ollama-show.txt."
+    }
+    Set-ConfiguredModel $model.name
 
     $doctorOutput = & node --import tsx scripts/experiment.ts doctor 2>&1
     if ($LASTEXITCODE -ne 0) {
@@ -214,6 +264,16 @@ finally {
 
 Invoke-Checked "Benchmark analysis" {
   node --import tsx scripts/benchmark/analyze.ts --root $Out
+}
+
+if ($Mode -eq "pilot") {
+  $summary = Get-Content -Raw (Join-Path $Out "summary.json") | ConvertFrom-Json
+  $bad = @($summary.models | Where-Object {
+    $_.runs -ne 3 -or $_.healthy_runs -ne 3 -or $_.infrastructure_failures -ne 0
+  })
+  if ($bad.Count -gt 0) {
+    throw "Pilot preflight failed: require 12/12 healthy episodes (3/3 per model, zero infrastructure failures). Inspect summary.csv and per-model diagnostics before full benchmark."
+  }
 }
 
 Write-Host ""

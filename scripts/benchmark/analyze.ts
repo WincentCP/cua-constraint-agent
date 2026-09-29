@@ -127,15 +127,23 @@ for (const model of [...new Set(runs.map((r) => r.model))]) {
   let outcomeRepeatable = 0;
   let trajectoryRepeatable = 0;
   let completeTriples = 0;
+  let completeHealthyTriples = 0;
   for (const task of taskNames) {
     const tr = rs
       .filter((r) => r.task === task)
       .sort((a, b) => (a.repetition ?? 0) - (b.repetition ?? 0));
-    if (tr.length === 3) {
+    const complete =
+      tr.length === 3 &&
+      new Set(tr.map((r) => r.repetition)).size === 3 &&
+      [1, 2, 3].every((n) => tr.some((r) => r.repetition === n));
+    if (complete) {
       completeTriples++;
-      if (new Set(tr.map((r) => r.outcome)).size === 1) outcomeRepeatable++;
-      if (new Set(tr.map((r) => r.trajectory)).size === 1)
-        trajectoryRepeatable++;
+      if (tr.every((r) => r.healthy)) {
+        completeHealthyTriples++;
+        if (new Set(tr.map((r) => r.outcome)).size === 1) outcomeRepeatable++;
+        if (new Set(tr.map((r) => r.trajectory)).size === 1)
+          trajectoryRepeatable++;
+      }
     }
   }
   const digests = [...new Set(rs.map((r) => r.digest).filter(Boolean))];
@@ -163,13 +171,14 @@ for (const model of [...new Set(runs.map((r) => r.model))]) {
       0,
     ),
     complete_task_triples: completeTriples,
+    complete_healthy_task_triples: completeHealthyTriples,
     outcome_repeatable_tasks: outcomeRepeatable,
     trajectory_repeatable_tasks: trajectoryRepeatable,
-    outcome_repeatability: completeTriples
-      ? outcomeRepeatable / completeTriples
+    outcome_repeatability: completeHealthyTriples
+      ? outcomeRepeatable / completeHealthyTriples
       : null,
-    trajectory_repeatability: completeTriples
-      ? trajectoryRepeatable / completeTriples
+    trajectory_repeatability: completeHealthyTriples
+      ? trajectoryRepeatable / completeHealthyTriples
       : null,
     median_eval_ms: median(evalTimes),
     median_total_model_ms: median(totalTimes),

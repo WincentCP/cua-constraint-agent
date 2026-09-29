@@ -63,6 +63,7 @@ npm run experiment -- export --input exports/main-v1
 ```
 
 - `metrics.csv`: VDA by policy and overall/type/subtype/U-level with paired assessable denominators.
+- `statistics.csv`: exact paired McNemar and Wilcoxon results for the predeclared main analyses.
 - `paired-probes.csv`: jointly correct pairs, Proposed minus Baseline probes. Medians, range and IQR are in `metrics.json`.
 - `episodes.csv`: all attempts and diagnostics.
 - `metrics.json`: selected pair IDs, missing cells, infrastructure/outcome counts and mechanism summaries.
@@ -79,6 +80,6 @@ Run `npm run experiment -- report --input DIR` to regenerate HTML/Markdown after
 
 Verified ACT and correct abstentions score one; other healthy outcomes score zero. Probe comparison includes only jointly correct pairs. Negative delta favors Proposed. Report exclusions and original infrastructure failures. Single episodes are diagnostics, not paired comparisons.
 
-For confirmatory analysis of the 32 paired main tasks, use an exact two-sided McNemar test on paired VDA. For probe efficiency, use a paired Wilcoxon signed-rank analysis only on jointly correct Baseline/Proposed pairs, with zero-difference/tie handling documented in the analysis implementation. U2/U3/U4 summaries are descriptive/exploratory mechanism analyses rather than separate primary treatment tests.
+For confirmatory analysis of the 32 paired main tasks, use an exact two-sided McNemar test on paired VDA. For probe efficiency, use a paired Wilcoxon signed-rank analysis only on jointly correct Baseline/Proposed pairs. The implementation discards zero probe-count differences, assigns average ranks to tied absolute differences, and obtains the two-sided p-value from the exact sign-permutation distribution. U2/U3/U4 summaries are descriptive/exploratory mechanism analyses rather than separate primary treatment tests. These statistics are written into `metrics.json` and `statistics.csv`.
 
 Claims apply to this controlled task set and model. They do not establish live-website generalization, usability for blind users, or superiority of Accessibility Trees over other representations.

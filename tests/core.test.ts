@@ -22,6 +22,8 @@ import { manifest, taskMetadata } from "../src/experiment/manifest.ts";
 import {
   calculateMetrics,
   selectedPairs,
+  exactMcNemar,
+  exactWilcoxonSignedRank,
   type Row,
 } from "../src/experiment/metrics.ts";
 import {
@@ -350,4 +352,20 @@ test("CSV retains numeric negative probe deltas and quotes untrusted text", () =
   assert(!output.includes("'-2"));
   assert(output.includes("'=SUM(A1)"));
   assert(output.includes('"a,""b"""'));
+});
+
+test("Exact paired statistical helpers use the declared two-sided rules", () => {
+  assert.equal(exactMcNemar(4, 0), 0.125);
+  assert.equal(exactMcNemar(0, 0), 1);
+  const w = exactWilcoxonSignedRank([-1, -2, -3, 0]);
+  assert.equal(w.nonzero_pairs, 3);
+  assert.equal(w.zero_differences, 1);
+  assert.equal(w.w_plus, 0);
+  assert.equal(w.w_minus, 6);
+  assert.equal(w.statistic, 0);
+  assert.equal(w.p_value, 0.25);
+  const tied = exactWilcoxonSignedRank([-1, 1]);
+  assert.equal(tied.w_plus, 1.5);
+  assert.equal(tied.w_minus, 1.5);
+  assert.equal(tied.p_value, 1);
 });

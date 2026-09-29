@@ -372,6 +372,29 @@ export function exportResults(out: string) {
     throw Error("Attempt identity differs from experiment");
   writeJson(join(out, "metrics.json"), metrics);
   writeFileSync(join(out, "metrics.csv"), csv(metrics.accuracy));
+  writeFileSync(
+    join(out, "statistics.csv"),
+    csv([
+      {
+        test: "Exact McNemar two-sided",
+        n: metrics.statistics.mcnemar_exact_two_sided.paired_n,
+        statistic:
+          metrics.statistics.mcnemar_exact_two_sided
+            .baseline_wrong_proposed_correct -
+          metrics.statistics.mcnemar_exact_two_sided
+            .baseline_correct_proposed_wrong,
+        p_value: metrics.statistics.mcnemar_exact_two_sided.p_value,
+        detail: JSON.stringify(metrics.statistics.mcnemar_exact_two_sided),
+      },
+      {
+        test: "Exact Wilcoxon signed-rank",
+        n: metrics.statistics.wilcoxon_signed_rank_exact.jointly_correct_pairs,
+        statistic: metrics.statistics.wilcoxon_signed_rank_exact.statistic,
+        p_value: metrics.statistics.wilcoxon_signed_rank_exact.p_value,
+        detail: JSON.stringify(metrics.statistics.wilcoxon_signed_rank_exact),
+      },
+    ]),
+  );
   writeFileSync(join(out, "episodes.csv"), csv(rows.map(flatRow)));
   writeFileSync(
     join(out, "paired-probes.csv"),

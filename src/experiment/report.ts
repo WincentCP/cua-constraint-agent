@@ -115,6 +115,27 @@ export function renderReport(
     ]),
   );
   table(
+    "Uji statistik berpasangan",
+    ["Uji", "N", "Statistik", "p dua sisi"],
+    [
+      [
+        "Exact McNemar (VDA)",
+        metrics.statistics.mcnemar_exact_two_sided.paired_n,
+        `discordant ${metrics.statistics.mcnemar_exact_two_sided.baseline_wrong_proposed_correct}/${metrics.statistics.mcnemar_exact_two_sided.baseline_correct_proposed_wrong}`,
+        metrics.statistics.mcnemar_exact_two_sided.p_value.toFixed(4),
+      ],
+      [
+        "Exact Wilcoxon signed-rank (probe; jointly correct)",
+        metrics.statistics.wilcoxon_signed_rank_exact.jointly_correct_pairs,
+        metrics.statistics.wilcoxon_signed_rank_exact.statistic,
+        metrics.statistics.wilcoxon_signed_rank_exact.p_value.toFixed(4),
+      ],
+    ],
+  );
+  paragraph(
+    "McNemar memakai pasangan VDA yang valid. Wilcoxon hanya memakai pasangan yang keduanya benar; selisih nol dibuang, ties memakai average ranks, dan p-value dua sisi dihitung dari exact sign-permutation distribution. Δ probe didefinisikan Proposed − Baseline, sehingga nilai negatif menguntungkan Proposed.",
+  );
+  table(
     "Outcome — seluruh attempt",
     ["Outcome", "Jumlah"],
     Object.entries(metrics.outcomes),

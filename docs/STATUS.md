@@ -1,9 +1,9 @@
 # Implementation status
 
-Final-contract refactor is in validation. This file will be updated with observed checks and artifact paths after validation.
+Implemented: final 32-task dataset; shared browser agent and evidence ledger; Baseline/Proposed selection; independent pre-ACT evaluator; durable recording; paired metrics; exact paired McNemar/Wilcoxon statistics; development/repeatability/freeze/main CLI; interrupted-attempt recovery and paired infrastructure reruns.
 
-Implemented: final 32-task dataset; shared browser agent and evidence ledger; Baseline/Proposed selection; independent pre-ACT evaluator; durable recording; paired metrics; development/repeatability/freeze/main CLI; interrupted-attempt recovery and paired infrastructure reruns.
+Repository CI validates formatting, TypeScript build, unit tests, browser integration tests and dataset invariants. The LEUCO local storefront uses only public fixture facts, preserves the controlled probe routes and records screenshots as documentation rather than planner input.
 
-Observed: unit tests and browser integration pass, including exact initial U-levels for all 32 tasks and all 64 deterministic policy runs. The LEUCO visual language is integrated into the local controlled world with three local kaos design assets, Indonesian copy, 2026 dates, responsive desktop/mobile layout, exact semantic probe labels, public-only fact visibility and empty/single-item cart states. The dedicated storefront integration checks pass, including a real card-to-detail-to-cart flow and rejected duplicate add. Demo is engineering evidence, not research data.
+The next clean pre-study cycle uses four Q4_K_M local candidates: Qwen3.5 9B, Ministral-3 8B Instruct, Granite 4.1 8B and RNJ-1 8B Instruct. The benchmark runner records stable machine/runtime/model identity, rejects a resume after that identity changes, saves per-model Ollama metadata, verifies actual Q4_K_M quantization, and requires a 12/12 healthy pilot before full Phase 1.
 
-Pending: real-model competence/repeatability, freeze and main data collection. Older ignored outputs are not evidence for this PRD.
+Pending research data: fresh four-model pilot on the chosen benchmark machine; full Phase 1 model selection; selected-model repeatability gate; formal freeze; 64-run main paired experiment. Older pilot/full outputs from previous candidate/config/environment cycles remain diagnostic history and are not final evidence.

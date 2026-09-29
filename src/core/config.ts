@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export const ConfigSchema = z
   .object({
-    version: z.literal("final-2026-09-10"),
+    version: z.literal("final-2026-09-29"),
     model: z
       .object({
         name: z.string().min(1),

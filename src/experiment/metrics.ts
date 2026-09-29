@@ -18,6 +18,86 @@ export type Row = {
   final_world: unknown;
 };
 export const median = (values: number[]) => quantile(values, 0.5);
+
+export function exactMcNemar(
+  baselineWrongProposedCorrect: number,
+  baselineCorrectProposedWrong: number,
+) {
+  const b = baselineWrongProposedCorrect,
+    c = baselineCorrectProposedWrong,
+    n = b + c;
+  if (![b, c].every((x) => Number.isInteger(x) && x >= 0))
+    throw Error("McNemar discordant counts must be non-negative integers");
+  if (!n) return 1;
+  const k = Math.min(b, c);
+  let combination = 1n,
+    tail = 0n;
+  for (let i = 0; i <= k; i++) {
+    if (i > 0)
+      combination = (combination * BigInt(n - i + 1)) / BigInt(i);
+    tail += combination;
+  }
+  const denominator = 1n << BigInt(n);
+  return Math.min(1, (2 * Number(tail)) / Number(denominator));
+}
+
+export function exactWilcoxonSignedRank(differences: number[]) {
+  const nonzero = differences
+    .map((delta, index) => ({ delta, abs: Math.abs(delta), index }))
+    .filter((x) => x.abs > 0)
+    .sort((a, b) => a.abs - b.abs || a.index - b.index);
+  const ranked: { delta: number; rank2: number }[] = [];
+  for (let i = 0; i < nonzero.length; ) {
+    let j = i + 1;
+    while (j < nonzero.length && nonzero[j].abs === nonzero[i].abs) j++;
+    const averageRank = ((i + 1) + j) / 2,
+      rank2 = Math.round(averageRank * 2);
+    for (let k = i; k < j; k++)
+      ranked.push({ delta: nonzero[k].delta, rank2 });
+    i = j;
+  }
+  const total2 = ranked.reduce((sum, x) => sum + x.rank2, 0),
+    plus2 = ranked
+      .filter((x) => x.delta > 0)
+      .reduce((sum, x) => sum + x.rank2, 0),
+    minus2 = total2 - plus2,
+    observed2 = Math.min(plus2, minus2);
+  if (!ranked.length)
+    return {
+      nonzero_pairs: 0,
+      zero_differences: differences.length,
+      w_plus: 0,
+      w_minus: 0,
+      statistic: 0,
+      p_value: 1,
+      method:
+        "zero differences discarded; tied absolute differences use average ranks; exact two-sided sign-permutation distribution",
+    };
+  let counts = Array<bigint>(total2 + 1).fill(0n);
+  counts[0] = 1n;
+  let reachable = 0;
+  for (const { rank2 } of ranked) {
+    const next = [...counts];
+    for (let sum = 0; sum <= reachable; sum++)
+      if (counts[sum]) next[sum + rank2] += counts[sum];
+    counts = next;
+    reachable += rank2;
+  }
+  let extreme = 0n;
+  for (let sum = 0; sum <= total2; sum++)
+    if (Math.min(sum, total2 - sum) <= observed2) extreme += counts[sum];
+  const totalAssignments = 1n << BigInt(ranked.length);
+  return {
+    nonzero_pairs: ranked.length,
+    zero_differences: differences.length - ranked.length,
+    w_plus: plus2 / 2,
+    w_minus: minus2 / 2,
+    statistic: observed2 / 2,
+    p_value: Number(extreme) / Number(totalAssignments),
+    method:
+      "zero differences discarded; tied absolute differences use average ranks; exact two-sided sign-permutation distribution",
+  };
+}
 function quantile(values: number[], q: number) {
   if (!values.length) return null;
   const v = [...values].sort((a, b) => a - b),
@@ -183,8 +263,38 @@ export function calculateMetrics(rows: Row[], plan: Cell[]) {
       paired_probe: efficiency.find((e) => e.group === `U${n}`),
     };
   });
+  const validPairs = pairs.filter((p) => p.Baseline && p.Proposed),
+    baselineWrongProposedCorrect = validPairs.filter(
+      (p) =>
+        p.Baseline!.evaluation.vda === 0 && p.Proposed!.evaluation.vda === 1,
+    ).length,
+    baselineCorrectProposedWrong = validPairs.filter(
+      (p) =>
+        p.Baseline!.evaluation.vda === 1 && p.Proposed!.evaluation.vda === 0,
+    ).length,
+    overallProbePairs = efficiency.find((e) => e.group === "overall")!.pairs,
+    probeDifferences = overallProbePairs.map((p) => p.delta),
+    statistics = {
+      mcnemar_exact_two_sided: {
+        paired_n: validPairs.length,
+        baseline_wrong_proposed_correct: baselineWrongProposedCorrect,
+        baseline_correct_proposed_wrong: baselineCorrectProposedWrong,
+        discordant_n:
+          baselineWrongProposedCorrect + baselineCorrectProposedWrong,
+        p_value: exactMcNemar(
+          baselineWrongProposedCorrect,
+          baselineCorrectProposedWrong,
+        ),
+      },
+      wilcoxon_signed_rank_exact: {
+        jointly_correct_pairs: overallProbePairs.length,
+        ...exactWilcoxonSignedRank(probeDifferences),
+        difference_definition:
+          "Proposed probes - Baseline probes; negative favors Proposed",
+      },
+    };
   return {
-    schema_version: 2,
+    schema_version: 3,
     demo: rows[0]?.demo ?? null,
     planned_original_runs: plan.length,
     original_attempts: rows.filter((r) => r.attempt === 0).length,
@@ -213,6 +323,7 @@ export function calculateMetrics(rows: Row[], plan: Cell[]) {
     accuracy,
     efficiency,
     mechanism,
+    statistics,
     outcomes: Object.fromEntries(
       [...new Set(rows.map((r) => r.evaluation.outcome))].map((o) => [
         o,
