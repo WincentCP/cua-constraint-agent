@@ -13,6 +13,7 @@ $ModelsPath = Join-Path $PSScriptRoot "models.json"
 $OriginalConfig = [IO.File]::ReadAllText($ConfigPath)
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $MinimumOllamaVersion = [version]"0.13.3"
+$MinimumNodeMajor = 24
 
 if (-not $Out) {
   $Out = Join-Path $RepoRoot "exports\llm-benchmark-$Mode-v1"
@@ -28,6 +29,23 @@ function Invoke-Checked {
   if ($LASTEXITCODE -ne 0) {
     throw "$Description failed with exit code $LASTEXITCODE"
   }
+}
+
+function Get-NodeMajor {
+  $raw = ((& node -v 2>&1) | Out-String).Trim()
+  $match = [regex]::Match($raw, '^v?(\d+)')
+  if (-not $match.Success) {
+    throw "Could not parse Node.js version from: $raw"
+  }
+  return [int]$match.Groups[1].Value
+}
+
+function Assert-NodeVersion {
+  $major = Get-NodeMajor
+  if ($major -lt $MinimumNodeMajor) {
+    throw "Node.js major version $major is too old. This repository requires Node.js $MinimumNodeMajor or newer."
+  }
+  Write-Host "==> Node.js major version $major (minimum $MinimumNodeMajor)" -ForegroundColor Cyan
 }
 
 function Get-OllamaVersion {
@@ -133,6 +151,7 @@ function Capture-Environment {
 }
 
 Set-Location $RepoRoot
+Assert-NodeVersion
 Assert-OllamaVersion
 
 if ((Test-Path $Out) -and -not $Resume) {
@@ -208,6 +227,8 @@ try {
     $modelRoot = Join-Path $Out $model.label
     New-Item -ItemType Directory -Path $modelRoot -Force | Out-Null
 
+    (& ollama show $model.name 2>&1) | Set-Content -Encoding utf8 (Join-Path $modelRoot "ollama-show.txt")
+
     $doctorOutput = & node --import tsx scripts/experiment.ts doctor 2>&1
     if ($LASTEXITCODE -ne 0) {
       $doctorOutput | Set-Content -Encoding utf8 (Join-Path $modelRoot "doctor-error.txt")
@@ -216,6 +237,7 @@ try {
     $doctorOutput | Set-Content -Encoding utf8 (Join-Path $modelRoot "doctor.json")
 
     Warm-Model $model.name (Join-Path $modelRoot "warmup.json")
+    (& ollama ps 2>&1) | Set-Content -Encoding utf8 (Join-Path $modelRoot "ollama-ps-after-warmup.txt")
 
     foreach ($task in $tasks) {
       foreach ($repeat in 1..$repetitions) {
