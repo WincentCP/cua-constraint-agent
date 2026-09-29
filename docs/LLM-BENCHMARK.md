@@ -23,7 +23,7 @@ From a clean checkout with all four models already installed and Ollama running:
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot
 ```
 
-The runner rejects Ollama older than 0.13.3, verifies the four committed candidates use Q4_K_M tags, performs build/tests/validation, captures the machine environment and Git commit, checks that every candidate is installed before model episodes begin, runs the declared episodes, preserves automatic screenshots/raw traces, restores `config/experiment.json` exactly, and generates `summary.csv`, `runs.csv` and `summary.json`.
+The runner rejects Node.js older than 24 and Ollama older than 0.13.3, verifies the four committed candidates use Q4_K_M tags, performs build/tests/validation, captures the machine environment and Git commit, checks that every candidate is installed before model episodes begin, records `ollama show` plus `ollama ps` after warm-up for deployment/offload diagnosis, runs the declared episodes, preserves automatic screenshots/raw traces, restores `config/experiment.json` exactly, and generates `summary.csv`, `runs.csv` and `summary.json`.
 
 Before timed benchmark episodes for each candidate, the runner performs one identical unscored warm-up inference and keeps the model resident briefly. This removes first-load latency from the 60-second per-call research timeout. Warm-up output and timing are written to `warmup.json`; warm-up is not included in VDA, repeatability, token, or latency summaries.
 
