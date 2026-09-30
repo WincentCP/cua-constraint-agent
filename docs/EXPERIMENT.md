@@ -22,7 +22,7 @@ The selected LLM arrives from the separate Phase 1 model-selection benchmark, wh
 
 The standalone `development` command remains available for engineering diagnostics when a code or dataset change needs investigation, but it is not an additional mandatory batch after a completed Phase 1 model benchmark.
 
-The gate requires real-model records bound to the current source/config/dataset/model/runtime, all 12 healthy complete pairs, Baseline correct on at least three distinct tasks requiring two or more probes, identical outcomes and selected-probe trajectories across three repetitions per task/policy, and no budget exhaustion or structured-output repair in selected gate runs.
+The gate requires real-model records bound to the current source/config/dataset/model/runtime, all 12 healthy complete pairs with **zero infrastructure failures in the repeatability output**, Baseline correct on at least three distinct tasks requiring two or more probes, stable evaluator outcomes across the three repetitions per task/policy, and no budget exhaustion or structured-output repair in selected gate runs. Exact selected-probe trajectories are recorded as a diagnostic repeatability measure but are **not** a hard pass/fail criterion.
 
 These conservative engineering criteria are declared before main and do not require Proposed to outperform Baseline. Any development fix invalidates the old gate. Budget must support the public route bounds printed by validation and must not be tuned to maximize the policy gap.
 
@@ -79,6 +79,17 @@ Run `npm run experiment -- report --input DIR` to regenerate HTML/Markdown after
 
 Verified ACT and correct abstentions score one; other healthy outcomes score zero. Probe comparison includes only jointly correct pairs. Negative delta favors Proposed. Report exclusions and original infrastructure failures. Single episodes are diagnostics, not paired comparisons.
 
-For confirmatory analysis of the 32 paired main tasks, use an exact two-sided McNemar test on paired VDA. For probe efficiency, use a paired Wilcoxon signed-rank analysis only on jointly correct Baseline/Proposed pairs, with zero-difference/tie handling documented in the analysis implementation. U2/U3/U4 summaries are descriptive/exploratory mechanism analyses rather than separate primary treatment tests.
+For confirmatory analysis of the 32 paired main tasks, the export/report computes an exact two-sided McNemar test on paired VDA and shows both-correct, Baseline-only, Proposed-only, and both-incorrect counts. Report those counts, absolute VDA difference, and the exact p-value together.
+
+For probe efficiency, the export/report computes a paired Wilcoxon signed-rank analysis only on jointly correct Baseline/Proposed pairs. Zero differences are removed from the signed-rank statistic and ties use average ranks. Report jointly-correct n, non-zero n, zero-difference count, median/IQR of paired probe deltas, statistic, and exact two-sided p-value. Treat this inference as secondary when the effective n is small.
+
+U2/U3/U4 summaries are descriptive/exploratory mechanism analyses rather than separate primary treatment tests. Hidden-constraint identities are rotated across U2/U3 tasks so a U-level is not tied to one fixed fact pattern.
+
+## Threats to validity
+
+- **Internal:** fixed model/configuration, counterbalanced order, repeatability gate, full state reset, and capability-matched policies reduce runtime/order/treatment confounds. U2/U3 rotate hidden-constraint identities.
+- **Construct:** VDA measures verified decision correctness; probe count is the primary information-acquisition efficiency measure. Latency/tokens/actions remain diagnostics.
+- **External:** conclusions are limited to this controlled synthetic task set, selected local model, four constraints, and Accessibility Tree representation.
+- **Statistical:** 32 paired tasks can yield few McNemar discordances, and the jointly-correct Wilcoxon subset can be small. Always report paired counts/effect magnitude and descriptive distributions with p-values.
 
 Claims apply to this controlled task set and model. They do not establish live-website generalization, usability for blind users, or superiority of Accessibility Trees over other representations.

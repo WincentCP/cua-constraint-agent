@@ -1,5 +1,7 @@
 // Offline evaluator. It intentionally does not import Evidence, the semantic
-// extractor, policy, planner, or agent run implementation.
+// extractor, policy, planner, or agent run implementation. Missing decisive
+// evidence is constraint-agnostic: variant/material/price/availability are all
+// evaluated from the actual public observation that exposed the missing fact.
 import { parse } from "yaml";
 import {
   fields,

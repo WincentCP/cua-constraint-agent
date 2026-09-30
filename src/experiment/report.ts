@@ -102,8 +102,54 @@ export function renderReport(
       e.delta_probe.iqr,
     ]),
   );
+  const overallBaseline = metrics.accuracy.find(
+      (a) => a.group === "overall" && a.policy === "Baseline",
+    )!,
+    overallProposed = metrics.accuracy.find(
+      (a) => a.group === "overall" && a.policy === "Proposed",
+    )!,
+    deltaVda =
+      overallBaseline.vda === null || overallProposed.vda === null
+        ? null
+        : overallProposed.vda - overallBaseline.vda;
   table(
-    "Mechanism check",
+    "Paired VDA discordance",
+    ["Pair outcome", "Count"],
+    [
+      ["Both correct", metrics.inference.mcnemar.both_correct],
+      ["Baseline only correct", metrics.inference.mcnemar.baseline_only],
+      ["Proposed only correct", metrics.inference.mcnemar.proposed_only],
+      ["Both incorrect", metrics.inference.mcnemar.both_incorrect],
+    ],
+  );
+  paragraph(
+    `Absolute VDA difference (Proposed − Baseline): ${deltaVda === null ? "—" : (deltaVda * 100).toFixed(1) + " percentage points"}.`,
+  );
+  table(
+    "Analisis statistik berpasangan",
+    ["Analisis", "N", "Statistik utama", "p exact dua sisi", "Catatan"],
+    [
+      [
+        "McNemar — VDA",
+        metrics.selected_valid_pairs,
+        `discordant=${metrics.inference.mcnemar.discordant}; Proposed-only=${metrics.inference.mcnemar.proposed_only}; Baseline-only=${metrics.inference.mcnemar.baseline_only}`,
+        metrics.inference.mcnemar.p_value_two_sided_exact.toFixed(4),
+        "Confirmatory. Laporkan juga empat sel pasangan dan selisih VDA; jangan interpretasikan p-value sendirian.",
+      ],
+      [
+        "Wilcoxon — Δ probe",
+        metrics.inference.wilcoxon_probe_efficiency.n_nonzero,
+        `W=${metrics.inference.wilcoxon_probe_efficiency.statistic}; zero=${metrics.inference.wilcoxon_probe_efficiency.zero_differences}`,
+        metrics.inference.wilcoxon_probe_efficiency.p_value_two_sided_exact.toFixed(
+          4,
+        ),
+        "Secondary; hanya jointly-correct pairs. Zero differences dikeluarkan dan ties memakai average ranks.",
+      ],
+    ],
+  );
+  paragraph(metrics.inference.note);
+  table(
+    "Mechanism check — eksploratori",
     ["UNKNOWN awal", "VDA Baseline", "VDA Proposed", "Gap (poin persentase)"],
     metrics.mechanism.map((m) => [
       `U${m.unknown}`,
@@ -194,7 +240,7 @@ export function renderReport(
     );
   }
   paragraph(
-    "Interpretasi dibatasi pada task terkontrol, model dan konfigurasi yang digunakan. Laporkan hasil nol/negatif serta pasangan yang tidak tersedia. Report ini menyediakan tabel dan bukti implementasi; pembahasan Bab 4 harus mengacu pada data main yang valid.",
+    "Interpretasi dibatasi pada task terkontrol, model dan konfigurasi yang digunakan. U2/U3/U4 adalah analisis eksploratori tingkat ketidaklengkapan bukti awal, bukan tiga uji treatment terpisah. Laporkan hasil nol/negatif serta pasangan yang tidak tersedia. Report ini menyediakan tabel dan bukti implementasi; pembahasan Bab 4 harus mengacu pada data main yang valid.",
   );
   return {
     markdown: parts.join(""),

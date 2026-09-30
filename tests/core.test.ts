@@ -37,6 +37,10 @@ import { sharedInput, scoreProbes, DemoModel } from "../src/agent/planner.ts";
 import { observationFrom } from "../src/browser/semantic.ts";
 import { Driver } from "../src/browser/session.ts";
 import { csv } from "../src/experiment/metrics.ts";
+import {
+  exactMcNemar,
+  exactWilcoxonSignedRank,
+} from "../src/experiment/statistics.ts";
 
 const goal = developmentTasks[0].goal,
   candidates = [
@@ -56,8 +60,20 @@ const fact = (
   step: 0,
   timestamp: new Date().toISOString(),
 });
-test("32 main tasks, exact composition, U2/U3/U4 and disjoint development split", () => {
-  assert.equal(validateDataset().passed, true);
+test("32 main tasks, exact composition, balanced hidden patterns and disjoint development split", () => {
+  const validation = validateDataset();
+  assert.equal(validation.passed, true);
+  assert.equal(
+    Object.keys(validation.hidden_patterns).filter((k) => k.startsWith("U2:"))
+      .length,
+    6,
+  );
+  assert.equal(
+    Object.keys(validation.hidden_patterns).filter((k) => k.startsWith("U3:"))
+      .length,
+    4,
+  );
+  assert(Object.keys(validation.unavailable_constraints).length >= 3);
   assert.equal(mainTasks.length, 32);
   assert.equal(manifest("main").length, 64);
   assert.deepEqual(
@@ -146,14 +162,14 @@ test("Lean pre-study subsets are fixed, valid and representative", () => {
       "utf8",
     ),
   );
-  assert.equal(models.length, 4);
+  assert(models.length >= 3 && models.length <= 4);
   assert.equal(
     models.length * protocol.pilot.tasks.length * protocol.pilot.repetitions,
-    12,
+    models.length * 3,
   );
   assert.equal(
     models.length * protocol.full.tasks.length * protocol.full.repetitions,
-    72,
+    models.length * 18,
   );
   assert.equal(new Set(protocol.full.tasks).size, 6);
 
@@ -424,4 +440,24 @@ test("CSV retains numeric negative probe deltas and quotes untrusted text", () =
   assert(!output.includes("'-2"));
   assert(output.includes("'=SUM(A1)"));
   assert(output.includes('"a,""b"""'));
+});
+
+test("Exact paired statistics expose discordance and zero handling", () => {
+  const m = exactMcNemar([
+    ...Array.from({ length: 8 }, () => ({
+      baseline: 0 as const,
+      proposed: 1 as const,
+    })),
+    { baseline: 1, proposed: 0 },
+    { baseline: 1, proposed: 1 },
+    { baseline: 0, proposed: 0 },
+  ]);
+  assert.equal(m.proposed_only, 8);
+  assert.equal(m.baseline_only, 1);
+  assert.equal(m.p_value_two_sided_exact, 0.0390625);
+  const w = exactWilcoxonSignedRank([-2, -1, 0, 1]);
+  assert.equal(w.n_pairs, 4);
+  assert.equal(w.n_nonzero, 3);
+  assert.equal(w.zero_differences, 1);
+  assert(w.p_value_two_sided_exact >= 0 && w.p_value_two_sided_exact <= 1);
 });

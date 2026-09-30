@@ -1,6 +1,6 @@
 import { type Ledger, type Policy, type Probe } from "./types.ts";
 
-// The only experimental branch. Eligibility and semantic annotations are shared.
+// The only experimental branch. Baseline follows generic model-guided progress scores; Proposed ignores those scores for final ranking and uses explicit UNKNOWN coverage, then public forward cost and stable order. Eligibility, ledger and semantic annotations are shared.
 export function selectProbe(
   policy: Policy,
   probes: Probe[],

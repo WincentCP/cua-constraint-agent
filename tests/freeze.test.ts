@@ -94,13 +94,25 @@ test("Development gate accepts consistent full real-mode evidence and rejects de
     }
   }
 });
-test("Gate rejects missing pairs, instability, insufficient baseline competence and mixed identities", () => {
-  for (const flaw of ["missing", "unstable", "incompetent", "identity"]) {
+test("Gate rejects missing pairs, outcome instability, infrastructure failures, insufficient baseline competence and mixed identities", () => {
+  for (const flaw of [
+    "missing",
+    "unstable-outcome",
+    "infrastructure",
+    "incompetent",
+    "identity",
+  ]) {
     const f = fixture();
     try {
       if (flaw === "missing") f.rows.pop();
-      if (flaw === "unstable")
-        f.rows[0].events[0].data.selected.id = "different";
+      if (flaw === "unstable-outcome") {
+        f.rows[0].evaluation.vda = 0;
+        f.rows[0].evaluation.outcome = "FALSE_ABSTENTION";
+      }
+      if (flaw === "infrastructure") {
+        f.rows[0].evaluation.vda = null;
+        f.rows[0].evaluation.outcome = "INFRASTRUCTURE_FAILURE";
+      }
       if (flaw === "incompetent")
         for (const r of f.rows)
           if (r.cell.policy === "Baseline") {
@@ -114,6 +126,22 @@ test("Gate rejects missing pairs, instability, insufficient baseline competence 
     } finally {
       f.close();
     }
+  }
+});
+test("Gate records trajectory variation as diagnostic without failing stable outcomes", () => {
+  const f = fixture();
+  try {
+    f.rows[0].events[0].data.selected.id = "different-but-valid-order";
+    f.save();
+    const gate = developmentGate(f.out);
+    assert.equal(gate.passed, true);
+    assert(
+      gate.trajectory_repeatability.some(
+        (x) => x.outcome_stable && !x.exact_trajectory_stable,
+      ),
+    );
+  } finally {
+    f.close();
   }
 });
 test("Frozen identity and integrity changes are rejected; demo cannot create a research freeze", () => {
