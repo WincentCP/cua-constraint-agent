@@ -9,11 +9,11 @@ function choose(n: number, k: number) {
 
 export function exactMcNemar(pairs: PairedBinary[]) {
   const counts = {
-      both_correct: 0,
-      baseline_only: 0,
-      proposed_only: 0,
-      both_incorrect: 0,
-    };
+    both_correct: 0,
+    baseline_only: 0,
+    proposed_only: 0,
+    both_incorrect: 0,
+  };
   for (const pair of pairs) {
     if (pair.baseline && pair.proposed) counts.both_correct++;
     else if (pair.baseline) counts.baseline_only++;

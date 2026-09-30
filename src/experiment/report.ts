@@ -140,7 +140,9 @@ export function renderReport(
         "Wilcoxon — Δ probe",
         metrics.inference.wilcoxon_probe_efficiency.n_nonzero,
         `W=${metrics.inference.wilcoxon_probe_efficiency.statistic}; zero=${metrics.inference.wilcoxon_probe_efficiency.zero_differences}`,
-        metrics.inference.wilcoxon_probe_efficiency.p_value_two_sided_exact.toFixed(4),
+        metrics.inference.wilcoxon_probe_efficiency.p_value_two_sided_exact.toFixed(
+          4,
+        ),
         "Secondary; hanya jointly-correct pairs. Zero differences dikeluarkan dan ties memakai average ranks.",
       ],
     ],

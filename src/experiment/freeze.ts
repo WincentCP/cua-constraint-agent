@@ -147,7 +147,9 @@ export function developmentGate(out: string) {
   if (hash(experiment.plan) !== hash(manifest("repeatability")))
     problems.push("Development manifest differs");
   if (rows.some((r) => r.evaluation.vda === null))
-    problems.push("Gate requires zero infrastructure failures; fix the environment and run a fresh repeatability output");
+    problems.push(
+      "Gate requires zero infrastructure failures; fix the environment and run a fresh repeatability output",
+    );
   const pairs = selectedPairs(rows, experiment.plan);
   if (pairs.some((p) => p.attempt === null))
     problems.push("Missing healthy development pairs");

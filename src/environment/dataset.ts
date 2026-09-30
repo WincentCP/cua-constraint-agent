@@ -357,7 +357,8 @@ export function validateDataset(tasks: Task[] = mainTasks) {
           errors.push("distribution mismatch");
     for (const unknown of [2, 3] as const) {
       const values = hiddenPatterns[unknown].map(
-        (pattern) => hiddenPatternsSeen[`U${unknown}:${pattern.join("+")}`] ?? 0,
+        (pattern) =>
+          hiddenPatternsSeen[`U${unknown}:${pattern.join("+")}`] ?? 0,
       );
       if (
         values.some((n) => n === 0) ||

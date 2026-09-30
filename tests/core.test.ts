@@ -37,7 +37,10 @@ import { sharedInput, scoreProbes, DemoModel } from "../src/agent/planner.ts";
 import { observationFrom } from "../src/browser/semantic.ts";
 import { Driver } from "../src/browser/session.ts";
 import { csv } from "../src/experiment/metrics.ts";
-import { exactMcNemar, exactWilcoxonSignedRank } from "../src/experiment/statistics.ts";
+import {
+  exactMcNemar,
+  exactWilcoxonSignedRank,
+} from "../src/experiment/statistics.ts";
 
 const goal = developmentTasks[0].goal,
   candidates = [
@@ -60,8 +63,16 @@ const fact = (
 test("32 main tasks, exact composition, balanced hidden patterns and disjoint development split", () => {
   const validation = validateDataset();
   assert.equal(validation.passed, true);
-  assert.equal(Object.keys(validation.hidden_patterns).filter((k) => k.startsWith("U2:")).length, 6);
-  assert.equal(Object.keys(validation.hidden_patterns).filter((k) => k.startsWith("U3:")).length, 4);
+  assert.equal(
+    Object.keys(validation.hidden_patterns).filter((k) => k.startsWith("U2:"))
+      .length,
+    6,
+  );
+  assert.equal(
+    Object.keys(validation.hidden_patterns).filter((k) => k.startsWith("U3:"))
+      .length,
+    4,
+  );
   assert(Object.keys(validation.unavailable_constraints).length >= 3);
   assert.equal(mainTasks.length, 32);
   assert.equal(manifest("main").length, 64);
@@ -433,7 +444,10 @@ test("CSV retains numeric negative probe deltas and quotes untrusted text", () =
 
 test("Exact paired statistics expose discordance and zero handling", () => {
   const m = exactMcNemar([
-    ...Array.from({ length: 8 }, () => ({ baseline: 0 as const, proposed: 1 as const })),
+    ...Array.from({ length: 8 }, () => ({
+      baseline: 0 as const,
+      proposed: 1 as const,
+    })),
     { baseline: 1, proposed: 0 },
     { baseline: 1, proposed: 1 },
     { baseline: 0, proposed: 0 },

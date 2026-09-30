@@ -185,7 +185,9 @@ export function calculateMetrics(rows: Row[], plan: Cell[]) {
     };
   });
   const pairedVda = pairs.filter(
-      (p) => p.Baseline?.evaluation.vda !== null && p.Proposed?.evaluation.vda !== null,
+      (p) =>
+        p.Baseline?.evaluation.vda !== null &&
+        p.Proposed?.evaluation.vda !== null,
     ),
     overallEfficiency = efficiency.find((e) => e.group === "overall")!;
   const inference = {
@@ -198,8 +200,7 @@ export function calculateMetrics(rows: Row[], plan: Cell[]) {
     wilcoxon_probe_efficiency: exactWilcoxonSignedRank(
       overallEfficiency.delta_probe.values,
     ),
-    note:
-      "McNemar is confirmatory for paired VDA. Wilcoxon is secondary and conditional on jointly correct pairs; always interpret it with n, median/IQR and zero/tie counts.",
+    note: "McNemar is confirmatory for paired VDA. Wilcoxon is secondary and conditional on jointly correct pairs; always interpret it with n, median/IQR and zero/tie counts.",
   };
   return {
     schema_version: 3,
