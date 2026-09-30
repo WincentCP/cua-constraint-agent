@@ -165,8 +165,8 @@ if ($researchStatus) {
 }
 
 $models = @(Get-Content -Raw $ModelsPath | ConvertFrom-Json)
-if ($models.Count -ne 4) {
-  throw "Benchmark protocol expects exactly four primary candidates; found $($models.Count). Commit an intentional protocol change before collection."
+if ($models.Count -lt 3 -or $models.Count -gt 4) {
+  throw "Benchmark protocol expects 3-4 committed active candidates; found $($models.Count). A deployment exclusion must be documented and committed before starting a fresh pilot."
 }
 $nonQ4 = @($models | Where-Object { $_.name -notmatch 'q4_K_M$' })
 if ($nonQ4.Count) {
