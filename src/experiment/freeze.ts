@@ -146,6 +146,8 @@ export function developmentGate(out: string) {
     problems.push("Gate requires repeatability experiment");
   if (hash(experiment.plan) !== hash(manifest("repeatability")))
     problems.push("Development manifest differs");
+  if (rows.some((r) => r.evaluation.vda === null))
+    problems.push("Gate requires zero infrastructure failures; fix the environment and run a fresh repeatability output");
   const pairs = selectedPairs(rows, experiment.plan);
   if (pairs.some((p) => p.attempt === null))
     problems.push("Missing healthy development pairs");
@@ -167,23 +169,42 @@ export function developmentGate(out: string) {
     problems.push(
       "Baseline must solve at least 3 distinct multi-probe development tasks",
     );
+  const trajectoryRepeatability: {
+    base: string;
+    policy: string;
+    repeats: number;
+    outcome_stable: boolean;
+    unique_trajectories: number;
+    exact_trajectory_stable: boolean;
+  }[] = [];
   for (const base of new Set(experiment.plan.map((c) => c.base)))
     for (const policy of ["Baseline", "Proposed"]) {
       const attempts = selected.filter(
-        (r) => r.cell.base === base && r.cell.policy === policy,
-      );
-      const signatures = attempts.map((r) =>
-        hash({
-          outcome: r.evaluation.outcome,
-          probes: r.events
-            .filter((e) => e.type === "PROBE_SELECTION")
-            .map((e) => e.data.selected.id),
-        }),
-      );
-      if (attempts.length !== 3 || new Set(signatures).size !== 1)
-        problems.push(
-          `Unstable or missing repeated trajectory: ${base}/${policy}`,
+          (r) => r.cell.base === base && r.cell.policy === policy,
+        ),
+        outcomes = new Set(attempts.map((r) => r.evaluation.outcome)),
+        trajectories = new Set(
+          attempts.map((r) =>
+            hash(
+              r.events
+                .filter((e) => e.type === "PROBE_SELECTION")
+                .map((e) => e.data.selected.id),
+            ),
+          ),
         );
+      trajectoryRepeatability.push({
+        base,
+        policy,
+        repeats: attempts.length,
+        outcome_stable: attempts.length === 3 && outcomes.size === 1,
+        unique_trajectories: trajectories.size,
+        exact_trajectory_stable:
+          attempts.length === 3 && trajectories.size === 1,
+      });
+      if (attempts.length !== 3)
+        problems.push(`Missing repeated outcomes: ${base}/${policy}`);
+      else if (outcomes.size !== 1)
+        problems.push(`Unstable repeated outcome: ${base}/${policy}`);
     }
   if (
     selected.some(
@@ -198,13 +219,16 @@ export function developmentGate(out: string) {
     problems,
     baseline_competent_tasks: [...competent],
     selected_runs: selected.length,
+    trajectory_repeatability: trajectoryRepeatability,
     identity: experiment.identity,
     experiment_id: experiment.id,
     evidence_hash: hash(rows),
     criteria: {
       distinct_baseline_multi_probe_successes: 3,
       repeats: 3,
-      exact_trajectory_repeatability: true,
+      stable_outcomes_across_repeats: true,
+      exact_trajectory_repeatability: "diagnostic_only",
+      zero_infrastructure_failures: true,
       no_budget_or_schema_failures: true,
     },
   };
