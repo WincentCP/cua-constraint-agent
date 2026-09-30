@@ -193,7 +193,7 @@ writeFileSync(
       root,
       models: summaries,
       interpretation:
-        "Phase 1 is model selection only. Do not rank models by Proposed-minus-Baseline effect. Repetitions assess repeatability and are not independent task observations.",
+        "Model-Selection Pre-Study is model selection only. Do not rank models by Proposed-minus-Baseline effect. Repetitions assess repeatability and are not independent task observations.",
     },
     null,
     2,
