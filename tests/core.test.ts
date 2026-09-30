@@ -140,6 +140,22 @@ test("Lean pre-study subsets are fixed, valid and representative", () => {
     ],
     repetitions: 3,
   });
+  const models = JSON.parse(
+    readFileSync(
+      join(process.cwd(), "scripts", "benchmark", "models.json"),
+      "utf8",
+    ),
+  );
+  assert.equal(models.length, 4);
+  assert.equal(
+    models.length * protocol.pilot.tasks.length * protocol.pilot.repetitions,
+    12,
+  );
+  assert.equal(
+    models.length * protocol.full.tasks.length * protocol.full.repetitions,
+    72,
+  );
+  assert.equal(new Set(protocol.full.tasks).size, 6);
 
   const byId = new Map(developmentTasks.map((task) => [task.id, task]));
   const phaseOneTaskIds = protocol.full.tasks as string[];
