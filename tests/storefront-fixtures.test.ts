@@ -11,6 +11,6 @@ test("Final audited research fixtures stay deterministic apart from public names
   // Captured after the final 2026-09-30 methodological audit (balanced hidden patterns and diversified missing evidence).
   assert.equal(
     createHash("sha256").update(JSON.stringify(tasks)).digest("hex"),
-    "23594a3e1a38e557e515f9b01552534dbfbf3b90c0eeb887f6b19fe5cfd374b1",
+    "0b7f924afecb1fb270d49f48e60a40d9263abdff56b5219da4a6df367a5c1e0d",
   );
 });
