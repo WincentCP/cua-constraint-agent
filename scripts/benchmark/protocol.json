@@ -1,10 +1,6 @@
 {
   "pilot": {
-    "tasks": [
-      "development-01",
-      "development-02",
-      "development-03"
-    ],
+    "tasks": ["development-01", "development-02", "development-03"],
     "repetitions": 1
   },
   "full": {
