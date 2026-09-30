@@ -9,7 +9,7 @@ Run commands from the repository root on the benchmark machine.
 - Git for source identity and freeze.
 - Playwright's managed Chromium (installed by the repository command below).
 - Ollama 0.13.3 or newer. RNJ-1 requires 0.13.3+, so the benchmark runner rejects an older runtime.
-- The committed Phase 1 candidate set from `scripts/benchmark/models.json` (normally four models; three only after a documented reproducible deployment exclusion), all using the Q4_K_M quantization class.
+- The committed Model-Selection Pre-Study candidate set from `scripts/benchmark/models.json` (normally four models; three only after a documented reproducible deployment exclusion), all using the Q4_K_M quantization class.
 
 ```powershell
 npm ci
@@ -41,7 +41,7 @@ npm run experiment -- validate
 
 No Python, database server, API key, microphone or cloud service is required. JSONL is the persistent record format. The synthetic server binds an ephemeral loopback port per attempt and closes afterward.
 
-## Phase 1 benchmark
+## Model-Selection Pre-Study benchmark
 
 Run the one-time preflight on a new benchmark machine:
 
@@ -57,17 +57,17 @@ If the machine, driver, Ollama version, repository revision and configuration re
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v1
 ```
 
-Full Phase 1 is normally 4 models × 6 predeclared development tasks × 3 repetitions = 72 Baseline-only episodes. If one model is formally deployment-ineligible before full Phase 1, the committed three-model set produces 54 episodes. The fixed task subset is `development-01`, `development-03`, `development-05`, `development-06`, `development-07`, and `development-11`. It balances U2/U3/U4 at two tasks each and covers both solvable subtypes plus no-solution and unavailable-evidence. The runner checks that every committed active model tag exists before starting model episodes.
+Full Model-Selection Pre-Study is normally 4 models × 6 predeclared development tasks × 3 repetitions = 72 Baseline-only episodes. If one model is formally deployment-ineligible before full Model-Selection Pre-Study, the committed three-model set produces 54 episodes. The fixed task subset is `development-01`, `development-03`, `development-05`, `development-06`, `development-07`, and `development-11`. It balances U2/U3/U4 at two tasks each and covers both solvable subtypes plus no-solution and unavailable-evidence. The runner checks that every committed active model tag exists before starting model episodes.
 
 Do not remove a candidate after one failure. Diagnose the machine and run one fresh pilot with the unchanged candidate list. If the same model again fails for reproducible deployment/infrastructure reasons while the others are healthy, preserve both pilot outputs, document the exclusion in `docs/STATUS.md`, update and commit `scripts/benchmark/models.json`, and start a fresh pilot. Never exclude a model for poor VDA or slow inference.
 
-If Granite 4.1 is the reproducibly incompatible candidate, the predeclared fallback is `granite3.3:8b-instruct-q4_K_M`. Update and commit the candidate list, then start a fresh pilot. Never switch candidates in the middle of the full Phase 1 benchmark.
+If Granite 4.1 is the reproducibly incompatible candidate, the predeclared fallback is `granite3.3:8b-instruct-q4_K_M`. Update and commit the candidate list, then start a fresh pilot. Never switch candidates in the middle of the full Model-Selection Pre-Study benchmark.
 
 ## Selected model, gate and freeze
 
-`config/experiment.json` currently carries Qwen3.5 9B only as the bootstrap real-model configuration. During Phase 1 the benchmark runner swaps the model field for each candidate and restores the file exactly afterward.
+`config/experiment.json` currently carries Qwen3.5 9B only as the bootstrap real-model configuration. During the Model-Selection Pre-Study the benchmark runner swaps the model field for each candidate and restores the file exactly afterward.
 
-After Phase 1, select one model using the rule in `docs/LLM-BENCHMARK.md`. Set `config/experiment.json` to the exact selected model tag and commit the change before the repeatability gate. Do not tune the prompt, budget, context, temperature or seed after seeing the benchmark result.
+After Model-Selection Pre-Study, select one model using the rule in `docs/LLM-BENCHMARK.md`. Set `config/experiment.json` to the exact selected model tag and commit the change before the repeatability gate. Do not tune the prompt, budget, context, temperature or seed after seeing the benchmark result.
 
 ```powershell
 npm run experiment -- doctor
@@ -78,7 +78,7 @@ npm run experiment -- main --freeze exports/freeze-v1.json --out exports/main-v1
 npm run experiment -- export --input exports/main-v1
 ```
 
-The repeatability gate is 4 predeclared development tasks (`development-01`, `development-03`, `development-05`, `development-06`) × 2 policies × 3 repetitions = 24 runs. It requires a clean output with stable evaluator outcomes, no infrastructure/budget/schema failures, and baseline competence. Exact probe trajectories are reported as diagnostics but do not need to be identical. The main experiment remains 32 base tasks × 2 policies = 64 planned policy executions. The full 12-task development pool remains available for engineering diagnostics, but no additional 12-task batch is mandatory after Phase 1.
+The repeatability gate is 4 predeclared development tasks (`development-01`, `development-03`, `development-05`, `development-06`) × 2 policies × 3 repetitions = 24 runs. It requires a clean output with stable evaluator outcomes, no infrastructure/budget/schema failures, and baseline competence. Exact probe trajectories are reported as diagnostics but do not need to be identical. The main experiment remains 32 base tasks × 2 policies = 64 planned policy executions. The full 12-task development pool remains available for engineering diagnostics, but no additional 12-task batch is mandatory after the Model-Selection Pre-Study.
 
 ## Configuration
 
