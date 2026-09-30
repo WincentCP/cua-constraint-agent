@@ -186,7 +186,11 @@ if ($tasks.Count -ne $expectedTaskCount -or $repetitions -ne $expectedRepetition
 if (($tasks | Select-Object -Unique).Count -ne $tasks.Count) {
   throw "$Mode benchmark protocol contains duplicate task IDs."
 }
-$invalidTasks = @($tasks | Where-Object { $_ -notmatch '^development-\d{2}
+$invalidTasks = @($tasks | Where-Object { $_ -notmatch '^development-\d{2}$' })
+if ($invalidTasks.Count) {
+  throw "$Mode benchmark protocol contains invalid task IDs: $($invalidTasks -join ', ')"
+}
+
 $plan = @()
 foreach ($model in $models) {
   foreach ($task in $tasks) {
