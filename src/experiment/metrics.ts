@@ -186,8 +186,10 @@ export function calculateMetrics(rows: Row[], plan: Cell[]) {
   });
   const pairedVda = pairs.filter(
       (p) =>
-        p.Baseline?.evaluation.vda !== null &&
-        p.Proposed?.evaluation.vda !== null,
+        p.Baseline !== null &&
+        p.Proposed !== null &&
+        p.Baseline.evaluation.vda !== null &&
+        p.Proposed.evaluation.vda !== null,
     ),
     overallEfficiency = efficiency.find((e) => e.group === "overall")!;
   const inference = {
