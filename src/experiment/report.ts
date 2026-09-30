@@ -102,6 +102,29 @@ export function renderReport(
       e.delta_probe.iqr,
     ]),
   );
+  const overallBaseline = metrics.accuracy.find(
+      (a) => a.group === "overall" && a.policy === "Baseline",
+    )!,
+    overallProposed = metrics.accuracy.find(
+      (a) => a.group === "overall" && a.policy === "Proposed",
+    )!,
+    deltaVda =
+      overallBaseline.vda === null || overallProposed.vda === null
+        ? null
+        : overallProposed.vda - overallBaseline.vda;
+  table(
+    "Paired VDA discordance",
+    ["Pair outcome", "Count"],
+    [
+      ["Both correct", metrics.inference.mcnemar.both_correct],
+      ["Baseline only correct", metrics.inference.mcnemar.baseline_only],
+      ["Proposed only correct", metrics.inference.mcnemar.proposed_only],
+      ["Both incorrect", metrics.inference.mcnemar.both_incorrect],
+    ],
+  );
+  paragraph(
+    `Absolute VDA difference (Proposed − Baseline): ${deltaVda === null ? "—" : (deltaVda * 100).toFixed(1) + " percentage points"}.`,
+  );
   table(
     "Analisis statistik berpasangan",
     ["Analisis", "N", "Statistik utama", "p exact dua sisi", "Catatan"],
