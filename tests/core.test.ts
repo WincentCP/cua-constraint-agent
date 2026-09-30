@@ -142,7 +142,8 @@ test("Lean pre-study subsets are fixed, valid and representative", () => {
   });
 
   const byId = new Map(developmentTasks.map((task) => [task.id, task]));
-  const phaseOneTasks = protocol.full.tasks.map((id: string) => {
+  const phaseOneTaskIds = protocol.full.tasks as string[];
+  const phaseOneTasks = phaseOneTaskIds.map((id) => {
     const task = byId.get(id);
     assert(task, `Unknown Phase-1 task: ${id}`);
     return task;
