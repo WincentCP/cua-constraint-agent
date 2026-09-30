@@ -117,6 +117,16 @@ function generate(
     [0, 1, 2],
     rng(parseInt(hash(`truth:${identity}`).slice(0, 8), 16)),
   );
+  const initial = fields.filter((k) => !hidden.includes(k)),
+    // Price/availability facts are scoped to a concrete variant. If either is
+    // initially visible, a wrong-variant decoy would make that visible fact
+    // irrelevant and silently increase the actual UNKNOWN count. Keep variant
+    // failures for tasks where scoped facts are not visible initially.
+    failureFields = initial.some(
+      (k) => k === "price" || k === "availability",
+    )
+      ? fields.filter((k) => k !== "variant")
+      : fields;
   const feasibleCount =
     type === "solvable"
       ? subtype === "single-feasible"
@@ -135,14 +145,13 @@ function generate(
       }
       continue;
     }
-    const field = fields[(index + rank) % 4];
+    const field = failureFields[(index + rank) % failureFields.length];
     if (field === "variant") p.size = goal.size === "XL" ? "S" : "XL";
     if (field === "material")
       p.material = goal.material === "katun" ? "linen" : "katun";
     if (field === "price") p.price = goal.maxPrice + 15000;
     if (field === "availability") p.available = false;
   }
-  const initial = fields.filter((k) => !hidden.includes(k));
   return {
     id: `${split}-${String(index + 1).padStart(2, "0")}`,
     split,
