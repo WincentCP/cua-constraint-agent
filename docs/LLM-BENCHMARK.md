@@ -13,7 +13,7 @@ Primary pilot candidates use the same Ollama runtime and the same Q4_K_M quantiz
 
 ### Inclusion/exclusion rationale
 
-A Model-Selection Pre-Study candidate must be selected **before performance results are inspected** and should satisfy all of the following:
+A candidate in the Model-Selection Pre-Study must be selected **before performance results are inspected** and should satisfy all of the following:
 
 1. approximately 7–10B parameters so local compute demand is comparable;
 2. runnable through the same local Ollama serving stack;
@@ -27,11 +27,11 @@ RNJ-1 requires Ollama 0.13.3 or newer, so the committed benchmark runner enforce
 
 ### Reproducible deployment incompatibility
 
-A single failed warm-up/episode does not remove a candidate. First diagnose the machine and run **one fresh pilot output** with the unchanged committed candidate list. If the same candidate again has reproducible deployment/infrastructure failure while the other candidates are healthy, it may be declared **deployment-ineligible** before full Model-Selection Pre-Study. Preserve both failed pilot outputs, document the reason in `docs/STATUS.md`, remove that candidate from `scripts/benchmark/models.json`, commit the protocol revision, and start another fresh pilot. The runner accepts 3–4 committed active candidates.
+A single failed warm-up/episode does not remove a candidate. First diagnose the machine and run **one fresh pilot output** with the unchanged committed candidate list. If the same candidate again has reproducible deployment/infrastructure failure while the other candidates are healthy, it may be declared **deployment-ineligible** before the full Model-Selection Pre-Study. Preserve both failed pilot outputs, document the reason in `docs/STATUS.md`, remove that candidate from `scripts/benchmark/models.json`, commit the protocol revision, and start another fresh pilot. The runner accepts 3–4 committed active candidates.
 
 Granite 3.3 8B Instruct Q4_K_M remains a **predeclared deployment fallback only** for Granite 4.1: if Granite 4.1 shows the reproducible incompatibility above, replace it with `granite3.3:8b-instruct-q4_K_M` in the committed candidate list instead of silently switching during a benchmark.
 
-Never exclude/replace a candidate because its VDA, latency, or repeatability is poor. Deployment eligibility is decided only from reproducible infrastructure compatibility, before full Model-Selection Pre-Study.
+Never exclude/replace a candidate because its VDA, latency, or repeatability is poor. Deployment eligibility is decided only from reproducible infrastructure compatibility, before the full Model-Selection Pre-Study.
 
 ## Repository runner
 
@@ -47,7 +47,7 @@ The runner rejects Node.js older than 24 and Ollama older than 0.13.3, verifies 
 
 Before timed benchmark episodes for each candidate, the runner performs one identical unscored warm-up inference and keeps the model resident briefly. This removes first-load latency from the 60-second per-call research timeout. Warm-up output and timing are written to `warmup.json`; warm-up is not included in VDA, repeatability, token, or latency summaries.
 
-The pilot is the recommended feasibility/preflight check on a new benchmark machine and is not used for model selection. With the default four candidates, the clean pilot contains 12 episodes; after a documented deployment exclusion it contains 9 episodes for three candidates. Continue only when the **currently committed active candidate set** completes a fresh pilot with zero infrastructure failures. Do not add repeated manual per-model smoke tests once that clean pilot exists. A healthy pilot reduces infrastructure risk but does not guarantee that the longer full benchmark cannot encounter a later infrastructure failure. The full Model-Selection Pre-Study benchmark remains mandatory under the predeclared lean protocol:
+The pilot is the recommended feasibility/preflight check on a new benchmark machine and is not used for model selection. With the default four candidates, the clean pilot contains 12 episodes; after a documented deployment exclusion it contains 9 episodes for three candidates. Continue only when the **currently committed active candidate set** completes a fresh pilot with zero infrastructure failures. Do not add repeated manual per-model smoke tests once that clean pilot exists. A healthy pilot reduces infrastructure risk but does not guarantee that the longer full benchmark cannot encounter a later infrastructure failure. The Model-Selection Pre-Study benchmark remains mandatory under the predeclared lean protocol:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full
@@ -65,11 +65,11 @@ Use Baseline only on:
 
 Run every active model/task combination once. With four committed candidates this is 12 pilot episodes; with one documented deployment exclusion it is 9.
 
-The pilot is a pipeline/feasibility check, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. The go/no-go condition is **all episodes healthy for the currently committed active candidate set, with zero recorded infrastructure failures**. If an infrastructure failure occurs, preserve it and diagnose the environment. Use the reproducible deployment-incompatibility rule above rather than repeatedly retrying indefinitely. Repeatability is assessed in the full Model-Selection Pre-Study benchmark, where each of the six predeclared Model-Selection Pre-Study tasks is repeated three times.
+The pilot is a pipeline/feasibility check, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. The go/no-go condition is **all episodes healthy for the currently committed active candidate set, with zero recorded infrastructure failures**. If an infrastructure failure occurs, preserve it and diagnose the environment. Use the reproducible deployment-incompatibility rule above rather than repeatedly retrying indefinitely. Repeatability is assessed in the Model-Selection Pre-Study benchmark, where each of the six predeclared development tasks is repeated three times.
 
-## Full Model-Selection Pre-Study benchmark
+## Model-Selection Pre-Study
 
-If the pilot is healthy, run every eligible candidate on the six predeclared development tasks `development-01`, `development-03`, `development-05`, `development-06`, `development-07`, and `development-11`, with three repetitions per task, still using Baseline only. This subset is fixed before data collection, balances U2/U3/U4 at two tasks each, and includes single-feasible, multi-feasible, no-solution, and unavailable-evidence cases. The remaining development tasks stay available for diagnostics but are not part of Model-Selection Pre-Study.
+If the pilot is healthy, run every eligible candidate on the six predeclared development tasks `development-01`, `development-03`, `development-05`, `development-06`, `development-07`, and `development-11`, with three repetitions per task, still using Baseline only. This subset is fixed before data collection, balances U2/U3/U4 at two tasks each, and includes single-feasible, multi-feasible, no-solution, and unavailable-evidence cases. The remaining development tasks stay available for diagnostics but are not part of the Model-Selection Pre-Study.
 
 The 32 main tasks are not used for model selection.
 
@@ -129,14 +129,14 @@ Use the shortest workflow that preserves the predeclared controls:
 
 1. machine/environment check;
 2. one clean pilot on the committed active set: normally 4 models × 3 development tasks × 1 run = 12 episodes (or 9 after one documented deployment exclusion);
-3. full Model-Selection Pre-Study benchmark: normally 4 × 6 × 3 = 72 episodes (or 3 × 6 × 3 = 54 after one documented deployment exclusion);
+3. Model-Selection Pre-Study benchmark: normally 4 × 6 × 3 = 72 episodes (or 3 × 6 × 3 = 54 after one documented deployment exclusion);
 4. select one model using the predeclared lexicographic rule and lock its configuration against further tuning;
 5. run the repeatability gate on the selected model: `development-01`, `development-03`, `development-05`, and `development-06` × 2 policies × 3 repetitions = 24 runs;
 6. after the gate passes, create the formal experiment freeze;
 7. collect the main paired experiment: 32 base tasks × 2 policies = 64 planned main episodes;
 8. perform the predeclared offline statistical analysis and report the results.
 
-The full model benchmark and the repeatability gate answer different questions and are not duplicates. Model-Selection Pre-Study asks which LLM is sufficiently reliable and competent under one shared Baseline policy. The gate asks whether the final selected model plus both experimental policies produce a stable system before main data collection.
+The full model benchmark and the repeatability gate answer different questions and are not duplicates. The Model-Selection Pre-Study asks which LLM is sufficiently reliable and competent under one shared Baseline policy. The gate asks whether the final selected model plus both experimental policies produce a stable system before main data collection.
 
 Do not repeat the 64-run main experiment three times: the task is the statistical unit and Baseline/Proposed are paired within each of the 32 tasks. Infrastructure reruns follow the separate documented rerun rule and are not additional experimental repetitions.
 
