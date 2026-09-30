@@ -319,6 +319,13 @@ export function validateDataset(tasks: Task[] = mainTasks) {
       t.products.some((p) => p.withheld.some((k) => t.initial.includes(k)))
     )
       errors.push(`${t.id}: initial UNKNOWN`);
+    if (
+      t.initial.some((k) => k === "price" || k === "availability") &&
+      t.products.some(
+        (p) => p.size !== t.goal.size || p.color !== t.goal.color,
+      )
+    )
+      errors.push(`${t.id}: scoped initial evidence changes actual UNKNOWN count`);
     const feasible = feasibleProducts(t),
       observable = feasible.filter((p) => !p.withheld.length);
     if (
