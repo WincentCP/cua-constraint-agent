@@ -11,7 +11,27 @@ Primary pilot candidates use the same Ollama runtime and the same Q4_K_M quantiz
 - `granite4.1:8b-q4_K_M`
 - `rnj-1:8b-instruct-q4_K_M`
 
-RNJ-1 requires Ollama 0.13.3 or newer, so the committed benchmark runner enforces that minimum runtime version before collection. Granite 3.3 8B Instruct Q4_K_M is a **predeclared deployment fallback only**: if Granite 4.1 cannot complete a clean pilot because of a reproducible infrastructure/deployment incompatibility, preserve the failed pilot, replace the candidate with `granite3.3:8b-instruct-q4_K_M` in a committed revision, and start a fresh pilot output. Do not switch candidates during the full Phase 1 benchmark.
+### Inclusion/exclusion rationale
+
+A Phase 1 candidate must be selected **before performance results are inspected** and should satisfy all of the following:
+
+1. approximately 7–10B parameters so local compute demand is comparable;
+2. runnable through the same local Ollama serving stack;
+3. available in the same Q4_K_M quantization class;
+4. suitable for structured JSON / agentic decision output without model-specific prompt tuning;
+5. feasible on the fixed benchmark machine.
+
+The four committed models satisfy that operational comparison target while providing different model families. Gemma is not in the active set because the current Gemma 3 sizes nearest this range are 4B and 12B, which would weaken size comparability. NVIDIA Nemotron is not mixed into the current active set because this protocol requires the same committed Ollama/Q4_K_M serving path; introducing a different serving stack would add a deployment confound. Either family can be considered in a future protocol revision **before collection** if an approximately comparable checkpoint is available on the same stack.
+
+RNJ-1 requires Ollama 0.13.3 or newer, so the committed benchmark runner enforces that minimum runtime version before collection.
+
+### Reproducible deployment incompatibility
+
+A single failed warm-up/episode does not remove a candidate. First diagnose the machine and run **one fresh pilot output** with the unchanged committed candidate list. If the same candidate again has reproducible deployment/infrastructure failure while the other candidates are healthy, it may be declared **deployment-ineligible** before full Phase 1. Preserve both failed pilot outputs, document the reason in `docs/STATUS.md`, remove that candidate from `scripts/benchmark/models.json`, commit the protocol revision, and start another fresh pilot. The runner accepts 3–4 committed active candidates.
+
+Granite 3.3 8B Instruct Q4_K_M remains a **predeclared deployment fallback only** for Granite 4.1: if Granite 4.1 shows the reproducible incompatibility above, replace it with `granite3.3:8b-instruct-q4_K_M` in the committed candidate list instead of silently switching during a benchmark.
+
+Never exclude/replace a candidate because its VDA, latency, or repeatability is poor. Deployment eligibility is decided only from reproducible infrastructure compatibility, before full Phase 1.
 
 ## Repository runner
 
@@ -27,7 +47,7 @@ The runner rejects Node.js older than 24 and Ollama older than 0.13.3, verifies 
 
 Before timed benchmark episodes for each candidate, the runner performs one identical unscored warm-up inference and keeps the model resident briefly. This removes first-load latency from the 60-second per-call research timeout. Warm-up output and timing are written to `warmup.json`; warm-up is not included in VDA, repeatability, token, or latency summaries.
 
-The pilot is the recommended one-time feasibility/preflight check on a new benchmark machine and is not used for model selection. If all 12 pilot episodes are healthy and the machine, driver, Ollama version, repository revision and configuration remain unchanged, do not add repeated manual per-model smoke tests or repeat the pilot without a documented reason. A healthy pilot reduces infrastructure risk but does not guarantee that the longer full benchmark cannot encounter a later infrastructure failure. The full Phase 1 benchmark remains mandatory under the predeclared lean protocol:
+The pilot is the recommended feasibility/preflight check on a new benchmark machine and is not used for model selection. With the default four candidates, the clean pilot contains 12 episodes; after a documented deployment exclusion it contains 9 episodes for three candidates. Continue only when the **currently committed active candidate set** completes a fresh pilot with zero infrastructure failures. Do not add repeated manual per-model smoke tests once that clean pilot exists. A healthy pilot reduces infrastructure risk but does not guarantee that the longer full benchmark cannot encounter a later infrastructure failure. The full Phase 1 benchmark remains mandatory under the predeclared lean protocol:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full
@@ -43,9 +63,9 @@ Use Baseline only on:
 - development-02 (U3)
 - development-03 (U4)
 
-Run every model/task combination once. With four primary candidates this is 12 pilot episodes.
+Run every active model/task combination once. With four committed candidates this is 12 pilot episodes; with one documented deployment exclusion it is 9.
 
-The pilot is a pipeline/feasibility check, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. The preferred go/no-go condition is 12/12 healthy pilot episodes with zero recorded infrastructure failures. If an infrastructure failure occurs, preserve it, diagnose the environment, and start a fresh pilot output after any environment change. Repeatability is assessed in the full Phase 1 benchmark, where each of the six predeclared Phase 1 tasks is repeated three times.
+The pilot is a pipeline/feasibility check, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. The go/no-go condition is **all episodes healthy for the currently committed active candidate set, with zero recorded infrastructure failures**. If an infrastructure failure occurs, preserve it and diagnose the environment. Use the reproducible deployment-incompatibility rule above rather than repeatedly retrying indefinitely. Repeatability is assessed in the full Phase 1 benchmark, where each of the six predeclared Phase 1 tasks is repeated three times.
 
 ## Full Phase 1 benchmark
 
@@ -108,8 +128,8 @@ Do **not** select a model using the size of the Proposed-minus-Baseline effect. 
 Use the shortest workflow that preserves the predeclared controls:
 
 1. machine/environment check;
-2. one pilot: 4 models × 3 development tasks × 1 run = 12 episodes;
-3. full Phase 1 model benchmark: 4 models × 6 predeclared development tasks × 3 repetitions = 72 episodes;
+2. one clean pilot on the committed active set: normally 4 models × 3 development tasks × 1 run = 12 episodes (or 9 after one documented deployment exclusion);
+3. full Phase 1 model benchmark: normally 4 × 6 × 3 = 72 episodes (or 3 × 6 × 3 = 54 after one documented deployment exclusion);
 4. select one model using the predeclared lexicographic rule and lock its configuration against further tuning;
 5. run the repeatability gate on the selected model: `development-01`, `development-03`, `development-05`, and `development-06` × 2 policies × 3 repetitions = 24 runs;
 6. after the gate passes, create the formal experiment freeze;
