@@ -89,7 +89,7 @@ RQ3 bersifat **deskriptif/eksploratori**, bukan uji treatment terpisah dan bukan
 
 - **H1:** Proposed memiliki Verified Decision Accuracy yang sama atau lebih tinggi daripada Baseline, terutama pada task dengan lebih banyak `UNKNOWN` awal.
 - **H2:** Pada paired-correct runs, Proposed memiliki jumlah probe yang lebih rendah.
-- **H3:** Keuntungan Proposed diperkirakan lebih terlihat pada U3/U4 dibanding U2.
+- **Ekspektasi eksploratori RQ3:** gap Proposed–Baseline diperkirakan lebih terlihat pada U3/U4 dibanding U2, tetapi tidak diperlakukan sebagai hipotesis confirmatory terpisah.
 
 Hipotesis bukan Definition of Done. Hasil nol atau negatif tetap merupakan hasil penelitian yang sah.
 
@@ -857,7 +857,7 @@ Implementasi belum dianggap sesuai PRD sebelum semua kondisi berikut dapat dibuk
 
 **AC-13.** Solvable terbagi 8 single-feasible dan 8 multi-feasible.
 
-**AC-14.** Dataset mencakup U2/U3/U4 dengan distribusi yang hampir seimbang dan setiap task mempunyai label yang dapat diverifikasi secara deterministik.
+**AC-14.** Dataset mencakup U2/U3/U4 dengan distribusi hampir seimbang; U2 memakai seluruh enam kombinasi hidden 2-dari-4 dan U3 seluruh empat kombinasi hidden 3-dari-4 secara hampir seimbang; unavailable-evidence tidak terpaku pada satu jenis constraint; setiap task tetap dapat diverifikasi secara deterministik.
 
 **AC-15.** Tidak ada EARLY/STAGED experimental multiplier; main = 64 policy runs.
 
