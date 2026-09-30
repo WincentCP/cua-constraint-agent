@@ -1,8 +1,8 @@
 # Constraint-Directed Computer-Use Agent
 
-Controlled research system comparing **Baseline generic probe selection** with **Proposed UNKNOWN-coverage selection**. Both receive the same goal, public Accessibility Tree, evidence ledger, eligible probes, model, budget, executor and verifier. Only the probe-selection rule differs.
+Controlled research system comparing **Baseline generic model-guided probe selection** with **Proposed UNKNOWN-coverage probe selection**. Both receive the same goal, public Accessibility Tree, evidence ledger, semantic probe annotations, eligible probes, model, budget, executor and verifier. Only the final probe-selection rule differs. The novelty is the isolated UNKNOWN-coverage selection rule—not constraint tracking or the general idea of continuing to search while evidence is incomplete.
 
-The approved methodology is [PRD-FINAL](docs/PRD-FINAL.md). Main evaluation contains **32 base tasks × 2 policies = 64 runs**: 16 solvable (8 single-feasible, 8 multi-feasible), 8 no-solution, and 8 unavailable-evidence. Initial information is grouped into U2/U3/U4 (11/10/11 tasks).
+The approved methodology is [PRD-FINAL](docs/PRD-FINAL.md). Main evaluation contains **32 base tasks × 2 policies = 64 runs**: 16 solvable (8 single-feasible, 8 multi-feasible), 8 no-solution, and 8 unavailable-evidence. Initial information is grouped into U2/U3/U4 (11/10/11 tasks). U2/U3 rotate hidden-constraint identities instead of always hiding the same facts, and unavailable-evidence cases diversify which decisive constraint is unpublished.
 
 This is a local CLI research tool with a synthetic website in isolated Chromium. It does not include a participant study, voice interface, payment flow, or production deployment.
 
@@ -42,13 +42,13 @@ ollama pull rnj-1:8b-instruct-q4_K_M
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-v1
 ```
 
-The pilot is a feasibility check only. On an unchanged machine, continue to the Baseline-only Phase 1 model-selection benchmark only after a clean 12/12 pilot. Full Phase 1 uses six predeclared development tasks × three repetitions across four models = 72 episodes:
+The pilot is a feasibility check only. With the default four-model set, continue on an unchanged machine only after a clean 12/12 pilot. If one model is reproducibly deployment-incompatible after one documented fresh retry, preserve the failed pilots, commit the documented exclusion (or Granite fallback), and obtain a clean fresh pilot on the remaining committed active set. Full Phase 1 normally uses six predeclared development tasks × three repetitions across four models = 72 episodes (54 with one documented deployment exclusion):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v1
 ```
 
-Select one model using the predeclared lexicographic rule in [LLM-BENCHMARK](docs/LLM-BENCHMARK.md), set `config/experiment.json` to that exact winning model tag without changing the other inference settings, and commit the selection before the 24-run repeatability gate:
+Select one model using the predeclared lexicographic rule in [LLM-BENCHMARK](docs/LLM-BENCHMARK.md), set `config/experiment.json` to that exact winning model tag without changing the other inference settings, and commit the selection before the 24-run repeatability gate. The gate requires stable evaluator outcomes and healthy execution; exact probe trajectories are diagnostic only:
 
 ```powershell
 npm run experiment -- repeatability --out exports/repeatability-v1
@@ -66,7 +66,7 @@ See [SETUP](docs/SETUP.md), [EXPERIMENT](docs/EXPERIMENT.md), [LLM-BENCHMARK](do
 
 The independent evaluator runs after the agent outcome and browser world are frozen. Successful ACT requires a correct final cart **and valid public evidence for all four constraints before dispatch**. Correct abstentions require public support. Healthy budget exhaustion counts as failure; infrastructure failures are recorded separately.
 
-Each experiment writes `experiment.json`, `journal.jsonl`, `events.jsonl`, `episodes.jsonl`, `episodes.csv`, `metrics.json`, `metrics.csv`, `paired-probes.csv`, and `failures.json`. On completion or a handled interruption it also writes `report.html` and `report.md`. Public UI screenshots are stored under `screenshots/<attempt-id>/`. Original attempts are retained. Primary comparison uses the earliest complete infrastructure-free pair, and probe efficiency uses only jointly correct pairs.
+Each experiment writes `experiment.json`, `journal.jsonl`, `events.jsonl`, `episodes.jsonl`, `episodes.csv`, `metrics.json`, `metrics.csv`, `paired-probes.csv`, and `failures.json`. On completion or a handled interruption it also writes `report.html` and `report.md`. Public UI screenshots are stored under `screenshots/<attempt-id>/`. Original attempts are retained. Primary comparison uses the earliest complete infrastructure-free pair, and probe efficiency uses only jointly correct pairs. Main reports also include exact two-sided McNemar paired counts/p-value and exact paired Wilcoxon signed-rank output with explicit zero/tie handling.
 
 Open `report.html` in a browser for the tables and screenshot gallery. Regenerate a report from existing final-contract data with:
 
