@@ -1,5 +1,6 @@
 import { type AgentOutcome, type Event } from "../core/types.ts";
 import { type Evaluation } from "../evaluation/oracle.ts";
+import { exactMcNemar, exactWilcoxonSignedRank } from "./statistics.ts";
 import { type Cell, type taskMetadata } from "./manifest.ts";
 
 export type Row = {
@@ -183,8 +184,25 @@ export function calculateMetrics(rows: Row[], plan: Cell[]) {
       paired_probe: efficiency.find((e) => e.group === `U${n}`),
     };
   });
+  const pairedVda = pairs.filter(
+      (p) => p.Baseline?.evaluation.vda !== null && p.Proposed?.evaluation.vda !== null,
+    ),
+    overallEfficiency = efficiency.find((e) => e.group === "overall")!;
+  const inference = {
+    mcnemar: exactMcNemar(
+      pairedVda.map((p) => ({
+        baseline: p.Baseline!.evaluation.vda as 0 | 1,
+        proposed: p.Proposed!.evaluation.vda as 0 | 1,
+      })),
+    ),
+    wilcoxon_probe_efficiency: exactWilcoxonSignedRank(
+      overallEfficiency.delta_probe.values,
+    ),
+    note:
+      "McNemar is confirmatory for paired VDA. Wilcoxon is secondary and conditional on jointly correct pairs; always interpret it with n, median/IQR and zero/tie counts.",
+  };
   return {
-    schema_version: 2,
+    schema_version: 3,
     demo: rows[0]?.demo ?? null,
     planned_original_runs: plan.length,
     original_attempts: rows.filter((r) => r.attempt === 0).length,
@@ -212,6 +230,7 @@ export function calculateMetrics(rows: Row[], plan: Cell[]) {
     })),
     accuracy,
     efficiency,
+    inference,
     mechanism,
     outcomes: Object.fromEntries(
       [...new Set(rows.map((r) => r.evaluation.outcome))].map((o) => [
