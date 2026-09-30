@@ -3,14 +3,14 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { developmentTasks, mainTasks } from "../src/environment/dataset.ts";
 
-test("LEUCO branding preserves the pre-revision research fixtures except names", () => {
+test("Final audited research fixtures stay deterministic apart from public names", () => {
   const tasks = [...developmentTasks, ...mainTasks].map((t) => ({
     ...t,
     products: t.products.map(({ name: _name, ...product }) => product),
   }));
-  // Captured from the clean 1b1ba57 fixtures before the storefront revision.
+  // Captured after the final 2026-09-30 methodological audit (balanced hidden patterns and diversified missing evidence).
   assert.equal(
     createHash("sha256").update(JSON.stringify(tasks)).digest("hex"),
-    "de54e9d7c0d39baace93dbe428fb4dace1b3d04dcb4aee156923b433de13e20e",
+    "23594a3e1a38e557e515f9b01552534dbfbf3b90c0eeb887f6b19fe5cfd374b1",
   );
 });
