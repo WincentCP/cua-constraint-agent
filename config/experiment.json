@@ -1,5 +1,5 @@
 {
-  "version": "final-2026-09-10",
+  "version": "final-2026-09-30-audit",
   "model": {
     "name": "qwen3.5:9b-q4_K_M",
     "think": false,
@@ -18,5 +18,7 @@
     "recoveries": 1
   },
   "order_seed": 20260910,
-  "reporting": { "screenshots": true }
+  "reporting": {
+    "screenshots": true
+  }
 }
