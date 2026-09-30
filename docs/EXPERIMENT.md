@@ -12,7 +12,7 @@ ACT/abstention rules, evidence updates, recovery and verification are shared. A 
 
 ## Development and gate
 
-The selected LLM arrives from the separate Phase 1 model-selection benchmark, which has exercised the six predeclared Phase 1 development tasks under Baseline. The full 12-task development pool remains available for diagnostics; do not add a standalone 12-task batch merely to expand the pre-study after results are observed.
+The selected LLM arrives from the separate Model-Selection Pre-Study, which has exercised the six predeclared Model-Selection Pre-Study development tasks under Baseline. The full 12-task development pool remains available for diagnostics; do not add a standalone 12-task batch merely to expand the pre-study after results are observed.
 
 1. Lock the selected model/configuration against further tuning.
 2. Run build, unit tests, integration tests and dataset validation.
@@ -20,7 +20,7 @@ The selected LLM arrives from the separate Phase 1 model-selection benchmark, wh
 4. Run `gate --input DIR` on that repeatability directory.
 5. Only after the gate passes, create the formal freeze and proceed to main.
 
-The standalone `development` command remains available for engineering diagnostics when a code or dataset change needs investigation, but it is not an additional mandatory batch after a completed Phase 1 model benchmark.
+The standalone `development` command remains available for engineering diagnostics when a code or dataset change needs investigation, but it is not an additional mandatory batch after a completed Model-Selection Pre-Study benchmark.
 
 The gate requires real-model records bound to the current source/config/dataset/model/runtime, all 12 healthy complete pairs with **zero infrastructure failures in the repeatability output**, Baseline correct on at least three distinct tasks requiring two or more probes, stable evaluator outcomes across the three repetitions per task/policy, and no budget exhaustion or structured-output repair in selected gate runs. Exact selected-probe trajectories are recorded as a diagnostic repeatability measure but are **not** a hard pass/fail criterion.
 
