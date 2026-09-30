@@ -27,7 +27,7 @@ The runner rejects Node.js older than 24 and Ollama older than 0.13.3, verifies 
 
 Before timed benchmark episodes for each candidate, the runner performs one identical unscored warm-up inference and keeps the model resident briefly. This removes first-load latency from the 60-second per-call research timeout. Warm-up output and timing are written to `warmup.json`; warm-up is not included in VDA, repeatability, token, or latency summaries.
 
-The pilot is the recommended one-time feasibility/preflight check on a new benchmark machine and is not used for model selection. If all 12 pilot episodes are healthy and the machine, driver, Ollama version, repository revision and configuration remain unchanged, do not add repeated manual per-model smoke tests or repeat the pilot without a documented reason. A healthy pilot reduces infrastructure risk but does not guarantee that the longer full benchmark cannot encounter a later infrastructure failure. The full Phase 1 benchmark remains mandatory and unchanged:
+The pilot is the recommended one-time feasibility/preflight check on a new benchmark machine and is not used for model selection. If all 12 pilot episodes are healthy and the machine, driver, Ollama version, repository revision and configuration remain unchanged, do not add repeated manual per-model smoke tests or repeat the pilot without a documented reason. A healthy pilot reduces infrastructure risk but does not guarantee that the longer full benchmark cannot encounter a later infrastructure failure. The full Phase 1 benchmark remains mandatory under the predeclared lean protocol:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full
@@ -45,11 +45,11 @@ Use Baseline only on:
 
 Run every model/task combination once. With four primary candidates this is 12 pilot episodes.
 
-The pilot is a pipeline/feasibility check, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. The preferred go/no-go condition is 12/12 healthy pilot episodes with zero recorded infrastructure failures. If an infrastructure failure occurs, preserve it, diagnose the environment, and start a fresh pilot output after any environment change. Repeatability is assessed in the full Phase 1 benchmark, where every development task is repeated three times.
+The pilot is a pipeline/feasibility check, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. The preferred go/no-go condition is 12/12 healthy pilot episodes with zero recorded infrastructure failures. If an infrastructure failure occurs, preserve it, diagnose the environment, and start a fresh pilot output after any environment change. Repeatability is assessed in the full Phase 1 benchmark, where each of the six predeclared Phase 1 tasks is repeated three times.
 
 ## Full Phase 1 benchmark
 
-If the pilot is healthy, run every eligible candidate on all 12 development tasks with three repetitions per task, still using Baseline only.
+If the pilot is healthy, run every eligible candidate on the six predeclared development tasks `development-01`, `development-03`, `development-05`, `development-06`, `development-07`, and `development-11`, with three repetitions per task, still using Baseline only. This subset is fixed before data collection, balances U2/U3/U4 at two tasks each, and includes single-feasible, multi-feasible, no-solution, and unavailable-evidence cases. The remaining development tasks stay available for diagnostics but are not part of Phase 1 model selection.
 
 The 32 main tasks are not used for model selection.
 
@@ -109,9 +109,9 @@ Use the shortest workflow that preserves the predeclared controls:
 
 1. machine/environment check;
 2. one pilot: 4 models × 3 development tasks × 1 run = 12 episodes;
-3. full Phase 1 model benchmark: 4 models × 12 development tasks × 3 repetitions = 144 episodes;
+3. full Phase 1 model benchmark: 4 models × 6 predeclared development tasks × 3 repetitions = 72 episodes;
 4. select one model using the predeclared lexicographic rule and lock its configuration against further tuning;
-5. run the repeatability gate on the selected model: first 6 development tasks × 2 policies × 3 repetitions = 36 runs;
+5. run the repeatability gate on the selected model: `development-01`, `development-03`, `development-05`, and `development-06` × 2 policies × 3 repetitions = 24 runs;
 6. after the gate passes, create the formal experiment freeze;
 7. collect the main paired experiment: 32 base tasks × 2 policies = 64 planned main episodes;
 8. perform the predeclared offline statistical analysis and report the results.

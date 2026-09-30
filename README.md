@@ -42,13 +42,13 @@ ollama pull rnj-1:8b-instruct-q4_K_M
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-v1
 ```
 
-The pilot is a feasibility check only. On an unchanged machine, continue to the Baseline-only Phase 1 model-selection benchmark only after a clean 12/12 pilot:
+The pilot is a feasibility check only. On an unchanged machine, continue to the Baseline-only Phase 1 model-selection benchmark only after a clean 12/12 pilot. Full Phase 1 uses six predeclared development tasks × three repetitions across four models = 72 episodes:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v1
 ```
 
-Select one model using the predeclared lexicographic rule in [LLM-BENCHMARK](docs/LLM-BENCHMARK.md), set `config/experiment.json` to that exact winning model tag without changing the other inference settings, and commit the selection before the repeatability gate:
+Select one model using the predeclared lexicographic rule in [LLM-BENCHMARK](docs/LLM-BENCHMARK.md), set `config/experiment.json` to that exact winning model tag without changing the other inference settings, and commit the selection before the 24-run repeatability gate:
 
 ```powershell
 npm run experiment -- repeatability --out exports/repeatability-v1
@@ -58,7 +58,7 @@ npm run experiment -- main --freeze exports/freeze-v1.json --out exports/main-v1
 npm run experiment -- export --input exports/main-v1
 ```
 
-Do not run the old standalone 12-task `development` batch after a completed Phase 1 benchmark solely to duplicate the same development evidence.
+The 12-task `development` pool remains available for diagnostics, but do not add a full standalone development batch after Phase 1 merely because more tasks are available; the pre-study subsets are fixed before collection.
 
 See [SETUP](docs/SETUP.md), [EXPERIMENT](docs/EXPERIMENT.md), [LLM-BENCHMARK](docs/LLM-BENCHMARK.md), [FRONTEND-INTEGRATION](docs/FRONTEND-INTEGRATION.md), and [STATUS](docs/STATUS.md) for prerequisites, experiment procedures, interface integration decisions, and observed validation evidence.
 

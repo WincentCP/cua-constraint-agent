@@ -2,7 +2,7 @@
 
 The controlled Baseline-versus-Proposed experiment contract is implemented and validation-ready.
 
-Implemented: final 32-task dataset; shared browser agent and evidence ledger; Baseline/Proposed selection; independent pre-ACT evaluator; durable recording; paired metrics; development/repeatability/freeze/main CLI; interrupted-attempt recovery and paired infrastructure reruns; Baseline-only four-model Phase 1 benchmark runner with pilot/full modes, repetition identity, environment capture and summary export.
+Implemented: final 32-task dataset; shared browser agent and evidence ledger; Baseline/Proposed selection; independent pre-ACT evaluator; durable recording; paired metrics; development/repeatability/freeze/main CLI; interrupted-attempt recovery and paired infrastructure reruns; a predeclared lean Baseline-only four-model Phase 1 runner (12-episode pilot, 72-episode full benchmark), 24-run selected-model repeatability gate, environment capture and summary export.
 
 Current Phase 1 candidate set: Qwen3.5 9B Q4_K_M, Ministral-3 8B Instruct Q4_K_M, Granite 4.1 8B Q4_K_M and RNJ-1 8B Instruct Q4_K_M. Granite 3.3 8B Instruct Q4_K_M is the predeclared deployment fallback if Granite 4.1 cannot complete a clean pilot on the fixed benchmark machine. The runner requires Ollama 0.13.3+ because RNJ-1 requires that runtime generation.
 

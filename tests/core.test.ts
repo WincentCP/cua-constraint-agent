@@ -18,7 +18,11 @@ import {
   validateDataset,
   feasibleProducts,
 } from "../src/environment/dataset.ts";
-import { manifest, taskMetadata } from "../src/experiment/manifest.ts";
+import {
+  manifest,
+  repeatabilityTaskIds,
+  taskMetadata,
+} from "../src/experiment/manifest.ts";
 import {
   calculateMetrics,
   selectedPairs,
@@ -100,6 +104,59 @@ test("32 main tasks, exact composition, U2/U3/U4 and disjoint development split"
     );
   assert(m.some((c, i) => i % 2 === 0 && c.policy === "Baseline"));
   assert(m.some((c, i) => i % 2 === 0 && c.policy === "Proposed"));
+});
+test("Lean pre-study subsets are fixed, valid and representative", () => {
+  assert.deepEqual(repeatabilityTaskIds, [
+    "development-01",
+    "development-03",
+    "development-05",
+    "development-06",
+  ]);
+  const repeatability = manifest("repeatability");
+  assert.equal(repeatability.length, 24);
+  assert.deepEqual(
+    [...new Set(repeatability.map((c) => c.base))].sort(),
+    [...repeatabilityTaskIds].sort(),
+  );
+
+  const protocol = JSON.parse(
+    readFileSync(
+      join(process.cwd(), "scripts", "benchmark", "protocol.json"),
+      "utf8",
+    ),
+  );
+  assert.deepEqual(protocol.pilot, {
+    tasks: ["development-01", "development-02", "development-03"],
+    repetitions: 1,
+  });
+  assert.deepEqual(protocol.full, {
+    tasks: [
+      "development-01",
+      "development-03",
+      "development-05",
+      "development-06",
+      "development-07",
+      "development-11",
+    ],
+    repetitions: 3,
+  });
+
+  const byId = new Map(developmentTasks.map((task) => [task.id, task]));
+  const phaseOneTasks = protocol.full.tasks.map((id: string) => {
+    const task = byId.get(id);
+    assert(task, `Unknown Phase-1 task: ${id}`);
+    return task;
+  });
+  assert.deepEqual(
+    [2, 3, 4].map(
+      (unknown) =>
+        phaseOneTasks.filter((task) => task.unknown === unknown).length,
+    ),
+    [2, 2, 2],
+  );
+  assert.equal(new Set(phaseOneTasks.map((task) => task.type)).size, 3);
+  assert(phaseOneTasks.some((task) => task.subtype === "single-feasible"));
+  assert(phaseOneTasks.some((task) => task.subtype === "multi-feasible"));
 });
 test("UNKNOWN, conflicts, null values and wrong-variant facts cannot satisfy ACT", () => {
   const e = new Evidence();

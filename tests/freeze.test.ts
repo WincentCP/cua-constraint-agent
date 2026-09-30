@@ -87,7 +87,7 @@ test("Development gate accepts consistent full real-mode evidence and rejects de
       f.save();
       const gate = developmentGate(f.out);
       assert.equal(gate.passed, !demo);
-      assert.equal(gate.selected_runs, 36);
+      assert.equal(gate.selected_runs, 24);
       if (demo) assert(gate.problems.some((p) => p.includes("Demo")));
     } finally {
       f.close();

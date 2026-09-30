@@ -12,17 +12,17 @@ ACT/abstention rules, evidence updates, recovery and verification are shared. A 
 
 ## Development and gate
 
-The selected LLM arrives from the separate Phase 1 model-selection benchmark, which has already exercised all 12 development tasks under Baseline. Do not add a redundant standalone 12-task development batch solely to repeat that evidence.
+The selected LLM arrives from the separate Phase 1 model-selection benchmark, which has exercised the six predeclared Phase 1 development tasks under Baseline. The full 12-task development pool remains available for diagnostics; do not add a standalone 12-task batch merely to expand the pre-study after results are observed.
 
 1. Lock the selected model/configuration against further tuning.
 2. Run build, unit tests, integration tests and dataset validation.
-3. Run `repeatability`: first six development tasks, three repetitions, both policies (36 runs). These cover U2/U3/U4 and both solvable subtypes.
+3. Run `repeatability` on the predeclared tasks `development-01`, `development-03`, `development-05`, and `development-06`, three repetitions, both policies (24 runs). These cover U2/U3/U4 and both solvable subtypes.
 4. Run `gate --input DIR` on that repeatability directory.
 5. Only after the gate passes, create the formal freeze and proceed to main.
 
 The standalone `development` command remains available for engineering diagnostics when a code or dataset change needs investigation, but it is not an additional mandatory batch after a completed Phase 1 model benchmark.
 
-The gate requires real-model records bound to the current source/config/dataset/model/runtime, all 18 healthy complete pairs, Baseline correct on at least three distinct tasks requiring two or more probes, identical outcomes and selected-probe trajectories across three repetitions per task/policy, and no budget exhaustion or structured-output repair in selected gate runs.
+The gate requires real-model records bound to the current source/config/dataset/model/runtime, all 12 healthy complete pairs, Baseline correct on at least three distinct tasks requiring two or more probes, identical outcomes and selected-probe trajectories across three repetitions per task/policy, and no budget exhaustion or structured-output repair in selected gate runs.
 
 These conservative engineering criteria are declared before main and do not require Proposed to outperform Baseline. Any development fix invalidates the old gate. Budget must support the public route bounds printed by validation and must not be tuned to maximize the policy gap.
 

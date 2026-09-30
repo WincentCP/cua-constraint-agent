@@ -14,6 +14,14 @@ export type Cell = {
   pair: string;
   repeat: number;
 };
+
+export const repeatabilityTaskIds = [
+  "development-01",
+  "development-03",
+  "development-05",
+  "development-06",
+] as const;
+const repeatabilityTaskIdSet = new Set<string>(repeatabilityTaskIds);
 export function manifest(
   mode: "main" | "development" | "repeatability",
 ): Cell[] {
@@ -22,7 +30,9 @@ export function manifest(
       mode === "main"
         ? mainTasks
         : mode === "repeatability"
-          ? developmentTasks.slice(0, 6)
+          ? developmentTasks.filter((task) =>
+              repeatabilityTaskIdSet.has(task.id),
+            )
           : developmentTasks;
   const repeats = mode === "repeatability" ? 3 : 1,
     result: Cell[] = [];

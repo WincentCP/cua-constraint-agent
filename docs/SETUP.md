@@ -57,7 +57,7 @@ If the machine, driver, Ollama version, repository revision and configuration re
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v1
 ```
 
-Full Phase 1 is 4 models × 12 development tasks × 3 repetitions = 144 Baseline-only episodes. The runner checks that all four model tags exist before starting model episodes, so a missing late candidate cannot create an avoidable partial benchmark.
+Full Phase 1 is 4 models × 6 predeclared development tasks × 3 repetitions = 72 Baseline-only episodes. The fixed task subset is `development-01`, `development-03`, `development-05`, `development-06`, `development-07`, and `development-11`. It balances U2/U3/U4 at two tasks each and covers both solvable subtypes plus no-solution and unavailable-evidence. The runner checks that all four model tags exist before starting model episodes, so a missing late candidate cannot create an avoidable partial benchmark.
 
 If Granite 4.1 cannot complete a clean pilot because of a reproducible deployment/infrastructure incompatibility, preserve that pilot. The predeclared fallback is `granite3.3:8b-instruct-q4_K_M`. Changing to the fallback requires updating and committing `scripts/benchmark/models.json`, then starting a fresh pilot output. Never switch candidates in the middle of the full Phase 1 benchmark.
 
@@ -76,7 +76,7 @@ npm run experiment -- main --freeze exports/freeze-v1.json --out exports/main-v1
 npm run experiment -- export --input exports/main-v1
 ```
 
-The repeatability gate is 6 development tasks × 2 policies × 3 repetitions = 36 runs. The main experiment is 32 base tasks × 2 policies = 64 planned policy executions. The standalone `development` command remains available for engineering diagnostics, but it is not an additional mandatory 12-task batch after a completed Phase 1 benchmark.
+The repeatability gate is 4 predeclared development tasks (`development-01`, `development-03`, `development-05`, `development-06`) × 2 policies × 3 repetitions = 24 runs. The main experiment remains 32 base tasks × 2 policies = 64 planned policy executions. The full 12-task development pool remains available for engineering diagnostics, but no additional 12-task batch is mandatory after Phase 1.
 
 ## Configuration
 
