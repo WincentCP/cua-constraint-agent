@@ -42,9 +42,11 @@ Pada task multi-constraint, final result yang terlihat benar belum tentu diperol
 
 LiveLedger / *When Is Enough Not Enough? Illusory Completion in Search Agents* menunjukkan masalah serupa pada search agents: agent dapat menganggap task selesai ketika masih ada constraint yang belum terverifikasi. Paper tersebut menunjukkan bahwa explicit constraint-state tracking membantu mengurangi underverified answers. Karena manfaat tracking itu sendiri sudah pernah ditunjukkan, penelitian ini **tidak mengklaim evidence/constraint ledger sebagai novelty**.
 
-Gap yang diuji di sini lebih sempit:
+Gap yang diuji di sini lebih sempit. LiveLedger telah menunjukkan manfaat explicit constraint-state tracking dan mendorong agent untuk melanjutkan pencarian ketika constraint belum terverifikasi. Karena itu, penelitian ini tidak mengklaim penggunaan status `UNKNOWN` sebagai novelty.
 
-> Jika kedua agent sudah memiliki constraint state yang sama, apakah strategi yang secara eksplisit memprioritaskan pemeriksaan untuk constraint yang masih `UNKNOWN` menghasilkan keputusan yang lebih tepat dan/atau lebih efisien daripada generic probe selection?
+> Jika kedua agent sudah memiliki constraint state dan semantic probe annotations yang sama, apakah **aturan pemilihan probe yang eksplisit berdasarkan jumlah constraint `UNKNOWN` yang berpotensi ditutup oleh sebuah probe** menghasilkan keputusan yang lebih tepat dan/atau lebih efisien daripada generic model-guided probe selection?
+
+Novelty yang diuji adalah **isolated UNKNOWN-coverage probe-selection rule**, bukan constraint tracking, evidence ledger, atau gagasan umum untuk terus mencari ketika bukti belum lengkap.
 
 WebArena dan benchmark web-agent lain mendukung penggunaan lingkungan terkontrol dan evaluator programatik untuk mengukur functional correctness. Prinsip ini digunakan di penelitian ini agar tiap task mempunyai ground truth yang jelas dan dapat diulang.
 
@@ -78,10 +80,10 @@ Dengan model, tools, Accessibility Tree observation, evidence matrix, eligible p
 **RQ2 — Probe efficiency**  
 Pada task yang diselesaikan dengan benar oleh kedua kondisi, apakah constraint-directed probe selection membutuhkan lebih sedikit probe untuk mencapai keputusan yang terverifikasi?
 
-**RQ3 — Mechanism check**  
-Bagaimana perbedaan performa antara Proposed dan Baseline berubah ketika jumlah constraint yang masih `UNKNOWN` pada awal task meningkat dari U2 menjadi U3 dan U4?
+**RQ3 — Exploratory mechanism check**  
+Bagaimana pola perbedaan performa antara Proposed dan Baseline pada task dengan tingkat ketidaklengkapan bukti awal U2, U3, dan U4?
 
-RQ3 berfungsi sebagai **mechanism analysis**, bukan klaim generalisasi luas. Jika gap Proposed meningkat ketika lebih banyak constraint belum terbukti, hasil tersebut memperkuat argumen bahwa mekanisme bekerja sesuai tujuan. Jika tidak, hasil tersebut tetap valid dan membatasi klaim penelitian.
+RQ3 bersifat **deskriptif/eksploratori**, bukan uji treatment terpisah dan bukan klaim kausal bahwa jumlah `UNKNOWN` saja menyebabkan perubahan efek. Dataset merotasi identitas constraint yang disembunyikan pada U2/U3 untuk mengurangi confounding, tetapi strata tetap kecil sehingga interpretasi dibatasi pada pola mekanisme.
 
 ### 3.3 Hipotesis kerja
 
@@ -186,9 +188,13 @@ Task diberi label:
 - **U3:** tepat 3 dari 4 belum dapat dibuktikan.
 - **U4:** seluruh 4 constraint masih membutuhkan pemeriksaan.
 
-Agar label tidak ambigu, untuk satu base task **jenis constraint yang tersembunyi di initial state harus konsisten di ketiga kandidat**. Contoh U2 dapat menyembunyikan price dan availability untuk semua kandidat, sementara variant match dan material sudah dapat dibaca.
+Agar label tidak ambigu, untuk satu base task **jenis constraint yang tersembunyi di initial state harus konsisten di ketiga kandidat**. Namun identitas hidden constraint **tidak boleh identik untuk seluruh task pada level U yang sama**.
 
-U2/U3/U4 menggantikan desain EARLY/STAGED lama.
+- U2 merotasi keenam kombinasi 2-dari-4 hidden constraints secara hampir seimbang.
+- U3 merotasi keempat kombinasi 3-dari-4 secara hampir seimbang.
+- U4 menyembunyikan seluruh empat constraint sehingga hanya memiliki satu pola yang mungkin.
+
+Rotasi ini mengurangi confounding antara *jumlah* initial UNKNOWN dan *jenis* constraint yang disembunyikan. U2/U3/U4 menggantikan desain EARLY/STAGED lama.
 
 ### 5.5 Probe
 
@@ -432,6 +438,8 @@ Distribusi boleh diubah sedikit **hanya sebelum freeze** bila fixture feasibilit
 
 - Ada minimal satu kandidat yang tidak dapat dibuktikan gagal hanya dari evidence yang tersedia.
 - Minimal satu decisive fact sengaja tidak tersedia melalui supported public route.
+- Missing decisive fact harus dipilih dari constraint yang memang hidden pada task tersebut, sehingga tidak bocor dari initial observation.
+- Jenis missing fact didiversifikasi lintas task (variant/material/price/availability bila feasible), bukan selalu satu constraint seperti price.
 - Agent tidak boleh menggunakan hidden backend truth.
 - Correct terminal decision adalah `INSUFFICIENT_EVIDENCE`.
 
@@ -500,7 +508,7 @@ Untuk U2/U3/U4, hitung:
 - absolute VDA difference;
 - paired probe difference pada jointly correct runs.
 
-Jika keuntungan Proposed meningkat seiring U2 → U3 → U4, hal itu mendukung causal story bahwa unknown-directed selection lebih berguna ketika kebutuhan evidence acquisition meningkat.
+U2/U3/U4 digunakan untuk melihat pola mekanisme secara eksploratori. Perbedaan yang membesar atau mengecil antar-level dapat dibahas sebagai pola yang konsisten/tidak konsisten dengan mekanisme yang diharapkan, tetapi tidak boleh ditafsirkan sebagai efek kausal murni dari jumlah UNKNOWN.
 
 ### 10.4 Diagnostic metrics
 
@@ -592,9 +600,17 @@ Tujuannya bukan memastikan Baseline tinggi, tetapi memastikan ia kompeten dan ti
 
 ### 13.3 Repeatability check
 
-Sebelum freeze, jalankan subset kecil development task beberapa kali pada kedua policy.
+Sebelum freeze, jalankan subset kecil development task tiga kali pada kedua policy.
 
-Jika trajectory sangat tidak stabil, perbaiki determinism/configuration sebelum main. Jangan menambah repeated main trials hanya karena satu development failure kecuali variability memang terbukti mengancam interpretasi.
+Hard gate memerlukan:
+
+- seluruh repetition sehat dan bebas infrastructure failure;
+- tidak ada budget exhaustion;
+- tidak ada unrecovered/repair-dependent structured-output failure;
+- evaluator outcome stabil untuk task/policy yang sama;
+- Baseline tetap menunjukkan kompetensi pada beberapa multi-probe development task.
+
+**Exact selected-probe trajectory tidak wajib identik.** Urutan probe tetap dicatat sebagai diagnostic repeatability metric karena dua trajectory yang berbeda dapat sama-sama valid, evidence-complete, dan berakhir pada outcome yang sama. Variasi trajectory boleh dibahas, tetapi tidak otomatis menggagalkan gate.
 
 ### 13.4 Freeze
 
@@ -941,15 +957,31 @@ Hanya task di mana kedua policy correct:
 - median `DeltaProbe`;
 - range/IQR.
 
-### Figure/summary — Mechanism trend
+### Table C — Paired inferential analysis
 
-Tampilkan gap Proposed - Baseline pada U2/U3/U4.
+Untuk main 32 paired tasks:
+
+- exact two-sided McNemar pada paired VDA;
+- tampilkan four-cell paired counts: both correct, Baseline-only correct, Proposed-only correct, both incorrect;
+- tampilkan absolute VDA difference dan exact p-value; p-value tidak boleh dilaporkan sendirian.
+
+Untuk probe efficiency pada jointly-correct pairs:
+
+- paired Wilcoxon signed-rank;
+- zero differences dikeluarkan dari signed-rank statistic;
+- ties menggunakan average ranks;
+- laporkan jointly-correct n, non-zero n, zero count, median/IQR delta probe, statistic, dan exact two-sided p-value;
+- jika n efektif kecil, inference diperlakukan sebagai secondary dan paired distribution tetap menjadi fokus.
+
+### Figure/summary — Exploratory mechanism trend
+
+Tampilkan gap Proposed - Baseline pada U2/U3/U4 secara deskriptif. Jangan menjalankan confirmatory test terpisah untuk setiap U-level.
 
 Interpretasi yang boleh dibuat:
 
 - Proposed lebih accurate pada kondisi tertentu;
 - Proposed lebih/kurang efisien pada jointly correct tasks;
-- keuntungan tampak/tidak tampak meningkat dengan initial unknown count;
+- pola gap tampak/tidak tampak berubah pada tingkat initial evidence incompleteness yang berbeda;
 - failure pattern apa yang paling sering terjadi.
 
 Interpretasi yang tidak boleh dibuat tanpa bukti tambahan:
@@ -962,9 +994,40 @@ Interpretasi yang tidak boleh dibuat tanpa bukti tambahan:
 
 ---
 
-## 23. Definition of Done
+## 23. Threats to Validity
 
-### 23.1 Engineering DoD
+### 23.1 Internal validity
+
+- LLM/runtime variability dikendalikan dengan fixed model/configuration, temperature 0, seed, repeatability gate, frozen source/runtime identity, dan full browser/world reset per attempt.
+- Order effect dikurangi dengan seeded base order dan counterbalanced policy order.
+- Baseline dan Proposed menerima capability yang sama; hanya aturan final probe selection yang berbeda.
+- Hidden constraint identity U2/U3 dirotasi agar U-level tidak selalu identik dengan jenis fact tertentu.
+- Independent evaluator tidak menjadi input agent dan memvalidasi evidence aktual sebelum ACT.
+
+### 23.2 Construct validity
+
+- VDA mengoperasionalkan **verified correct decision**, bukan sekadar final cart correctness.
+- Probe count digunakan sebagai ukuran utama information-acquisition efficiency karena paling dekat dengan treatment; wall time, token, dan action count tetap diagnostic.
+- Correct abstention membutuhkan public support; budget exhaustion tidak dianggap abstention yang benar.
+
+### 23.3 External validity
+
+- Hasil berlaku pada controlled synthetic e-commerce-like task set, tiga kandidat, empat constraint, selected local model, dan Accessibility Tree representation.
+- Penelitian tidak membuktikan generalisasi langsung ke live marketplace, domain lain, vision-based agents, atau pengguna tunanetra.
+- Controlled environment dipilih untuk meningkatkan internal validity dan auditability mekanisme, bukan untuk mensimulasikan seluruh kompleksitas web nyata.
+
+### 23.4 Statistical conclusion validity
+
+- Unit statistik main adalah 32 paired base tasks, bukan jumlah model call atau repetition pre-study.
+- Exact McNemar dapat memiliki power terbatas jika discordant pairs sedikit; paired counts dan effect magnitude wajib dilaporkan bersama p-value.
+- Wilcoxon hanya menggunakan jointly-correct pairs dan dapat memiliki n efektif kecil setelah zero differences dikeluarkan; hasilnya secondary dan harus dibaca bersama median/IQR serta paired deltas.
+- U2/U3/U4 adalah exploratory strata dan tidak digunakan untuk multiple confirmatory hypothesis tests.
+
+---
+
+## 24. Definition of Done
+
+### 24.1 Engineering DoD
 
 - final code sesuai acceptance criteria;
 - legacy out-of-scope flow dihapus;
@@ -973,7 +1036,7 @@ Interpretasi yang tidak boleh dibuat tanpa bukti tambahan:
 - export menghasilkan data yang cukup untuk VDA dan paired probe analysis;
 - no stale docs atau dead research paths.
 
-### 23.2 Pre-main research DoD
+### 24.2 Pre-main research DoD
 
 - 32-task main dataset selesai dan diaudit;
 - U2/U3/U4 benar;
@@ -984,7 +1047,7 @@ Interpretasi yang tidak boleh dibuat tanpa bukti tambahan:
 - code/config/model/dataset/prompt/budget difreeze;
 - main run order disimpan sebelum data collection.
 
-### 23.3 Final research DoD
+### 24.3 Final research DoD
 
 - 64 planned main policy runs dijalankan atau missing/infrastructure runs dijelaskan transparan;
 - rerun mengikuti protocol;
@@ -995,7 +1058,7 @@ Interpretasi yang tidak boleh dibuat tanpa bukti tambahan:
 
 ---
 
-## 24. Instruksi untuk GPT Astra
+## 25. Instruksi untuk GPT Astra
 
 Gunakan dokumen ini sebagai **research contract**, bukan sebagai permintaan untuk mempertahankan arsitektur lama.
 
@@ -1024,7 +1087,7 @@ Jika ada konflik antara implementasi lama dan dokumen ini, **dokumen ini menang*
 
 ---
 
-## 25. Literatur Utama dan Posisi Penelitian
+## 26. Literatur Utama dan Posisi Penelitian
 
 ### LiveLedger / Illusory Completion
 
@@ -1063,12 +1126,12 @@ Relevansi: contoh UI-agent research yang memisahkan technical behavior dan user-
 
 ---
 
-## 26. Final Research Statement
+## 27. Final Research Statement
 
-Kontribusi penelitian ini bukan Accessibility Tree, bukan evidence matrix, dan bukan constraint tracking itu sendiri.
+Kontribusi penelitian ini bukan Accessibility Tree, bukan evidence matrix, bukan constraint tracking itu sendiri, dan bukan gagasan umum untuk terus mencari saat constraint masih `UNKNOWN`.
 
 **Kontribusi yang diuji adalah:**
 
-> sebuah strategi **constraint-directed probe selection** yang menggunakan constraint state yang sama dengan baseline, tetapi secara eksplisit memprioritaskan pemeriksaan yang dapat menutup constraint `UNKNOWN`; manfaatnya diuji melalui controlled paired benchmark menggunakan verified decisions, pre-ACT evidence completeness, probe efficiency, dan analysis berdasarkan initial unknown count.
+> sebuah **isolated UNKNOWN-coverage probe-selection rule** pada constraint-directed computer-use agent: kedua kondisi menerima goal, constraint ledger, semantic probe annotations, model, tools, dan budget yang sama, tetapi Proposed secara deterministik memprioritaskan probe yang berpotensi menutup lebih banyak constraint `UNKNOWN`, sedangkan Baseline menggunakan generic model-guided progress score. Manfaatnya diuji melalui controlled paired benchmark menggunakan verified decisions dan paired probe efficiency.
 
 Dengan demikian, penelitian mempunyai satu variabel eksperimen yang jelas, evaluator independen, dataset yang terstruktur, metric yang tidak ambigu, dan scope yang tetap realistis untuk skripsi S1.
