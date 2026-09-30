@@ -122,9 +122,7 @@ function generate(
     // initially visible, a wrong-variant decoy would make that visible fact
     // irrelevant and silently increase the actual UNKNOWN count. Keep variant
     // failures for tasks where scoped facts are not visible initially.
-    failureFields = initial.some(
-      (k) => k === "price" || k === "availability",
-    )
+    failureFields = initial.some((k) => k === "price" || k === "availability")
       ? fields.filter((k) => k !== "variant")
       : fields;
   const feasibleCount =
@@ -321,11 +319,11 @@ export function validateDataset(tasks: Task[] = mainTasks) {
       errors.push(`${t.id}: initial UNKNOWN`);
     if (
       t.initial.some((k) => k === "price" || k === "availability") &&
-      t.products.some(
-        (p) => p.size !== t.goal.size || p.color !== t.goal.color,
-      )
+      t.products.some((p) => p.size !== t.goal.size || p.color !== t.goal.color)
     )
-      errors.push(`${t.id}: scoped initial evidence changes actual UNKNOWN count`);
+      errors.push(
+        `${t.id}: scoped initial evidence changes actual UNKNOWN count`,
+      );
     const feasible = feasibleProducts(t),
       observable = feasible.filter((p) => !p.withheld.length);
     if (
