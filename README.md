@@ -8,7 +8,7 @@ This is a local CLI research tool with a synthetic website in isolated Chromium.
 
 ## Setup and engineering checks
 
-Requires Node.js 24+, npm, Git and Ollama **0.13.3 or newer**. The Phase 1 benchmark uses four committed Q4_K_M candidates: Qwen3.5 9B, Ministral-3 8B Instruct, Granite 4.1 8B and RNJ-1 8B Instruct.
+Requires Node.js 24+, npm, Git and Ollama **0.13.3 or newer**. The Model-Selection Pre-Study benchmark uses four committed Q4_K_M candidates: Qwen3.5 9B, Ministral-3 8B Instruct, Granite 4.1 8B and RNJ-1 8B Instruct.
 
 ```powershell
 npm ci
@@ -42,7 +42,7 @@ ollama pull rnj-1:8b-instruct-q4_K_M
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-v1
 ```
 
-The pilot is a feasibility check only. With the default four-model set, continue on an unchanged machine only after a clean 12/12 pilot. If one model is reproducibly deployment-incompatible after one documented fresh retry, preserve the failed pilots, commit the documented exclusion (or Granite fallback), and obtain a clean fresh pilot on the remaining committed active set. Full Phase 1 normally uses six predeclared development tasks × three repetitions across four models = 72 episodes (54 with one documented deployment exclusion):
+The pilot is a feasibility check only. With the default four-model set, continue on an unchanged machine only after a clean 12/12 pilot. If one model is reproducibly deployment-incompatible after one documented fresh retry, preserve the failed pilots, commit the documented exclusion (or Granite fallback), and obtain a clean fresh pilot on the remaining committed active set. Full Model-Selection Pre-Study normally uses six predeclared development tasks × three repetitions across four models = 72 episodes (54 with one documented deployment exclusion):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v1
@@ -58,7 +58,7 @@ npm run experiment -- main --freeze exports/freeze-v1.json --out exports/main-v1
 npm run experiment -- export --input exports/main-v1
 ```
 
-The 12-task `development` pool remains available for diagnostics, but do not add a full standalone development batch after Phase 1 merely because more tasks are available; the pre-study subsets are fixed before collection.
+The 12-task `development` pool remains available for diagnostics, but do not add a full standalone development batch after the Model-Selection Pre-Study merely because more tasks are available; the pre-study subsets are fixed before collection.
 
 See [SETUP](docs/SETUP.md), [EXPERIMENT](docs/EXPERIMENT.md), [LLM-BENCHMARK](docs/LLM-BENCHMARK.md), [FRONTEND-INTEGRATION](docs/FRONTEND-INTEGRATION.md), and [STATUS](docs/STATUS.md) for prerequisites, experiment procedures, interface integration decisions, and observed validation evidence.
 
