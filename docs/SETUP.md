@@ -65,15 +65,15 @@ If Granite 4.1 is the reproducibly incompatible candidate, the predeclared fallb
 
 ## Selected model, gate and freeze
 
-`config/experiment.json` now carries the formally selected model, `qwen3.5:9b-q4_K_M`, following the completed Model-Selection Pre-Study. The benchmark runner had previously swapped the model field for each candidate and restored the file exactly afterward.
+`config/experiment.json` currently carries Qwen3.5 as the bootstrap real-model configuration. A prior pre-study selected Qwen3.5, but the repeatability gate exposed systematic incomplete score arrays that required schema repair. The shared Ollama planner interface was then revised before main collection to enforce a dynamic JSON Schema. Because that model-facing interface changed, the prior selection is superseded and a fresh pilot plus fresh full Model-Selection Pre-Study are required before selecting and locking the final model.
 
-Do not tune the prompt, budget, context, temperature, seed or selected model after the benchmark result. Proceed directly to the repeatability gate with the committed Qwen3.5 configuration.
+Do not tune model-specific prompts or inference settings during the rerun. After the fresh full pre-study, commit the newly selected model before a new repeatability gate.
 
 ```powershell
 npm run experiment -- doctor
-npm run experiment -- repeatability --out exports/repeatability-v1
-npm run experiment -- gate --input exports/repeatability-v1
-npm run experiment -- freeze --gate exports/repeatability-v1 --out exports/freeze-v1.json
+npm run experiment -- repeatability --out exports/repeatability-v3
+npm run experiment -- gate --input exports/repeatability-v3
+npm run experiment -- freeze --gate exports/repeatability-v3 --out exports/freeze-v1.json
 npm run experiment -- main --freeze exports/freeze-v1.json --out exports/main-v1
 npm run experiment -- export --input exports/main-v1
 ```
