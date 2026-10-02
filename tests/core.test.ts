@@ -33,7 +33,12 @@ import {
   rerunCells,
   type Experiment,
 } from "../src/experiment/runner.ts";
-import { sharedInput, scoreProbes, DemoModel } from "../src/agent/planner.ts";
+import {
+  sharedInput,
+  scoreProbes,
+  DemoModel,
+  plannerResponseFormat,
+} from "../src/agent/planner.ts";
 import { observationFrom } from "../src/browser/semantic.ts";
 import { Driver } from "../src/browser/session.ts";
 import { csv } from "../src/experiment/metrics.ts";
@@ -273,6 +278,35 @@ test("Both conditions receive identical full public input; annotation alone adds
   assert.equal(o.facts.length, 0);
   assert(!JSON.stringify(a).includes("feasible"));
   assert(!("policy" in a));
+});
+test("Planner response schema requires exactly one bounded score slot per eligible probe", () => {
+  const o = observationFrom("- main: []", "/", candidates, 0, "o"),
+    e = new Evidence(),
+    probes: Probe[] = ["p1", "p2"].map((id, order) => ({
+      id,
+      url: id,
+      candidate: order ? "b" : "a",
+      name: id,
+      may_answer: ["price"],
+      forward_cost: 1,
+      action_cost: 1,
+      order,
+    })),
+    input = sharedInput(goal, o, e.ledger(candidates, goal), probes, [], {}),
+    format = plannerResponseFormat(input),
+    wrapped = plannerResponseFormat({ context: input, repair: "test" });
+  assert.equal(format.properties.scores.minItems, 2);
+  assert.equal(format.properties.scores.maxItems, 2);
+  assert.deepEqual(format.properties.scores.items.properties.probe_id.enum, [
+    "p1",
+    "p2",
+  ]);
+  assert.equal(
+    format.properties.scores.items.properties.progress.type,
+    "integer",
+  );
+  assert.equal(format.properties.scores.items.additionalProperties, false);
+  assert.deepEqual(wrapped, format);
 });
 test("Schema repair is bounded, records calls, and rejects invented IDs", async () => {
   const o = observationFrom("- main: []", "/", candidates, 0, "o"),
