@@ -12,7 +12,7 @@
     "name": "granite4.1:8b-q4_K_M"
   },
   {
-    "label": "olmo3-7b",
-    "name": "olmo-3:7b-instruct-q4_K_M"
+    "label": "xlam2-8b",
+    "name": "hf.co/Salesforce/Llama-xLAM-2-8b-fc-r-gguf:Q4_K_M"
   }
 ]
