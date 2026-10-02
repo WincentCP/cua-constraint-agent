@@ -9,7 +9,7 @@ Run commands from the repository root on the benchmark machine.
 - Git for source identity and freeze.
 - Playwright's managed Chromium (installed by the repository command below).
 - Ollama 0.13.3 or newer. The benchmark runner retains this fixed minimum runtime for the audited protocol.
-- The committed active candidate set for the Model-Selection Pre-Study from `scripts/benchmark/models.json`: four models, all using the Q4_K_M quantization class. RNJ-1 was removed after the documented reproducible deployment-incompatibility rule was satisfied; OLMo 3 7B Instruct was added in a documented amendment before any full Model-Selection Pre-Study run.
+- The committed active candidate set for the Model-Selection Pre-Study from `scripts/benchmark/models.json`: four models, all using the Q4_K_M quantization class. RNJ-1 was removed after the documented reproducible deployment-incompatibility rule was satisfied; OLMo 3 7B Instruct was later superseded by Salesforce Llama-xLAM-2 8B FC-R in a documented refinement after feasibility pilot but before any full Model-Selection Pre-Study run.
 
 ```powershell
 npm ci
@@ -17,7 +17,7 @@ npx playwright install chromium
 ollama pull qwen3.5:9b-q4_K_M
 ollama pull ministral-3:8b-instruct-2512-q4_K_M
 ollama pull granite4.1:8b-q4_K_M
-ollama pull olmo-3:7b-instruct-q4_K_M
+ollama run hf.co/Salesforce/Llama-xLAM-2-8b-fc-r-gguf:Q4_K_M "Return exactly OK."
 ```
 
 Ollama stores models outside the repository, normally in `%USERPROFILE%\.ollama\models` on Windows. Start the Ollama desktop application, or run `ollama serve` in a separate terminal if it is not already serving. The default endpoint is `http://127.0.0.1:11434`.
