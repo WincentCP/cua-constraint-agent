@@ -39,7 +39,7 @@ ollama pull qwen3.5:9b-q4_K_M
 ollama pull ministral-3:8b-instruct-2512-q4_K_M
 ollama pull granite4.1:8b-q4_K_M
 ollama run hf.co/Salesforce/Llama-xLAM-2-8b-fc-r-gguf:Q4_K_M "Return exactly OK."
-powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-v1
+powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-v4
 ```
 
 The pilot is a feasibility check only. With the currently committed four-model set, continue on an unchanged machine only after a clean 12/12 pilot. RNJ-1 has already been excluded under the documented reproducible deployment-incompatibility rule, with both failed pilots preserved as diagnostic history. The full Model-Selection Pre-Study now uses six predeclared development tasks × three repetitions across four models = 72 episodes:
