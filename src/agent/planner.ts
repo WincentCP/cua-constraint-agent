@@ -44,6 +44,33 @@ export function sharedInput(
     remaining,
   };
 }
+export function plannerResponseFormat(raw: unknown) {
+  const input =
+    (raw as { context?: PlannerInput }).context ?? (raw as PlannerInput);
+  const ids = input.eligible_probes.map((probe) => probe.id);
+  return {
+    type: "object",
+    properties: {
+      scores: {
+        type: "array",
+        minItems: ids.length,
+        maxItems: ids.length,
+        items: {
+          type: "object",
+          properties: {
+            probe_id: { type: "string", enum: ids },
+            progress: { type: "integer", minimum: 0, maximum: 100 },
+          },
+          required: ["probe_id", "progress"],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ["scores"],
+    additionalProperties: false,
+  };
+}
+
 export interface Model {
   readonly demo: boolean;
   complete(
@@ -76,7 +103,7 @@ export class OllamaModel implements Model {
       model: name,
       stream: false,
       think,
-      format: "json",
+      format: plannerResponseFormat(input),
       options,
       messages: [
         { role: "system", content: PROMPT },
