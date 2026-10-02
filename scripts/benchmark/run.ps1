@@ -164,7 +164,8 @@ if ($researchStatus) {
   throw ("Research files are not clean. Commit/stash changes before benchmarking. " + ($researchStatus -join "; "))
 }
 
-$models = @(Get-Content -Raw $ModelsPath | ConvertFrom-Json)
+$parsedModels = Get-Content -Raw $ModelsPath | ConvertFrom-Json
+$models = @($parsedModels)
 if ($models.Count -lt 3 -or $models.Count -gt 4) {
   throw "Benchmark protocol expects 3-4 committed active candidates; found $($models.Count). A deployment exclusion must be documented and committed before starting a fresh pilot."
 }
