@@ -89,7 +89,7 @@ Everything except the model checkpoint must be held constant:
 - same Ollama version and machine;
 - same browser/runtime and source revision;
 - same Q4_K_M quantization class for primary candidates;
-- same structured-output validation and one-repair rule;
+- same server-enforced dynamic JSON Schema for planner responses, the same post-response validation, and the same one-repair rule;
 - same three repetitions;
 - `think=false` for the benchmark configuration;
 - no model-specific prompt tuning after results are observed;
@@ -127,11 +127,13 @@ Use a gated/lexicographic rule rather than a post-hoc weighted score:
 
 Do **not** select a model using the size of the Proposed-minus-Baseline effect. Model selection must be independent of the later treatment effect.
 
-## Model-selection result
+## Superseded development result and protocol revision
 
-The completed 72-episode Model-Selection Pre-Study selected `qwen3.5:9b-q4_K_M` under the predeclared lexicographic rule. Qwen completed 18/18 healthy runs correctly (VDA 1.00), with zero invalid outputs, zero repairs, zero unrecovered structured failures, and perfect outcome/trajectory repeatability across the six repeated development tasks. Ministral completed 14/18 correctly (VDA 0.778) with four unrecovered structured failures; Granite completed 9/18 correctly (VDA 0.50) with nine unrecovered structured failures; xLAM-2 completed 6/18 correctly (VDA 0.333) with twelve unrecovered structured failures. No candidate had an infrastructure failure in the full pre-study.
+An earlier completed 72-episode Model-Selection Pre-Study selected `qwen3.5:9b-q4_K_M` under the predeclared lexicographic rule. Qwen completed 18/18 healthy runs correctly (VDA 1.00), with zero invalid outputs, zero repairs, zero unrecovered structured failures, and perfect outcome/trajectory repeatability across the six repeated development tasks. Ministral completed 14/18 correctly (VDA 0.778) with four unrecovered structured failures; Granite completed 9/18 correctly (VDA 0.50) with nine unrecovered structured failures; xLAM-2 completed 6/18 correctly (VDA 0.333) with twelve unrecovered structured failures. No candidate had an infrastructure failure in the full pre-study.
 
-The selected Qwen3.5 model is therefore locked for the repeatability gate. No prompt or inference-setting tuning is allowed after selection.
+That selection is no longer the final selection evidence. The following repeatability gate exposed a systematic schema-completeness failure on `development-05` Proposed: in all three repetitions Qwen returned syntactically valid JSON with only the two stock probes even though eight probes were eligible, after which the one permitted repair returned the complete score list. The gate correctly rejected those runs because selected gate runs must contain no schema repair.
+
+Before any main data collection, the shared planner transport was minimally revised from generic `format: "json"` to an Ollama JSON Schema whose score array has `minItems` and `maxItems` equal to the current eligible-probe count, restricts `probe_id` to the current eligible IDs, constrains `progress` to integer 0–100, and disallows extra properties. The existing application-level exact-set validation and one-repair rule remain unchanged. Because the model-facing interface changed, the previous pilot/pre-study outputs remain audit history only; final model selection must be repeated from a fresh pilot and fresh full pre-study on the same four candidates.
 
 ## Efficient end-to-end workflow
 
@@ -140,7 +142,7 @@ Use the shortest workflow that preserves the predeclared controls:
 1. machine/environment check;
 2. one clean pilot on the committed active set: 4 models × 3 development tasks × 1 run = 12 episodes;
 3. Model-Selection Pre-Study benchmark: 4 × 6 × 3 = 72 episodes;
-4. selected result: Qwen3.5 9B Q4_K_M; keep its committed configuration locked against further tuning;
+4. select one model from the fresh post-revision pre-study using the same predeclared lexicographic rule and lock its configuration against further tuning;
 5. run the repeatability gate on the selected model: `development-01`, `development-03`, `development-05`, and `development-06` × 2 policies × 3 repetitions = 24 runs;
 6. after the gate passes, create the formal experiment freeze;
 7. collect the main paired experiment: 32 base tasks × 2 policies = 64 planned main episodes;
