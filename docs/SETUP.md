@@ -46,7 +46,7 @@ No Python, database server, API key, microphone or cloud service is required. JS
 Run the one-time preflight on a new benchmark machine:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-v1
+powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-v4
 ```
 
 The declared pilot is one run per active model on three development tasks. With the currently committed four candidates this is 12 episodes. Go/no-go is **all pilot episodes healthy with zero infrastructure failures for the currently committed active set**. A clean pilot is not the final model-selection result.
@@ -54,7 +54,7 @@ The declared pilot is one run per active model on three development tasks. With 
 If the machine, driver, Ollama version, repository revision and configuration remain unchanged, run the full model-selection benchmark:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v1
+powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v2
 ```
 
 The Model-Selection Pre-Study contains 4 models × 6 predeclared development tasks × 3 repetitions = 72 Baseline-only episodes. The fixed task subset is `development-01`, `development-03`, `development-05`, `development-06`, `development-07`, and `development-11`. It balances U2/U3/U4 at two tasks each and covers both solvable subtypes plus no-solution and unavailable-evidence. The runner checks that every committed active model tag exists before starting model episodes.
