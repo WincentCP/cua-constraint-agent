@@ -65,9 +65,9 @@ If Granite 4.1 is the reproducibly incompatible candidate, the predeclared fallb
 
 ## Selected model, gate and freeze
 
-`config/experiment.json` currently carries Qwen3.5 9B only as the bootstrap real-model configuration. During the Model-Selection Pre-Study the benchmark runner swaps the model field for each candidate and restores the file exactly afterward.
+`config/experiment.json` now carries the formally selected model, `qwen3.5:9b-q4_K_M`, following the completed Model-Selection Pre-Study. The benchmark runner had previously swapped the model field for each candidate and restored the file exactly afterward.
 
-After the Model-Selection Pre-Study, select one model using the rule in `docs/LLM-BENCHMARK.md`. Set `config/experiment.json` to the exact selected model tag and commit the change before the repeatability gate. Do not tune the prompt, budget, context, temperature or seed after seeing the benchmark result.
+Do not tune the prompt, budget, context, temperature, seed or selected model after the benchmark result. Proceed directly to the repeatability gate with the committed Qwen3.5 configuration.
 
 ```powershell
 npm run experiment -- doctor
