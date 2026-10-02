@@ -8,8 +8,8 @@ Run commands from the repository root on the benchmark machine.
 - Node.js 24 or newer, with npm.
 - Git for source identity and freeze.
 - Playwright's managed Chromium (installed by the repository command below).
-- Ollama 0.13.3 or newer. RNJ-1 requires 0.13.3+, so the benchmark runner rejects an older runtime.
-- The committed candidate set for the Model-Selection Pre-Study from `scripts/benchmark/models.json` (normally four models; three only after a documented reproducible deployment exclusion), all using the Q4_K_M quantization class.
+- Ollama 0.13.3 or newer. The benchmark runner retains this fixed minimum runtime for the audited protocol.
+- The committed active candidate set for the Model-Selection Pre-Study from `scripts/benchmark/models.json`: three models, all using the Q4_K_M quantization class. RNJ-1 was removed after the documented reproducible deployment-incompatibility rule was satisfied.
 
 ```powershell
 npm ci
@@ -17,7 +17,6 @@ npx playwright install chromium
 ollama pull qwen3.5:9b-q4_K_M
 ollama pull ministral-3:8b-instruct-2512-q4_K_M
 ollama pull granite4.1:8b-q4_K_M
-ollama pull rnj-1:8b-instruct-q4_K_M
 ```
 
 Ollama stores models outside the repository, normally in `%USERPROFILE%\.ollama\models` on Windows. Start the Ollama desktop application, or run `ollama serve` in a separate terminal if it is not already serving. The default endpoint is `http://127.0.0.1:11434`.
@@ -49,7 +48,7 @@ Run the one-time preflight on a new benchmark machine:
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-v1
 ```
 
-The declared pilot is one run per active model on three development tasks. With the default four candidates this is 12 episodes. Go/no-go is **all pilot episodes healthy with zero infrastructure failures for the currently committed active set**. A clean pilot is not the final model-selection result.
+The declared pilot is one run per active model on three development tasks. With the currently committed three candidates this is 9 episodes. Go/no-go is **all pilot episodes healthy with zero infrastructure failures for the currently committed active set**. A clean pilot is not the final model-selection result.
 
 If the machine, driver, Ollama version, repository revision and configuration remain unchanged, run the full model-selection benchmark:
 
@@ -57,9 +56,9 @@ If the machine, driver, Ollama version, repository revision and configuration re
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v1
 ```
 
-The Model-Selection Pre-Study normally contains 4 models × 6 predeclared development tasks × 3 repetitions = 72 Baseline-only episodes. If one model is formally deployment-ineligible before the full Model-Selection Pre-Study, the committed three-model set produces 54 episodes. The fixed task subset is `development-01`, `development-03`, `development-05`, `development-06`, `development-07`, and `development-11`. It balances U2/U3/U4 at two tasks each and covers both solvable subtypes plus no-solution and unavailable-evidence. The runner checks that every committed active model tag exists before starting model episodes.
+The Model-Selection Pre-Study contains 3 models × 6 predeclared development tasks × 3 repetitions = 54 Baseline-only episodes. The fixed task subset is `development-01`, `development-03`, `development-05`, `development-06`, `development-07`, and `development-11`. It balances U2/U3/U4 at two tasks each and covers both solvable subtypes plus no-solution and unavailable-evidence. The runner checks that every committed active model tag exists before starting model episodes.
 
-Do not remove a candidate after one failure. Diagnose the machine and run one fresh pilot with the unchanged candidate list. If the same model again fails for reproducible deployment/infrastructure reasons while the others are healthy, preserve both pilot outputs, document the exclusion in `docs/STATUS.md`, update and commit `scripts/benchmark/models.json`, and start a fresh pilot. Never exclude a model for poor VDA or slow inference.
+Do not remove a candidate after one failure. Diagnose the machine and run one fresh pilot with the unchanged candidate list. RNJ-1 has already completed this rule: two separate fresh four-model pilots reproduced its infrastructure failure while the other candidates remained infrastructure-healthy, so the exclusion is documented in `docs/STATUS.md` and committed in `scripts/benchmark/models.json`. Any future exclusion must follow the same rule. Never exclude a model for poor VDA or slow inference.
 
 If Granite 4.1 is the reproducibly incompatible candidate, the predeclared fallback is `granite3.3:8b-instruct-q4_K_M`. Update and commit the candidate list, then start a fresh pilot. Never switch candidates in the middle of the Model-Selection Pre-Study benchmark.
 
