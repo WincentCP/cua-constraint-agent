@@ -9,13 +9,13 @@ Primary pilot candidates use the same Ollama runtime and the same Q4_K_M quantiz
 - `qwen3.5:9b-q4_K_M`
 - `ministral-3:8b-instruct-2512-q4_K_M`
 - `granite4.1:8b-q4_K_M`
-- `olmo-3:7b-instruct-q4_K_M`
+- `hf.co/Salesforce/Llama-xLAM-2-8b-fc-r-gguf:Q4_K_M`
 
 ### Inclusion/exclusion rationale
 
 A candidate in the Model-Selection Pre-Study must be selected **before performance results are inspected** and should satisfy all of the following:
 
-1. approximately 7–10B parameters so local compute demand is comparable;
+1. approximately 8–10B parameters so local compute demand is comparable;
 2. runnable through the same local Ollama serving stack;
 3. available in the same Q4_K_M quantization class;
 4. suitable for structured JSON / agentic decision output without model-specific prompt tuning;
@@ -23,9 +23,9 @@ A candidate in the Model-Selection Pre-Study must be selected **before performan
 
 The four active models satisfy that operational comparison target while providing different model families. The original committed set also included RNJ-1 8B Instruct Q4_K_M. RNJ-1 was removed before the full Model-Selection Pre-Study after two separate fresh pilots on the fixed benchmark machine reproduced the same deployment failure: warm-up failure plus infrastructure failures on `development-02` and `development-03`, with Ollama diagnostics showing `GGML_ASSERT(hparams.is_swa_any()) failed` during model loading. The other three candidates had zero infrastructure failures in both pilots. This was a deployment-eligibility exclusion only; RNJ-1 was not removed for VDA, latency or model quality.
 
-After RNJ-1 was excluded for reproducible deployment incompatibility, the candidate set was amended before any full Model-Selection Pre-Study run to add OLMo 3 7B Instruct Q4_K_M. This amendment was based only on external operational eligibility criteria, not comparative pilot performance: OLMo 3 is a 7.3B-class model, has an official Ollama Q4_K_M tag, supports tool-oriented use, uses Apache-2.0 licensing and adds a distinct Ai2 family. The prior RNJ diagnostic pilots remain preserved and are not model-selection evidence.
+After RNJ-1 was excluded for reproducible deployment incompatibility, OLMo 3 7B Instruct was temporarily added and completed a feasibility pilot. Before any full Model-Selection Pre-Study run, the candidate set was refined again: OLMo was superseded by Salesforce Llama-xLAM-2 8B FC-R Q4_K_M. This refinement occurred after feasibility data had been observed, so the history is retained explicitly rather than described as pre-pilot. The reason for the refinement is methodological task alignment and tighter size comparability: xLAM-2 is an 8B action/function-calling model, Salesforce publishes the Q4_K_M GGUF, and the model can be invoked through Ollama from the official Hugging Face repository. All RNJ and OLMo pilot outputs remain diagnostic history and are excluded from model-selection evidence.
 
-Gemma is not in the active set because the current Gemma 3 sizes nearest this range are 4B and 12B, which would weaken size comparability. NVIDIA Nemotron is not mixed into the current active set because this protocol requires the same committed Ollama/Q4_K_M serving path; introducing a different serving stack would add a deployment confound. Either family can be considered in a future protocol revision **before collection** if an approximately comparable checkpoint is available on the same stack.
+Gemma is not in the active set because the nearest operationally suitable Gemma checkpoints do not match the committed dense 8–10B comparison as cleanly. NVIDIA Nemotron is not mixed into the current active set because the protocol prioritizes a directly reproducible Ollama/Q4_K_M path from the model publisher. Alternative families may be considered only in a future protocol revision before a new collection cycle.
 
 The committed benchmark runner retains Ollama 0.13.3 as the fixed minimum runtime version for this audited protocol.
 
