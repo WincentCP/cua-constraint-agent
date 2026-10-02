@@ -9,6 +9,7 @@ Primary pilot candidates use the same Ollama runtime and the same Q4_K_M quantiz
 - `qwen3.5:9b-q4_K_M`
 - `ministral-3:8b-instruct-2512-q4_K_M`
 - `granite4.1:8b-q4_K_M`
+- `olmo-3:7b-instruct-q4_K_M`
 
 ### Inclusion/exclusion rationale
 
@@ -20,7 +21,9 @@ A candidate in the Model-Selection Pre-Study must be selected **before performan
 4. suitable for structured JSON / agentic decision output without model-specific prompt tuning;
 5. feasible on the fixed benchmark machine.
 
-The three active models satisfy that operational comparison target while providing different model families. The original committed set also included RNJ-1 8B Instruct Q4_K_M. RNJ-1 was removed before the full Model-Selection Pre-Study after two separate fresh pilots on the fixed benchmark machine reproduced the same deployment failure: warm-up failure plus infrastructure failures on `development-02` and `development-03`, with Ollama diagnostics showing `GGML_ASSERT(hparams.is_swa_any()) failed` during model loading. The other three candidates had zero infrastructure failures in both pilots. This was a deployment-eligibility exclusion only; RNJ-1 was not removed for VDA, latency or model quality.
+The four active models satisfy that operational comparison target while providing different model families. The original committed set also included RNJ-1 8B Instruct Q4_K_M. RNJ-1 was removed before the full Model-Selection Pre-Study after two separate fresh pilots on the fixed benchmark machine reproduced the same deployment failure: warm-up failure plus infrastructure failures on `development-02` and `development-03`, with Ollama diagnostics showing `GGML_ASSERT(hparams.is_swa_any()) failed` during model loading. The other three candidates had zero infrastructure failures in both pilots. This was a deployment-eligibility exclusion only; RNJ-1 was not removed for VDA, latency or model quality.
+
+After RNJ-1 was excluded for reproducible deployment incompatibility, the candidate set was amended before any full Model-Selection Pre-Study run to add OLMo 3 7B Instruct Q4_K_M. This amendment was based only on external operational eligibility criteria, not comparative pilot performance: OLMo 3 is a 7.3B-class model, has an official Ollama Q4_K_M tag, supports tool-oriented use, uses Apache-2.0 licensing and adds a distinct Ai2 family. The prior RNJ diagnostic pilots remain preserved and are not model-selection evidence.
 
 Gemma is not in the active set because the current Gemma 3 sizes nearest this range are 4B and 12B, which would weaken size comparability. NVIDIA Nemotron is not mixed into the current active set because this protocol requires the same committed Ollama/Q4_K_M serving path; introducing a different serving stack would add a deployment confound. Either family can be considered in a future protocol revision **before collection** if an approximately comparable checkpoint is available on the same stack.
 
@@ -38,7 +41,7 @@ Never exclude/replace a candidate because its VDA, latency, or repeatability is 
 
 The benchmark is executed from the committed repository scripts; no chat-provided ZIP or external helper is part of the research workflow.
 
-From a clean checkout with all three active models already installed and Ollama running:
+From a clean checkout with all four active models already installed and Ollama running:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot
@@ -48,7 +51,7 @@ The runner rejects Node.js older than 24 and Ollama older than 0.13.3, verifies 
 
 Before timed benchmark episodes for each candidate, the runner performs one identical unscored warm-up inference and keeps the model resident briefly. This removes first-load latency from the 60-second per-call research timeout. Warm-up output and timing are written to `warmup.json`; warm-up is not included in VDA, repeatability, token, or latency summaries.
 
-The pilot is the recommended feasibility/preflight check on a new benchmark machine and is not used for model selection. The currently committed three-model set requires a clean 9-episode pilot. Continue only when the **currently committed active candidate set** completes a fresh pilot with zero infrastructure failures. Do not add repeated manual per-model smoke tests once that clean pilot exists. A healthy pilot reduces infrastructure risk but does not guarantee that the longer full benchmark cannot encounter a later infrastructure failure. The Model-Selection Pre-Study benchmark remains mandatory under the predeclared lean protocol:
+The pilot is the recommended feasibility/preflight check on a new benchmark machine and is not used for model selection. The currently committed four-model set requires a clean 12-episode pilot. Continue only when the **currently committed active candidate set** completes a fresh pilot with zero infrastructure failures. Do not add repeated manual per-model smoke tests once that clean pilot exists. A healthy pilot reduces infrastructure risk but does not guarantee that the longer full benchmark cannot encounter a later infrastructure failure. The Model-Selection Pre-Study benchmark remains mandatory under the predeclared lean protocol:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full
@@ -64,7 +67,7 @@ Use Baseline only on:
 - development-02 (U3)
 - development-03 (U4)
 
-Run every active model/task combination once. With the currently committed three-candidate set this is 9 pilot episodes.
+Run every active model/task combination once. With the currently committed four-candidate set this is 12 pilot episodes.
 
 The pilot is a pipeline/feasibility check, not the final model-selection result. It verifies model loading, structured-output logging, repair/failure handling and resource suitability before the full benchmark. The go/no-go condition is **all episodes healthy for the currently committed active candidate set, with zero recorded infrastructure failures**. If an infrastructure failure occurs, preserve it and diagnose the environment. Use the reproducible deployment-incompatibility rule above rather than repeatedly retrying indefinitely. Repeatability is assessed in the Model-Selection Pre-Study benchmark, where each of the six predeclared development tasks is repeated three times.
 
@@ -129,8 +132,8 @@ Do **not** select a model using the size of the Proposed-minus-Baseline effect. 
 Use the shortest workflow that preserves the predeclared controls:
 
 1. machine/environment check;
-2. one clean pilot on the committed active set: 3 models × 3 development tasks × 1 run = 9 episodes;
-3. Model-Selection Pre-Study benchmark: 3 × 6 × 3 = 54 episodes;
+2. one clean pilot on the committed active set: 4 models × 3 development tasks × 1 run = 12 episodes;
+3. Model-Selection Pre-Study benchmark: 4 × 6 × 3 = 72 episodes;
 4. select one model using the predeclared lexicographic rule and lock its configuration against further tuning;
 5. run the repeatability gate on the selected model: `development-01`, `development-03`, `development-05`, and `development-06` × 2 policies × 3 repetitions = 24 runs;
 6. after the gate passes, create the formal experiment freeze;
