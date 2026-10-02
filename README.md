@@ -8,7 +8,7 @@ This is a local CLI research tool with a synthetic website in isolated Chromium.
 
 ## Setup and engineering checks
 
-Requires Node.js 24+, npm, Git and Ollama **0.13.3 or newer**. The active Model-Selection Pre-Study set uses three committed Q4_K_M candidates: Qwen3.5 9B, Ministral-3 8B Instruct and Granite 4.1 8B. RNJ-1 8B Instruct was removed before the full pre-study after reproducible deployment incompatibility in two fresh pilots; see [STATUS](docs/STATUS.md).
+Requires Node.js 24+, npm, Git and Ollama **0.13.3 or newer**. The active Model-Selection Pre-Study set uses four committed Q4_K_M candidates: Qwen3.5 9B, Ministral-3 8B Instruct, Granite 4.1 8B and OLMo 3 7B Instruct. RNJ-1 8B Instruct was removed before the full pre-study after reproducible deployment incompatibility in two fresh pilots; OLMo 3 was added in a documented pre-study amendment before any full Model-Selection Pre-Study run; see [STATUS](docs/STATUS.md).
 
 ```powershell
 npm ci
@@ -38,10 +38,11 @@ Start Ollama and install the exact committed benchmark candidates:
 ollama pull qwen3.5:9b-q4_K_M
 ollama pull ministral-3:8b-instruct-2512-q4_K_M
 ollama pull granite4.1:8b-q4_K_M
+ollama pull olmo-3:7b-instruct-q4_K_M
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-v1
 ```
 
-The pilot is a feasibility check only. With the currently committed three-model set, continue on an unchanged machine only after a clean 9/9 pilot. RNJ-1 has already been excluded under the documented reproducible deployment-incompatibility rule, with both failed four-model pilots preserved as diagnostic history. The full Model-Selection Pre-Study now uses six predeclared development tasks × three repetitions across three models = 54 episodes:
+The pilot is a feasibility check only. With the currently committed four-model set, continue on an unchanged machine only after a clean 12/12 pilot. RNJ-1 has already been excluded under the documented reproducible deployment-incompatibility rule, with both failed pilots preserved as diagnostic history. The full Model-Selection Pre-Study now uses six predeclared development tasks × three repetitions across four models = 72 episodes:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v1
