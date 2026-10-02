@@ -61,7 +61,7 @@ function Get-OllamaVersion {
 function Assert-OllamaVersion {
   $installed = Get-OllamaVersion
   if ($installed -lt $MinimumOllamaVersion) {
-    throw "Ollama $installed is too old. This benchmark requires Ollama $MinimumOllamaVersion or newer because RNJ-1 requires 0.13.3+."
+    throw "Ollama $installed is too old. This benchmark requires Ollama $MinimumOllamaVersion or newer for the audited serving protocol."
   }
   Write-Host "==> Ollama version $installed (minimum $MinimumOllamaVersion)" -ForegroundColor Cyan
 }
