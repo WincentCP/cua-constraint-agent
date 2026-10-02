@@ -48,7 +48,7 @@ The pilot is a feasibility check only. With the currently committed four-model s
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v1
 ```
 
-Select one model using the predeclared lexicographic rule in [LLM-BENCHMARK](docs/LLM-BENCHMARK.md), set `config/experiment.json` to that exact winning model tag without changing the other inference settings, and commit the selection before the 24-run repeatability gate. The gate requires stable evaluator outcomes and healthy execution; exact probe trajectories are diagnostic only:
+The completed Model-Selection Pre-Study selected `qwen3.5:9b-q4_K_M` under the predeclared lexicographic rule. That exact configuration is now committed in `config/experiment.json`. The next step is the 24-run repeatability gate; it requires stable evaluator outcomes and healthy execution, while exact probe trajectories are diagnostic only:
 
 ```powershell
 npm run experiment -- repeatability --out exports/repeatability-v1
