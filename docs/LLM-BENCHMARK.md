@@ -127,6 +127,12 @@ Use a gated/lexicographic rule rather than a post-hoc weighted score:
 
 Do **not** select a model using the size of the Proposed-minus-Baseline effect. Model selection must be independent of the later treatment effect.
 
+## Model-selection result
+
+The completed 72-episode Model-Selection Pre-Study selected `qwen3.5:9b-q4_K_M` under the predeclared lexicographic rule. Qwen completed 18/18 healthy runs correctly (VDA 1.00), with zero invalid outputs, zero repairs, zero unrecovered structured failures, and perfect outcome/trajectory repeatability across the six repeated development tasks. Ministral completed 14/18 correctly (VDA 0.778) with four unrecovered structured failures; Granite completed 9/18 correctly (VDA 0.50) with nine unrecovered structured failures; xLAM-2 completed 6/18 correctly (VDA 0.333) with twelve unrecovered structured failures. No candidate had an infrastructure failure in the full pre-study.
+
+The selected Qwen3.5 model is therefore locked for the repeatability gate. No prompt or inference-setting tuning is allowed after selection.
+
 ## Efficient end-to-end workflow
 
 Use the shortest workflow that preserves the predeclared controls:
@@ -134,7 +140,7 @@ Use the shortest workflow that preserves the predeclared controls:
 1. machine/environment check;
 2. one clean pilot on the committed active set: 4 models × 3 development tasks × 1 run = 12 episodes;
 3. Model-Selection Pre-Study benchmark: 4 × 6 × 3 = 72 episodes;
-4. select one model using the predeclared lexicographic rule and lock its configuration against further tuning;
+4. selected result: Qwen3.5 9B Q4_K_M; keep its committed configuration locked against further tuning;
 5. run the repeatability gate on the selected model: `development-01`, `development-03`, `development-05`, and `development-06` × 2 policies × 3 repetitions = 24 runs;
 6. after the gate passes, create the formal experiment freeze;
 7. collect the main paired experiment: 32 base tasks × 2 policies = 64 planned main episodes;
