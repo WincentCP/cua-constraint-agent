@@ -1,5 +1,5 @@
 {
-  "version": "final-2026-10-02-qwen-selected",
+  "version": "final-2026-09-30-audit",
   "model": {
     "name": "qwen3.5:9b-q4_K_M",
     "think": false,
