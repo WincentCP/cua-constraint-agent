@@ -45,15 +45,15 @@ powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot
 The pilot is a feasibility check only. With the currently committed four-model set, continue on an unchanged machine only after a clean 12/12 pilot. RNJ-1 has already been excluded under the documented reproducible deployment-incompatibility rule, with both failed pilots preserved as diagnostic history. The full Model-Selection Pre-Study now uses six predeclared development tasks × three repetitions across four models = 72 episodes:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v1
+powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v2
 ```
 
-The completed Model-Selection Pre-Study selected `qwen3.5:9b-q4_K_M` under the predeclared lexicographic rule. That exact configuration is now committed in `config/experiment.json`. The next step is the 24-run repeatability gate; it requires stable evaluator outcomes and healthy execution, while exact probe trajectories are diagnostic only:
+A prior Model-Selection Pre-Study selected Qwen3.5, but its repeatability gate exposed a systematic incomplete-score schema repair on `development-05` Proposed. The shared Ollama planner now uses a dynamic JSON Schema instead of generic JSON mode, so the prior selection is retained only as development history. Run a fresh pilot and fresh full pre-study before selecting a model again:
 
 ```powershell
-npm run experiment -- repeatability --out exports/repeatability-v1
-npm run experiment -- gate --input exports/repeatability-v1
-npm run experiment -- freeze --gate exports/repeatability-v1 --out exports/freeze-v1.json
+npm run experiment -- repeatability --out exports/repeatability-v3
+npm run experiment -- gate --input exports/repeatability-v3
+npm run experiment -- freeze --gate exports/repeatability-v3 --out exports/freeze-v1.json
 npm run experiment -- main --freeze exports/freeze-v1.json --out exports/main-v1
 npm run experiment -- export --input exports/main-v1
 ```
