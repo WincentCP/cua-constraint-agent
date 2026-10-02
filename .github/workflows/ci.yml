@@ -20,7 +20,7 @@ jobs:
         run: >-
           node -e "const m=require('./scripts/benchmark/models.json');
           if(m.length<3||m.length>4) throw new Error('expected 3-4 committed benchmark candidates');
-          const bad=m.filter(x=>!x.name.endsWith('q4_K_M'));
+          const bad=m.filter(x=>!x.name.toLowerCase().endsWith('q4_k_m'));
           if(bad.length) throw new Error('non-Q4_K_M candidates: '+bad.map(x=>x.name).join(', '));"
       - name: Parse benchmark PowerShell
         shell: pwsh
