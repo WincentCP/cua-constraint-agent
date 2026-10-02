@@ -8,7 +8,7 @@ This is a local CLI research tool with a synthetic website in isolated Chromium.
 
 ## Setup and engineering checks
 
-Requires Node.js 24+, npm, Git and Ollama **0.13.3 or newer**. The Model-Selection Pre-Study uses four committed Q4_K_M candidates: Qwen3.5 9B, Ministral-3 8B Instruct, Granite 4.1 8B and RNJ-1 8B Instruct.
+Requires Node.js 24+, npm, Git and Ollama **0.13.3 or newer**. The active Model-Selection Pre-Study set uses three committed Q4_K_M candidates: Qwen3.5 9B, Ministral-3 8B Instruct and Granite 4.1 8B. RNJ-1 8B Instruct was removed before the full pre-study after reproducible deployment incompatibility in two fresh pilots; see [STATUS](docs/STATUS.md).
 
 ```powershell
 npm ci
@@ -38,11 +38,10 @@ Start Ollama and install the exact committed benchmark candidates:
 ollama pull qwen3.5:9b-q4_K_M
 ollama pull ministral-3:8b-instruct-2512-q4_K_M
 ollama pull granite4.1:8b-q4_K_M
-ollama pull rnj-1:8b-instruct-q4_K_M
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-v1
 ```
 
-The pilot is a feasibility check only. With the default four-model set, continue on an unchanged machine only after a clean 12/12 pilot. If one model is reproducibly deployment-incompatible after one documented fresh retry, preserve the failed pilots, commit the documented exclusion (or Granite fallback), and obtain a clean fresh pilot on the remaining committed active set. The full Model-Selection Pre-Study normally uses six predeclared development tasks × three repetitions across four models = 72 episodes (54 with one documented deployment exclusion):
+The pilot is a feasibility check only. With the currently committed three-model set, continue on an unchanged machine only after a clean 9/9 pilot. RNJ-1 has already been excluded under the documented reproducible deployment-incompatibility rule, with both failed four-model pilots preserved as diagnostic history. The full Model-Selection Pre-Study now uses six predeclared development tasks × three repetitions across three models = 54 episodes:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v1
