@@ -10,5 +10,9 @@
   {
     "label": "granite4.1-8b",
     "name": "granite4.1:8b-q4_K_M"
+  },
+  {
+    "label": "olmo3-7b",
+    "name": "olmo-3:7b-instruct-q4_K_M"
   }
 ]
