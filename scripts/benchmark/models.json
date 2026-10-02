@@ -10,9 +10,5 @@
   {
     "label": "granite4.1-8b",
     "name": "granite4.1:8b-q4_K_M"
-  },
-  {
-    "label": "rnj1-8b",
-    "name": "rnj-1:8b-instruct-q4_K_M"
   }
 ]
