@@ -1,0 +1,18 @@
+[
+  {
+    "label": "qwen3.5-9b",
+    "name": "qwen3.5:9b-q4_K_M"
+  },
+  {
+    "label": "ministral3-8b",
+    "name": "ministral-3:8b-instruct-2512-q4_K_M"
+  },
+  {
+    "label": "granite4.1-8b",
+    "name": "granite4.1:8b-q4_K_M"
+  },
+  {
+    "label": "xlam2-8b",
+    "name": "hf.co/Salesforce/Llama-xLAM-2-8b-fc-r-gguf:Q4_K_M"
+  }
+]
