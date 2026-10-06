@@ -28,9 +28,7 @@ export const WebArenaAgentResponseSchema = z
   })
   .strict();
 
-export type WebArenaAgentResponse = z.infer<
-  typeof WebArenaAgentResponseSchema
->;
+export type WebArenaAgentResponse = z.infer<typeof WebArenaAgentResponseSchema>;
 
 export const WebArenaConfigSchema = z
   .object({
