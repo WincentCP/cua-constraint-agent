@@ -29,9 +29,7 @@ export function parseAccessibilitySnapshot(snapshot: string): AccessibleNode[] {
 
   const make = (key: string, value: unknown): AccessibleNode => {
     const match = /^(\w+)(?: "((?:[^"\\]|\\.)*)")?(.*)$/.exec(key);
-    const name = match?.[2]
-      ? (JSON.parse(`"${match[2]}"`) as string)
-      : "";
+    const name = match?.[2] ? (JSON.parse(`"${match[2]}"`) as string) : "";
     const url = Array.isArray(value)
       ? value.find(
           (item) => item && typeof item === "object" && "/url" in item,
