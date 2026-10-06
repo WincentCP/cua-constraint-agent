@@ -63,7 +63,11 @@ async function doctor() {
     if (result.status === 0) {
       printResult(name, "PASS", result.stdout.trim() || "available");
     } else {
-      printResult(name, required ? "FAIL" : "WARN", result.stderr || "not found");
+      printResult(
+        name,
+        required ? "FAIL" : "WARN",
+        result.stderr || "not found",
+      );
       failed ||= required;
     }
   }
@@ -86,10 +90,14 @@ function validate() {
     throw new Error("PoC task must remain 284 until pilot review");
   }
   if (manifest.tasks.length !== 6) {
-    throw new Error("Pilot manifest must contain exactly 6 pre-registered tasks");
+    throw new Error(
+      "Pilot manifest must contain exactly 6 pre-registered tasks",
+    );
   }
 
-  const models = JSON.parse(readFileSync("config/models.json", "utf8")) as Array<{
+  const models = JSON.parse(
+    readFileSync("config/models.json", "utf8"),
+  ) as Array<{
     label: string;
     name: string;
   }>;
@@ -176,10 +184,7 @@ async function inspect() {
       await session.goto(task.start_urls[index]);
       const snapshot = await session.capture();
       const probes = probesFromControls(snapshot.controls, spec.constraints);
-      const snapshotPath = join(
-        taskDir,
-        `accessibility-${index + 1}.yaml`,
-      );
+      const snapshotPath = join(taskDir, `accessibility-${index + 1}.yaml`);
       writeFileSync(snapshotPath, snapshot.accessibility, "utf8");
       observations.push({
         index,
@@ -219,8 +224,7 @@ async function inspect() {
       mapped_required_ids: required
         .filter((constraint) => mapped.has(constraint.id))
         .map((constraint) => constraint.id),
-      note:
-        "Initial-page hint mapping is diagnostic only. It is not evidence and is not a task-success score.",
+      note: "Initial-page hint mapping is diagnostic only. It is not evidence and is not a task-success score.",
     },
   };
   const reportPath = join(taskDir, "inspection.json");
