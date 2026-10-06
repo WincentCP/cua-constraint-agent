@@ -1,7 +1,4 @@
 node_modules
-exports
-data
-dist
-.runtime
-.venv
-docs/PRD-FINAL.md
+output
+results
+package-lock.json
