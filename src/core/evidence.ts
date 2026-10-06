@@ -1,79 +1,56 @@
-import {
-  fields,
-  same,
-  type Candidate,
-  type Fact,
-  type Goal,
-  type Ledger,
-  type Constraint,
+import type {
+  ConstraintSpec,
+  EvidenceFact,
+  Ledger,
+  LedgerCell,
 } from "./types.ts";
 
-export class Evidence {
-  readonly facts: Fact[] = [];
-  add(facts: Fact[]) {
-    for (const fact of facts)
-      if (
-        !this.facts.some(
-          (f) =>
-            f.candidate === fact.candidate &&
-            f.constraint === fact.constraint &&
-            f.source === fact.source,
-        )
-      )
-        this.facts.push(structuredClone(fact));
+export class EvidenceStore {
+  readonly facts: EvidenceFact[] = [];
+
+  add(facts: EvidenceFact[]) {
+    for (const fact of facts) {
+      const duplicate = this.facts.some(
+        (existing) =>
+          existing.subject === fact.subject &&
+          existing.constraint === fact.constraint &&
+          existing.state === fact.state &&
+          existing.source === fact.source &&
+          existing.observation_id === fact.observation_id,
+      );
+      if (!duplicate) this.facts.push(structuredClone(fact));
+    }
   }
-  relevant(candidate: string, k: Constraint, g: Goal) {
-    return this.facts.filter(
-      (f) =>
-        f.candidate === candidate &&
-        f.constraint === k &&
-        (!f.scope ||
-          (same(f.scope.size, g.size) && same(f.scope.color, g.color))),
-    );
-  }
-  ledger(candidates: Candidate[], g: Goal): Ledger {
+
+  ledger(subjects: string[], constraints: ConstraintSpec[]): Ledger {
     return Object.fromEntries(
-      candidates.map((c) => [
-        c.id,
+      subjects.map((subject) => [
+        subject,
         Object.fromEntries(
-          fields.map((k) => {
-            const sources = this.relevant(c.id, k, g),
-              values = sources
-                .filter((f) => f.value !== null)
-                .map((f) => f.value),
-              distinct = new Set(values.map((v) => JSON.stringify(v)));
-            let state: "UNKNOWN" | "SATISFIED" | "REFUTED" = "UNKNOWN";
-            if (distinct.size === 1) {
-              const v = values[0];
-              const pass =
-                k === "variant"
-                  ? typeof v === "object" &&
-                    v !== null &&
-                    same(v.size, g.size) &&
-                    same(v.color, g.color)
-                  : k === "material"
-                    ? typeof v === "string" && same(v, g.material)
-                    : k === "price"
-                      ? typeof v === "number" && v <= g.maxPrice
-                      : v === true;
-              state = pass ? "SATISFIED" : "REFUTED";
-            }
-            return [k, { state, sources }];
+          constraints.map((constraint) => {
+            const sources = this.facts.filter(
+              (fact) =>
+                fact.subject === subject && fact.constraint === constraint.id,
+            );
+            const states = new Set(sources.map((source) => source.state));
+            const state: LedgerCell["state"] =
+              states.size === 1 ? [...states][0] : "UNKNOWN";
+            return [constraint.id, { state, sources } satisfies LedgerCell];
           }),
         ),
       ]),
-    ) as Ledger;
+    );
   }
 }
-export const satisfied = (ledger: Ledger, candidate: string) =>
-  fields.every((k) => ledger[candidate]?.[k].state === "SATISFIED");
-export const refuted = (ledger: Ledger, candidate: string) =>
-  fields.some((k) => ledger[candidate]?.[k].state === "REFUTED");
-export const evidenceUnavailable = (ledger: Ledger, candidate: string) =>
-  fields.some(
-    (k) =>
-      ledger[candidate][k].state === "UNKNOWN" &&
-      ledger[candidate][k].sources.some(
-        (f) => f.value === null && f.source.endsWith("belum dipublikasikan"),
-      ),
-  );
+
+export function requiredEvidenceComplete(
+  ledger: Ledger,
+  subject: string,
+  constraints: ConstraintSpec[],
+) {
+  return constraints
+    .filter((constraint) => constraint.required)
+    .every(
+      (constraint) => ledger[subject]?.[constraint.id]?.state === "SATISFIED",
+    );
+}
