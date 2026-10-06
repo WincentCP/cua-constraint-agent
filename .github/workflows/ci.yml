@@ -16,10 +16,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Format working tree for validation
-        run: npm run format
-      - name: Show formatting patch
-        run: git diff -- src scripts tests config package.json tsconfig.json README.md docs .github/workflows/ci.yml
+      - run: npm run format:check
       - run: npm run build
       - run: npm test
       - run: npm run test:integration
