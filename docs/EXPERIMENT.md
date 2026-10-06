@@ -1,95 +1,70 @@
-# Experiment protocol
+# WebArena-Verified feasibility and experiment protocol
 
-The methodology is fixed by [PRD-FINAL](PRD-FINAL.md). These operational rules are declared before data collection. The pre-main LLM model-selection procedure is fixed separately in [LLM-BENCHMARK](LLM-BENCHMARK.md); it uses development tasks only and must not use the Proposed-minus-Baseline effect to choose a model.
+## Purpose
 
-## Conditions and dataset
+The immediate question is not whether Proposed beats Baseline. The immediate question is whether an established interactive benchmark contains tasks for which the thesis treatment — constraint-directed evidence acquisition — can be defined objectively without leaking evaluator ground truth.
 
-Main contains 32 base tasks and 64 planned runs. There are 12 separate development tasks. Task IDs, U-levels, split, expected outcomes, private attributes and seeds are not passed to the planner; it receives the canonical goal and recorded public UI state.
+## Stage 2: one-task proof of concept
 
-Both policies call the same structured-output planner at each multi-probe decision. It scores every eligible probe for generic task progress. Baseline follows those scores. Proposed ranks UNKNOWN coverage, then required forward browser action cost (including restoration), then stable discovery order. Eligibility filtering is shared. A single eligible probe bypasses the model identically. Public control labels supply shared probe annotations; annotations never count as evidence.
+Primary task: **284**.
 
-ACT/abstention rules, evidence updates, recovery and verification are shared. A public missing-fact notice can support insufficient evidence; exhausting a numeric budget cannot.
+Pass criteria:
 
-## Development and gate
+1. official task input can be exported reproducibly;
+2. the official site can be started/reset locally;
+3. Playwright obtains a usable Accessibility Tree;
+4. task requirements can be decomposed into public, auditable constraints;
+5. at least two meaningful information-acquisition choices can occur before terminal completion;
+6. HAR output is produced in the official evaluator format;
+7. no private reference answer/evaluator expectation is exposed to the agent.
 
-The selected LLM arrives from the separate Model-Selection Pre-Study, which has exercised the six predeclared development tasks used by that pre-study under Baseline. The full 12-task development pool remains available for diagnostics; do not add a standalone 12-task batch merely to expand the pre-study after results are observed.
+## Stage 3: six-task suitability pilot
 
-1. Lock the selected model/configuration against further tuning.
-2. Run build, unit tests, integration tests and dataset validation.
-3. Run `repeatability` on the predeclared tasks `development-01`, `development-03`, `development-05`, and `development-06`, three repetitions, both policies (24 runs). These cover U2/U3/U4 and both solvable subtypes.
-4. Run `gate --input DIR` on that repeatability directory.
-5. Only after the gate passes, create the formal freeze and proceed to main.
+Pre-registered task IDs: **284, 323, 493, 523, 552, 562**.
 
-The standalone `development` command remains available for engineering diagnostics when a code or dataset change needs investigation, but it is not an additional mandatory batch after a completed Model-Selection Pre-Study.
+A task is eligible for the final candidate pool only if all are true:
 
-The gate requires real-model records bound to the current source/config/dataset/model/runtime, all 12 healthy complete pairs with **zero infrastructure failures in the repeatability output**, Baseline correct on at least three distinct tasks requiring two or more probes, stable evaluator outcomes across the three repetitions per task/policy, and no budget exhaustion or structured-output repair in selected gate runs. Exact selected-probe trajectories are recorded as a diagnostic repeatability measure but are **not** a hard pass/fail criterion.
+- objective official evaluator exists;
+- at least three required facts/rules can be stated before execution;
+- evidence can be acquired from public UI observations;
+- there are at least two plausible inspection/navigation choices at one or more states;
+- task is not reducible to a single direct click or direct form copy;
+- constraint annotations can be defined without consulting the hidden expected answer at runtime;
+- task can be reset/replayed locally;
+- Baseline and Proposed can share the same observation, action, budget, and eligible-probe construction.
 
-These conservative engineering criteria are declared before main and do not require Proposed to outperform Baseline. Any development fix invalidates the old gate. Budget must support the public route bounds printed by validation and must not be tuned to maximize the policy gap.
+Task removal must be justified by these criteria before main results exist. "Proposed does not win" is never a removal criterion.
 
-## Freeze and main
+## Treatment boundary
 
-Commit the tested source/config/tests and create the freeze **outside `config/`**, for example `exports/freeze-v1.json`. Freeze locks source hashes, code commit, dataset, model/provider/version/digest, model options, budget, browser/runtime, dependencies and exact run-order manifest, with gate criteria and evidence hash.
+Both conditions share task intent, start state, browser, Accessibility Tree, public evidence store, eligible probes, `may_answer` annotations, action executor, resource budget, and evaluators.
 
-```powershell
-npm run experiment -- freeze --gate exports/repeatability-v1 --out exports/freeze-v1.json
-npm run experiment -- main --freeze exports/freeze-v1.json --out exports/main-v1
-```
+Only probe ranking differs:
 
-Base order and within-pair policy order are seeded before collection. Every attempt uses a new server, cookie, browser process/context and empty cart. The agent cannot access private fixture state or the evaluator. Model chat history does not cross runs.
+- **Baseline**: generic model-estimated progress score.
+- **Proposed**: unresolved constraint coverage, then lower forward cost, then stable order.
 
-Do not modify frozen components after inspecting main outcomes. Null/negative differences are valid results. Demo cannot satisfy the real-model gate.
+`may_answer` is metadata about possible relevance, never proof that a constraint is satisfied.
 
-## Interrupted runs and infrastructure reruns
+## Stage 4: design finalization
 
-```powershell
-npm run experiment -- resume --input exports/main-v1 --freeze exports/freeze-v1.json
-npm run experiment -- rerun --input exports/main-v1 --freeze exports/freeze-v1.json --pair main-01:r1 --reason "Ollama server stopped"
-```
+Only after the six-task pilot:
 
-An original batch stops at its first infrastructure failure to avoid repeatedly dispatching against a broken browser/model. `resume` verifies configuration integrity, reconciles interrupted journal entries and runs only unattempted original cells. It does not silently retry failures. `rerun` requires a recorded infrastructure failure and dispatches both policies with a new attempt index. Original observations and results remain intact. If a rerun is interrupted, reconcile with `resume`, then issue another documented paired rerun.
+1. define the final task-selection rule;
+2. select the held-out main subset before viewing main results;
+3. lock exactly four model IDs/configurations;
+4. lock prompts, parsing rules, budgets, browser version, WebArena-Verified version, task list, constraint specs, and run order;
+5. hash the complete research identity;
+6. run competence/repeatability checks on development tasks;
+7. create the research freeze;
+8. begin main experiment.
 
-Primary analysis selects the earliest complete infrastructure-free pair. It never selects the best result or mixes policies across attempts. Healthy budget exhaustion, wrong/underverified actions, false abstentions and execution/verification failures do not justify reruns. Missing pairs and every infrastructure attempt remain visible.
+A likely final factorial design is `task × 4 models × 2 methods`, but task count is intentionally **not frozen yet**.
 
-## Outcome precedence
+## Evaluation layers
 
-Infrastructure failures are separate. A healthy run that reaches its deadline/budget before a verified terminal decision is `BUDGET_EXHAUSTED`, including a deadline reached after dispatch. Otherwise, for ACT: a wrong nonempty final effect is `WRONG_ACT`; missing pre-ACT evidence is `UNDERVERIFIED_ACT`; an evidenced intent with missing/unverified effect is `EXECUTION_OR_VERIFICATION_FAILURE`; a correct evidenced and verified effect is `VERIFIED_ACT_SUCCESS`. Orthogonal flags retain evidence completeness and final correctness when failures overlap.
+**Official benchmark layer:** WebArena-Verified owns task success through `agent_response.json` + `network.har`.
 
-For no-action terminals, budget exhaustion is failure. No-solution requires public refutation for every candidate and an empty private feasible set. Insufficient evidence requires recorded unavailable decisive facts for still-unrefuted candidates and no fully observable feasible solution. Agent assertions alone are not evaluator evidence.
+**Research layer:** the thesis may additionally measure evidence completeness before consequential action, probe/action count, budget exhaustion, invalid model output, correct abstention/refusal, and method effect across the four models.
 
-## Export and interpretation
-
-```powershell
-npm run experiment -- export --input exports/main-v1
-```
-
-- `metrics.csv`: VDA by policy and overall/type/subtype/U-level with paired assessable denominators.
-- `paired-probes.csv`: jointly correct pairs, Proposed minus Baseline probes. Medians, range and IQR are in `metrics.json`.
-- `episodes.csv`: all attempts and diagnostics.
-- `metrics.json`: selected pair IDs, missing cells, infrastructure/outcome counts and mechanism summaries.
-- `events.jsonl`: durable observations, model input/output, evidence, selection, pre-ACT snapshots and frozen outcomes.
-- `episodes.jsonl`: independent evaluations and final private worlds for offline audit.
-- `report.html` and `report.md`: readable tables and a mechanically selected case gallery. Reports distinguish demo, development and main; they display missing pairs and infrastructure failures.
-- `screenshots/<attempt-id>/obs-N.png`: actual screenshots of the public browser page at recorded observations, linked to observation IDs in `SCREENSHOT` events.
-
-Screenshot recording is configured by `reporting.screenshots` in the single experiment configuration and is frozen with it. It is identical for both policies, never enters planner input, and does not replace Accessibility Tree evidence. Recording time is included in wall time/deadline; screenshot capture adds no exploratory probe. Capture errors are logged as `SCREENSHOT_FAILURE` and reported as missing documentation, without fabricating an image or changing the semantic evidence. Agent and evaluator do not consume PNG files.
-
-Reports choose the first recorded attempt per policy and task type (including failures), and show initial, latest pre-ACT, and terminal screenshots where available. This selection rule is fixed and is not based on success. Keep demo captions when using those images to illustrate implementation in Bab 4. Quantitative findings must come from a valid frozen main run.
-
-Run `npm run experiment -- report --input DIR` to regenerate HTML/Markdown after an interrupted process. The HTML is printable from a browser; keep the report beside its `screenshots` directory. The generator creates tables and captions, not unsupported scientific conclusions.
-
-Verified ACT and correct abstentions score one; other healthy outcomes score zero. Probe comparison includes only jointly correct pairs. Negative delta favors Proposed. Report exclusions and original infrastructure failures. Single episodes are diagnostics, not paired comparisons.
-
-For confirmatory analysis of the 32 paired main tasks, the export/report computes an exact two-sided McNemar test on paired VDA and shows both-correct, Baseline-only, Proposed-only, and both-incorrect counts. Report those counts, absolute VDA difference, and the exact p-value together.
-
-For probe efficiency, the export/report computes a paired Wilcoxon signed-rank analysis only on jointly correct Baseline/Proposed pairs. Zero differences are removed from the signed-rank statistic and ties use average ranks. Report jointly-correct n, non-zero n, zero-difference count, median/IQR of paired probe deltas, statistic, and exact two-sided p-value. Treat this inference as secondary when the effective n is small.
-
-U2/U3/U4 summaries are descriptive/exploratory mechanism analyses rather than separate primary treatment tests. Hidden-constraint identities are rotated across U2/U3 tasks so a U-level is not tied to one fixed fact pattern.
-
-## Threats to validity
-
-- **Internal:** fixed model/configuration, counterbalanced order, repeatability gate, full state reset, and capability-matched policies reduce runtime/order/treatment confounds. U2/U3 rotate hidden-constraint identities.
-- **Construct:** VDA measures verified decision correctness; probe count is the primary information-acquisition efficiency measure. Latency/tokens/actions remain diagnostics.
-- **External:** conclusions are limited to this controlled synthetic task set, selected local model, four constraints, and Accessibility Tree representation.
-- **Statistical:** 32 paired tasks can yield few McNemar discordances, and the jointly-correct Wilcoxon subset can be small. Always report paired counts/effect magnitude and descriptive distributions with p-values.
-
-Claims apply to this controlled task set and model. They do not establish live-website generalization, usability for blind users, or superiority of Accessibility Trees over other representations.
+The research layer must never redefine an official failure as official success.
