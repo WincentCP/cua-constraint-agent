@@ -1,92 +1,135 @@
-# Constraint-Directed Computer-Use Agent
+# CUA Constraint Agent — WebArena-Verified Transition
 
-Controlled research system comparing **Baseline generic model-guided probe selection** with **Proposed UNKNOWN-coverage probe selection**. Both receive the same goal, public Accessibility Tree, evidence ledger, semantic probe annotations, eligible probes, model, budget, executor and verifier. Only the final probe-selection rule differs. The novelty is the isolated UNKNOWN-coverage selection rule—not constraint tracking or the general idea of continuing to search while evidence is incomplete.
+This is the active research codebase for the thesis **Computer-Use Agent with Constraint-Directed Evidence Acquisition**.
 
-The approved methodology is [PRD-FINAL](docs/PRD-FINAL.md). Main evaluation contains **32 base tasks × 2 policies = 64 runs**: 16 solvable (8 single-feasible, 8 multi-feasible), 8 no-solution, and 8 unavailable-evidence. Initial information is grouped into U2/U3/U4 (11/10/11 tasks). U2/U3 rotate hidden-constraint identities instead of always hiding the same facts, and unavailable-evidence cases diversify which decisive constraint is unpublished.
+The previous LEUCO synthetic e-commerce implementation is preserved on the `leuco-legacy` branch. `main` is intentionally focused on validating whether the research treatment can be transferred to an established benchmark before any new main experiment is frozen.
 
-This is a local CLI research tool with a synthetic website in isolated Chromium. It does not include a participant study, voice interface, payment flow, or production deployment.
+## Current research stage
 
-## Setup and engineering checks
+**Stage 2–4 only: WebArena-Verified feasibility pilot.**
 
-Requires Node.js 24+, npm, Git and Ollama **0.13.3 or newer**. The active Model-Selection Pre-Study set uses four committed Q4_K_M candidates: Qwen3.5 9B, Ministral-3 8B Instruct, Granite 4.1 8B and Salesforce Llama-xLAM-2 8B FC-R. RNJ-1 8B Instruct was removed after reproducible deployment incompatibility; OLMo 3 7B Instruct was later superseded by xLAM-2 in a documented protocol refinement after feasibility pilot but before any full Model-Selection Pre-Study run; see [STATUS](docs/STATUS.md).
+The repository currently supports:
+
+- a generic evidence ledger (`SATISFIED` / `REFUTED` / `UNKNOWN`);
+- capability-matched Baseline vs Proposed probe selection;
+- official WebArena-Verified task input contracts;
+- Playwright Accessibility Tree inspection and HAR recording;
+- a pre-registered six-task pilot manifest;
+- a pre-registered four-model manifest for the later main experiment;
+- official WebArena-Verified CLI handoff for task export and evaluation;
+- research-identity hashing/freeze utilities.
+
+It **does not yet claim** that the six pilot tasks are suitable for the final experiment. Suitability must be established by running the pilot on the target device. Pilot output is not main-experiment data.
+
+## Branches
+
+- `main` — active WebArena-Verified research direction.
+- `leuco-legacy` — complete snapshot of the former LEUCO implementation before migration.
+
+## Device setup
+
+Requirements:
+
+- Windows 10/11 + PowerShell
+- Node.js 24+
+- Docker Desktop / WSL2
+- `uv` / `uvx`
+- Playwright Chromium
+- Ollama is only required when model-driven pilot execution is added after feasibility is confirmed
 
 ```powershell
 npm ci
 npx playwright install chromium
+Copy-Item config/webarena.example.json config/webarena.local.json
+npm run webarena:doctor
+npm run webarena:validate
+```
+
+## Stage 2 — primary PoC task 284
+
+Start the official Shopping environment:
+
+```powershell
+uvx webarena-verified env start --site shopping
+```
+
+Export only public task input from the official benchmark:
+
+```powershell
+npm run webarena:prepare -- --task 284
+```
+
+Capture the initial Accessibility Tree, visible controls, constraint-hint mapping, and HAR trace:
+
+```powershell
+npm run webarena:inspect -- --task 284
+```
+
+Expected artifacts:
+
+```text
+output/pilot/
+  tasks.json
+  284/
+    accessibility-1.yaml
+    inspection.json
+    network.har
+```
+
+`inspection.json` is diagnostic. A `may_answer` mapping is never treated as evidence.
+
+## Stage 3 — six-task pilot
+
+The pre-registered pilot IDs are:
+
+```text
+284, 323, 493, 523, 552, 562
+```
+
+They were chosen for feasibility auditing because their official tasks contain multiple requirements and objective evaluator outputs. They are **not automatically accepted as the final thesis subset**.
+
+See `docs/EXPERIMENT.md`.
+
+## Stage 4 — freeze only after pilot
+
+If the pilot confirms construct validity, then and only then:
+
+- choose the final held-out task subset;
+- lock four models/configurations;
+- lock Baseline/Proposed prompts and budgets;
+- lock task annotations and evaluator versions;
+- generate a research freeze before main data collection.
+
+No main results should be collected from the current pilot configuration.
+
+## Official WebArena-Verified outputs
+
+The official evaluator expects, per task:
+
+```text
+<output-root>/<task-id>/
+  agent_response.json
+  network.har
+```
+
+After both exist:
+
+```powershell
+npm run webarena:evaluate -- --task 284
+```
+
+This calls the official `webarena-verified eval-tasks` CLI. Our research layer may add evidence/process metrics later, but it must not replace the official task-success evaluator.
+
+## Verification
+
+CI checks:
+
+```powershell
+npm run format:check
 npm run build
 npm test
 npm run test:integration
-npm run experiment -- validate
-npm run experiment -- main --demo --out exports/demo-main-v1
+npm run webarena:validate
 ```
 
-Demo uses a deterministic test double and is **not research data**. Use a fresh output directory for each experiment.
-
-To inspect the redesigned LEUCO kaos storefront manually with an isolated development task:
-
-```powershell
-npm run preview -- --task development-01 --port 4173
-```
-
-Open `http://127.0.0.1:4173`. This preview is for UI inspection only and is not research data.
-
-## Research workflow
-
-Start Ollama and install the exact committed benchmark candidates:
-
-```powershell
-ollama pull qwen3.5:9b-q4_K_M
-ollama pull ministral-3:8b-instruct-2512-q4_K_M
-ollama pull granite4.1:8b-q4_K_M
-ollama run hf.co/Salesforce/Llama-xLAM-2-8b-fc-r-gguf:Q4_K_M "Return exactly OK."
-powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode pilot -Out exports\device-preflight-v4
-```
-
-The pilot is a feasibility check only. With the currently committed four-model set, continue on an unchanged machine only after a clean 12/12 pilot. RNJ-1 has already been excluded under the documented reproducible deployment-incompatibility rule, with both failed pilots preserved as diagnostic history. The full Model-Selection Pre-Study now uses six predeclared development tasks × three repetitions across four models = 72 episodes:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\benchmark\run.ps1 -Mode full -Out exports\llm-benchmark-full-v2
-```
-
-A prior Model-Selection Pre-Study selected Qwen3.5, but its repeatability gate exposed a systematic incomplete-score schema repair on `development-05` Proposed. The shared Ollama planner now uses a dynamic JSON Schema instead of generic JSON mode, so the prior selection is retained only as development history. Run a fresh pilot and fresh full pre-study before selecting a model again:
-
-```powershell
-npm run experiment -- repeatability --out exports/repeatability-v3
-npm run experiment -- gate --input exports/repeatability-v3
-npm run experiment -- freeze --gate exports/repeatability-v3 --out exports/freeze-v1.json
-npm run experiment -- main --freeze exports/freeze-v1.json --out exports/main-v1
-npm run experiment -- export --input exports/main-v1
-```
-
-The 12-task `development` pool remains available for diagnostics, but do not add a full standalone development batch after the Model-Selection Pre-Study merely because more tasks are available; the pre-study subsets are fixed before collection.
-
-See [SETUP](docs/SETUP.md), [EXPERIMENT](docs/EXPERIMENT.md), [LLM-BENCHMARK](docs/LLM-BENCHMARK.md), [FRONTEND-INTEGRATION](docs/FRONTEND-INTEGRATION.md), and [STATUS](docs/STATUS.md) for prerequisites, experiment procedures, interface integration decisions, and observed validation evidence.
-
-## Evaluation and outputs
-
-The independent evaluator runs after the agent outcome and browser world are frozen. Successful ACT requires a correct final cart **and valid public evidence for all four constraints before dispatch**. Correct abstentions require public support. Healthy budget exhaustion counts as failure; infrastructure failures are recorded separately.
-
-Each experiment writes `experiment.json`, `journal.jsonl`, `events.jsonl`, `episodes.jsonl`, `episodes.csv`, `metrics.json`, `metrics.csv`, `paired-probes.csv`, and `failures.json`. On completion or a handled interruption it also writes `report.html` and `report.md`. Public UI screenshots are stored under `screenshots/<attempt-id>/`. Original attempts are retained. Primary comparison uses the earliest complete infrastructure-free pair, and probe efficiency uses only jointly correct pairs. Main reports also include exact two-sided McNemar paired counts/p-value and exact paired Wilcoxon signed-rank output with explicit zero/tie handling.
-
-Open `report.html` in a browser for the tables and screenshot gallery. Regenerate a report from existing final-contract data with:
-
-```powershell
-npm run experiment -- report --input exports/demo-main-v1
-```
-
-Demo reports are explicitly labeled and can illustrate implementation in a thesis, but their metrics must not be presented as real-model research findings. Keep the whole output directory together so image links remain valid.
-
-## Code boundaries
-
-| Directory               | Responsibility                                                        |
-| ----------------------- | --------------------------------------------------------------------- |
-| `src/environment`       | Private fixture generator and isolated synthetic HTTP world           |
-| `src/browser`           | Public Accessibility Tree observation, controls and cart verifier     |
-| `src/core`              | Goal schema, evidence, common budget and policy selection             |
-| `src/agent`             | Shared execution loop and Ollama structured-output planner            |
-| `src/evaluation`        | Offline oracle validating observations against private specifications |
-| `src/experiment`        | Manifest, recorder, paired metrics, development gate and freeze       |
-| `scripts/experiment.ts` | CLI entry point                                                       |
-| `tests`                 | Unit, browser integration and research-invariant tests                |
-
-Generated artifacts, dependencies and models are excluded from Git. Existing ignored outputs from older designs are not evidence for this PRD.
+The integration test launches Chromium locally against a synthetic `data:` page only to verify the Accessibility Tree + HAR plumbing. CI deliberately does **not** claim that WebArena task 284 has been solved; live benchmark execution requires the official Docker environment on the research device.
