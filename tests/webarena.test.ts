@@ -28,7 +28,9 @@ test("pilot task manifest is explicit, six-task, and starts with task 284", () =
 });
 
 test("four-model manifest is pre-registered without selecting a winner", () => {
-  const models = JSON.parse(readFileSync("config/models.json", "utf8")) as Array<{
+  const models = JSON.parse(
+    readFileSync("config/models.json", "utf8"),
+  ) as Array<{
     label: string;
     name: string;
   }>;
@@ -67,13 +69,7 @@ test("accessibility controls are parsed and hint mapping remains annotation-only
   assert.equal(controls.length, 3);
   const constraints = loadPilotManifest().tasks[0].constraints;
   const probes = probesFromControls(controls, constraints);
-  assert(
-    probes.some((probe) => probe.may_answer.includes("product_category")),
-  );
-  assert(
-    probes.some((probe) => probe.may_answer.includes("minimum_capacity")),
-  );
-  assert(
-    probes.some((probe) => probe.may_answer.includes("least_expensive")),
-  );
+  assert(probes.some((probe) => probe.may_answer.includes("product_category")));
+  assert(probes.some((probe) => probe.may_answer.includes("minimum_capacity")));
+  assert(probes.some((probe) => probe.may_answer.includes("least_expensive")));
 });
