@@ -171,12 +171,18 @@ export function ensureMainRunLayout(options: {
   );
   mkdirSync(runRoot, { recursive: true });
   for (const taskId of options.taskIds) {
-    mkdirSync(join(mainTaskArtifactDir(
-      options.outputRoot,
-      options.modelLabel,
-      options.method,
-      taskId,
-    ), "accessibility"), { recursive: true });
+    mkdirSync(
+      join(
+        mainTaskArtifactDir(
+          options.outputRoot,
+          options.modelLabel,
+          options.method,
+          taskId,
+        ),
+        "accessibility",
+      ),
+      { recursive: true },
+    );
   }
   return runRoot;
 }
