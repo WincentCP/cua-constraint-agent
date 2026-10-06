@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "status": "PILOT_ONLY",
+  "primary_poc_task": 284,
+  "tasks": [
+    {
+      "task_id": 284,
+      "sites": ["shopping"],
+      "rationale": "Navigation task with an explicit product category, minimum capacity constraint, and optimization objective. Used only to test whether constraint-directed inspection can be grounded in an established benchmark.",
+      "constraints": [
+        {
+          "id": "product_category",
+          "description": "Candidate is shoe storage.",
+          "required": true,
+          "hints": ["shoe", "storage"]
+        },
+        {
+          "id": "minimum_capacity",
+          "description": "Candidate stores at least 12 pairs.",
+          "required": true,
+          "hints": ["12", "pair", "capacity"]
+        },
+        {
+          "id": "least_expensive",
+          "description": "Chosen feasible candidate is the least expensive.",
+          "required": true,
+          "hints": ["price", "$", "least", "sort"]
+        }
+      ]
+    },
+    {
+      "task_id": 323,
+      "sites": ["shopping"],
+      "rationale": "Retrieval task whose answer depends on order status, time window, retained-item exclusion, shipping exclusion, and aggregation.",
+      "constraints": [
+        {
+          "id": "time_window",
+          "description": "Only relevant March 2022 orders are considered.",
+          "required": true,
+          "hints": ["march", "2022", "date"]
+        },
+        {
+          "id": "canceled_orders",
+          "description": "Only canceled orders contribute to the refund calculation.",
+          "required": true,
+          "hints": ["cancel", "order", "status"]
+        },
+        {
+          "id": "kept_item_exclusion",
+          "description": "The retained AC-DC Adapter is excluded from refundable item value.",
+          "required": true,
+          "hints": ["AC-DC", "adapter", "item"]
+        },
+        {
+          "id": "shipping_exclusion",
+          "description": "Shipping fees are not refundable for this task.",
+          "required": true,
+          "hints": ["shipping", "delivery"]
+        },
+        {
+          "id": "refund_total",
+          "description": "The final refund is aggregated from the verified eligible components.",
+          "required": true,
+          "hints": ["refund", "total", "amount"]
+        }
+      ]
+    },
+    {
+      "task_id": 493,
+      "sites": ["shopping_admin"],
+      "rationale": "Mutation task requiring the correct customer, pending-order status, recency selection, and exact message before an external side effect.",
+      "constraints": [
+        {
+          "id": "customer_identity",
+          "description": "The selected customer is Grace Nguyen.",
+          "required": true,
+          "hints": ["Grace", "Nguyen", "customer"]
+        },
+        {
+          "id": "pending_status",
+          "description": "The target order is pending.",
+          "required": true,
+          "hints": ["pending", "status"]
+        },
+        {
+          "id": "most_recent",
+          "description": "The target is the customer's most recent pending order.",
+          "required": true,
+          "hints": ["recent", "date", "order"]
+        },
+        {
+          "id": "message_exact",
+          "description": "The notification message matches the task instruction.",
+          "required": true,
+          "hints": ["comment", "notify", "message"]
+        }
+      ]
+    },
+    {
+      "task_id": 523,
+      "sites": ["gitlab"],
+      "rationale": "Mutation task that requires identifying a global top-five ranking before applying repeated star actions.",
+      "constraints": [
+        {
+          "id": "repository_population",
+          "description": "The relevant GitLab repository population has been inspected.",
+          "required": true,
+          "hints": ["project", "repository", "explore"]
+        },
+        {
+          "id": "star_ranking",
+          "description": "Repositories are ranked by star count.",
+          "required": true,
+          "hints": ["star", "sort", "popular"]
+        },
+        {
+          "id": "top_five_identity",
+          "description": "The five highest-star repositories are identified before mutation.",
+          "required": true,
+          "hints": ["top", "five", "star"]
+        },
+        {
+          "id": "star_each",
+          "description": "Each of the five verified repositories is starred.",
+          "required": true,
+          "hints": ["star", "unstar"]
+        }
+      ]
+    },
+    {
+      "task_id": 552,
+      "sites": ["gitlab", "reddit"],
+      "rationale": "Cross-site workflow: retrieve the five most recent forum posts, preserve order and URLs, then create and commit a structured JSON artifact in GitLab.",
+      "constraints": [
+        {
+          "id": "forum_scope",
+          "description": "Posts come from the space forum.",
+          "required": true,
+          "hints": ["space", "forum"]
+        },
+        {
+          "id": "five_most_recent",
+          "description": "Exactly the five most recent posts are selected newest to oldest.",
+          "required": true,
+          "hints": ["new", "recent", "latest"]
+        },
+        {
+          "id": "full_urls",
+          "description": "The full URLs for all selected posts are captured.",
+          "required": true,
+          "hints": ["url", "link"]
+        },
+        {
+          "id": "json_structure",
+          "description": "urls.json contains a JSON object with a urls array in the required order.",
+          "required": true,
+          "hints": ["urls.json", "json", "file"]
+        },
+        {
+          "id": "repository_target",
+          "description": "The file is created under real_space in the target repository.",
+          "required": true,
+          "hints": ["real_space", "repository", "folder"]
+        },
+        {
+          "id": "commit_effect",
+          "description": "The file is committed to the default branch.",
+          "required": true,
+          "hints": ["commit", "branch"]
+        }
+      ]
+    },
+    {
+      "task_id": 562,
+      "sites": ["gitlab", "reddit"],
+      "rationale": "Cross-site workflow with retrieval, ranking, formatting, repository creation, privacy setting, and commit side effects.",
+      "constraints": [
+        {
+          "id": "forum_scope",
+          "description": "Posts come from the DIY forum.",
+          "required": true,
+          "hints": ["DIY", "forum"]
+        },
+        {
+          "id": "six_most_active",
+          "description": "Exactly the six most active posts are selected in forum order.",
+          "required": true,
+          "hints": ["active", "top", "post"]
+        },
+        {
+          "id": "markdown_links",
+          "description": "README entries are markdown links using titles as link text.",
+          "required": true,
+          "hints": ["README", "markdown", "link"]
+        },
+        {
+          "id": "required_headings",
+          "description": "README contains the required main heading and subheading.",
+          "required": true,
+          "hints": ["heading", "Most Active DIY Threads", "README"]
+        },
+        {
+          "id": "private_repository",
+          "description": "The requested GitLab repository is created as private.",
+          "required": true,
+          "hints": ["private", "visibility", "repository"]
+        },
+        {
+          "id": "commit_effect",
+          "description": "The README is committed to the default branch.",
+          "required": true,
+          "hints": ["commit", "branch"]
+        }
+      ]
+    }
+  ]
+}
