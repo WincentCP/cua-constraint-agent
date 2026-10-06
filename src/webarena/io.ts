@@ -11,12 +11,15 @@ import {
 
 export function readTasks(path: string): WebArenaTask[] {
   const raw = JSON.parse(readFileSync(path, "utf8"));
-  if (!Array.isArray(raw)) throw new Error("WebArena task export must be an array");
+  if (!Array.isArray(raw))
+    throw new Error("WebArena task export must be an array");
   return raw.map((task) => WebArenaTaskSchema.parse(task));
 }
 
 export function readTask(path: string, taskId: number) {
-  const task = readTasks(path).find((candidate) => candidate.task_id === taskId);
+  const task = readTasks(path).find(
+    (candidate) => candidate.task_id === taskId,
+  );
   if (!task) throw new Error(`Task ${taskId} not found in ${path}`);
   return task;
 }
