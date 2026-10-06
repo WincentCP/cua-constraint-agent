@@ -6,7 +6,7 @@ The previous LEUCO synthetic e-commerce implementation is preserved on the `leuc
 
 ## Current research stage
 
-**Stage 2–4 only: WebArena-Verified feasibility pilot.**
+**WebArena-Verified PoC → feasibility pilot.**
 
 The repository currently supports:
 
@@ -17,7 +17,8 @@ The repository currently supports:
 - a pre-registered six-task pilot manifest;
 - a pre-registered four-model manifest for the later main experiment;
 - official WebArena-Verified CLI handoff for task export and evaluation;
-- research-identity hashing/freeze utilities.
+- research-identity hashing/freeze utilities;
+- automatic, stage-separated experiment artifacts and generated audit indexes.
 
 It **does not yet claim** that the six pilot tasks are suitable for the final experiment. Suitability must be established by running the pilot on the target device. Pilot output is not main-experiment data.
 
@@ -65,18 +66,26 @@ Capture the initial Accessibility Tree, visible controls, constraint-hint mappin
 npm run webarena:inspect -- --task 284
 ```
 
-Expected artifacts:
+PoC artifacts are created automatically:
 
 ```text
-output/pilot/
-  tasks.json
+output/poc/
+  stage-manifest.json
+  task-inputs/284.json
   284/
-    accessibility-1.yaml
+    accessibility/01.yaml
     inspection.json
     network.har
+
+reports/poc/
+  artifact-index.json
+  artifact-index.csv
+  stage-summary.md
 ```
 
 `inspection.json` is diagnostic. A `may_answer` mapping is never treated as evidence.
+
+See `docs/ARTIFACTS.md` for the full PoC → pilot → main directory convention.
 
 ## Stage 3 — six-task pilot
 
@@ -86,7 +95,20 @@ The pre-registered pilot IDs are:
 284, 323, 493, 523, 552, 562
 ```
 
-They were chosen for feasibility auditing because their official tasks contain multiple requirements and objective evaluator outputs. They are **not automatically accepted as the final thesis subset**.
+Initialize the complete pilot artifact layout:
+
+```powershell
+npm run artifacts:init -- --stage pilot
+```
+
+Then use the same WebArena commands with `--stage pilot`, for example:
+
+```powershell
+npm run webarena:prepare -- --task 323 --stage pilot
+npm run webarena:inspect -- --task 323 --stage pilot
+```
+
+The pilot tasks were chosen for feasibility auditing because their official tasks contain multiple requirements and objective evaluator outputs. They are **not automatically accepted as the final thesis subset**.
 
 See `docs/EXPERIMENT.md`.
 
@@ -99,6 +121,8 @@ If the pilot confirms construct validity, then and only then:
 - lock Baseline/Proposed prompts and budgets;
 - lock task annotations and evaluator versions;
 - generate a research freeze before main data collection.
+
+The planned main artifact layout is `output/main/<experiment-id>/runs/<model>/<method>/<task-id>/`. It is scaffolded only after final task selection; the autonomous main runner and run-level statistical aggregation are intentionally not claimed complete yet.
 
 No main results should be collected from the current pilot configuration.
 

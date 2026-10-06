@@ -1,5 +1,6 @@
 node_modules/
 output/
+reports/
 results/
 playwright-report/
 test-results/

@@ -4,6 +4,15 @@ import { chromium } from "playwright";
 import { probesFromControls } from "../src/browser/accessibility.ts";
 import { openInspectionSession } from "../src/browser/session.ts";
 import {
+  defaultOutputRoot,
+  defaultReportRoot,
+  ensureArtifactLayout,
+  parseExperimentStage,
+  refreshArtifactReport,
+  taskArtifactDir,
+  type ExperimentStage,
+} from "../src/experiment/artifacts.ts";
+import {
   authHeadersForTask,
   taskAllowedOrigins,
 } from "../src/webarena/auth.ts";
@@ -33,12 +42,64 @@ function configPath() {
   return resolve(option("config", "config/webarena.local.json")!);
 }
 
-function tasksPath() {
-  return resolve(option("tasks", "output/pilot/tasks.json")!);
+function currentStage(): Exclude<ExperimentStage, "main"> {
+  const stage = parseExperimentStage(option("stage", "poc")!);
+  if (stage === "main") {
+    throw new Error(
+      "The current WebArena inspection CLI is for PoC/pilot only. Main runs are enabled only after the experiment freeze and autonomous runner are finalized.",
+    );
+  }
+  return stage;
 }
 
 function outputRoot() {
-  return resolve(option("output", "output/pilot")!);
+  const stage = currentStage();
+  return resolve(option("output", defaultOutputRoot(stage))!);
+}
+
+function reportRoot() {
+  const stage = currentStage();
+  return resolve(option("reports", defaultReportRoot(stage))!);
+}
+
+function taskInputPath(id: number) {
+  return resolve(
+    option("tasks", join(outputRoot(), "task-inputs", `${id}.json`))!,
+  );
+}
+
+function ensureCurrentLayout(stage: "poc" | "pilot", ids: number[]) {
+  return ensureArtifactLayout({
+    stage,
+    outputRoot: outputRoot(),
+    reportRoot: reportRoot(),
+    taskIds: ids,
+  });
+}
+
+function refreshCurrentReport(stage: "poc" | "pilot") {
+  refreshArtifactReport({
+    stage,
+    outputRoot: outputRoot(),
+    reportRoot: reportRoot(),
+  });
+}
+
+function assertStageTask(stage: "poc" | "pilot", id: number) {
+  const manifest = loadPilotManifest();
+  if (stage === "poc" && id !== manifest.primary_poc_task) {
+    throw new Error(
+      `PoC is fixed to task ${manifest.primary_poc_task}; received task ${id}`,
+    );
+  }
+  if (
+    stage === "pilot" &&
+    !manifest.tasks.some((task) => task.task_id === id)
+  ) {
+    throw new Error(
+      `Task ${id} is not pre-registered in config/pilot-tasks.json`,
+    );
+  }
 }
 
 function printResult(
@@ -125,19 +186,17 @@ function validate() {
 
 function prepare() {
   const id = taskId();
-  const manifest = loadPilotManifest();
-  if (!manifest.tasks.some((task) => task.task_id === id)) {
-    throw new Error(
-      `Task ${id} is not pre-registered in config/pilot-tasks.json`,
-    );
-  }
+  const stage = currentStage();
+  assertStageTask(stage, id);
+  ensureCurrentLayout(stage, [id]);
+
   const config = configPath();
   if (!existsSync(config)) {
     throw new Error(
       `Missing ${config}. Copy config/webarena.example.json to config/webarena.local.json first.`,
     );
   }
-  const tasks = tasksPath();
+  const tasks = taskInputPath(id);
   mkdirSync(resolve(tasks, ".."), { recursive: true });
   const result = requireSuccess(
     webArenaVerified([
@@ -151,12 +210,17 @@ function prepare() {
     ]),
   );
   if (result.stdout.trim()) console.log(result.stdout.trim());
+  refreshCurrentReport(stage);
   console.log(`Task ${id} exported to ${tasks}`);
 }
 
 async function inspect() {
   const id = taskId();
-  const tasks = tasksPath();
+  const stage = currentStage();
+  assertStageTask(stage, id);
+  ensureCurrentLayout(stage, [id]);
+
+  const tasks = taskInputPath(id);
   const config = configPath();
   if (!existsSync(tasks)) {
     throw new Error(`Missing ${tasks}; run webarena:prepare first.`);
@@ -169,8 +233,9 @@ async function inspect() {
   const spec = manifest.tasks.find((candidate) => candidate.task_id === id);
   if (!spec) throw new Error(`Task ${id} is not in pilot manifest`);
 
-  const taskDir = join(outputRoot(), String(id));
-  mkdirSync(taskDir, { recursive: true });
+  const taskDir = taskArtifactDir(outputRoot(), id);
+  const accessibilityDir = join(taskDir, "accessibility");
+  mkdirSync(accessibilityDir, { recursive: true });
   const harPath = join(taskDir, "network.har");
   const session = await openInspectionSession({
     harPath,
@@ -184,7 +249,10 @@ async function inspect() {
       await session.goto(task.start_urls[index]);
       const snapshot = await session.capture();
       const probes = probesFromControls(snapshot.controls, spec.constraints);
-      const snapshotPath = join(taskDir, `accessibility-${index + 1}.yaml`);
+      const snapshotPath = join(
+        accessibilityDir,
+        `${String(index + 1).padStart(2, "0")}.yaml`,
+      );
       writeFileSync(snapshotPath, snapshot.accessibility, "utf8");
       observations.push({
         index,
@@ -211,7 +279,7 @@ async function inspect() {
   );
   const report = {
     schema_version: 1,
-    stage: "PILOT_INSPECTION",
+    stage: `${stage.toUpperCase()}_INSPECTION`,
     task,
     rationale: spec.rationale,
     constraints: spec.constraints,
@@ -229,15 +297,20 @@ async function inspect() {
   };
   const reportPath = join(taskDir, "inspection.json");
   writeJson(reportPath, report);
+  refreshCurrentReport(stage);
   console.log(`Inspection written to ${reportPath}`);
   console.log(`HAR written to ${harPath}`);
 }
 
 function evaluate() {
   const id = taskId();
+  const stage = currentStage();
+  assertStageTask(stage, id);
+  ensureCurrentLayout(stage, [id]);
+
   const config = configPath();
   const output = outputRoot();
-  const taskDir = join(output, String(id));
+  const taskDir = taskArtifactDir(output, id);
   for (const required of ["agent_response.json", "network.har"]) {
     if (!existsSync(join(taskDir, required))) {
       throw new Error(
@@ -259,6 +332,7 @@ function evaluate() {
       output,
     ]),
   );
+  refreshCurrentReport(stage);
   console.log(result.stdout.trim());
   console.log(`Official evaluation completed for task ${id}`);
 }
@@ -275,9 +349,9 @@ try {
       "Usage:\n" +
         "  npm run webarena:doctor\n" +
         "  npm run webarena:validate\n" +
-        "  npm run webarena:prepare -- --task 284\n" +
-        "  npm run webarena:inspect -- --task 284\n" +
-        "  npm run webarena:evaluate -- --task 284",
+        "  npm run webarena:prepare -- --task 284 [--stage poc|pilot]\n" +
+        "  npm run webarena:inspect -- --task 284 [--stage poc|pilot]\n" +
+        "  npm run webarena:evaluate -- --task 284 [--stage poc|pilot]",
     );
   }
 } catch (error) {
