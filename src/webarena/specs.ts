@@ -38,7 +38,8 @@ export function loadPilotManifest(
   const raw = JSON.parse(readFileSync(path, "utf8"));
   const manifest = PilotManifestSchema.parse(raw);
   const ids = manifest.tasks.map((task) => task.task_id);
-  if (new Set(ids).size !== ids.length) throw new Error("Duplicate pilot task IDs");
+  if (new Set(ids).size !== ids.length)
+    throw new Error("Duplicate pilot task IDs");
   if (!ids.includes(manifest.primary_poc_task)) {
     throw new Error("primary_poc_task must be present in tasks");
   }
