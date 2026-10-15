@@ -34,6 +34,10 @@ jobs:
       - name: Validate Colab notebook syntax
         run: |
           python -c "import json,ast; n=json.load(open('notebooks/thesis_analysis.ipynb')); [ast.parse(''.join(c['source'])) for c in n['cells'] if c['cell_type']=='code']; print('Notebook syntax OK')"
+      - name: Execute Colab pipeline on synthetic fixtures
+        run: |
+          python -m pip install --quiet numpy pandas scipy matplotlib
+          python tests/notebook-smoke.py
       - run: npm run webarena:validate
       - run: npm run artifacts:init -- --stage poc
       - run: npm run artifacts:init -- --stage pilot

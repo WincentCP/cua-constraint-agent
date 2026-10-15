@@ -212,10 +212,13 @@ export function buildResultsDataset(args: {
           row.official_status = result.status;
           row.issue = "";
         } catch (error) {
+          // No local Windows username/path or raw exception may enter Colab CSV.
+          const code = error instanceof Error ? error.message : "";
           row.issue =
-            error instanceof Error
-              ? error.message.slice(0, 100)
-              : "INVALID_RUN";
+            code.startsWith("ENOENT") ? "MISSING" :
+            ["RUN_METADATA_MISMATCH", "RUN_INCOMPLETE", "MISSING_AGENT_EVIDENCE",
+              "INVALID_HAR", "OFFICIAL_METADATA_MISMATCH", "EVALUATOR_ERROR",
+              "INVALID_OFFICIAL_SCORE"].includes(code) ? code : "INVALID_ARTIFACT";
         }
         rows.push(row);
       }
