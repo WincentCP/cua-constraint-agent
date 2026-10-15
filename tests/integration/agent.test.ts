@@ -83,7 +83,10 @@ test("mock model drives a synthetic browser and records screenshots/decision evi
     intent_template_id: 207,
     sites: ["shopping"],
     start_urls: [
-      "data:text/html,<main><a href='#target'>Shoe storage</a><section id='target'>12 pairs capacity</section></main>",
+      "data:text/html," +
+        encodeURIComponent(
+          "<main><a href='#target'>Shoe storage</a><section id='target'>12 pairs capacity</section></main>",
+        ),
     ],
     intent: "Go to the cheapest shoe storage product with capacity of 12 pairs",
   };
