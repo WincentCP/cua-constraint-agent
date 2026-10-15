@@ -57,3 +57,14 @@ jobs:
       - run: npm run artifacts:init -- --stage poc
       - run: npm run artifacts:init -- --stage pilot
       - run: npm run artifacts:report -- --stage pilot
+      - uses: astral-sh/setup-uv@v6
+      - name: Windows pinned CLI input with spaces in path
+        shell: pwsh
+        run: |
+          $configDir = Join-Path $env:RUNNER_TEMP "webarena config with spaces"
+          New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+          $configPath = Join-Path $configDir "webarena.local.json"
+          $taskPath = Join-Path $configDir "284.json"
+          Copy-Item config/webarena.example.json $configPath
+          npm run webarena:prepare -- --task 284 --stage poc --config $configPath --tasks $taskPath
+          if (-not (Test-Path $taskPath)) { throw "Public task export missing" }
