@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { authHeadersForTask, taskAllowedOrigins } from "../src/webarena/auth.ts";
+import { WebArenaConfigSchema } from "../src/webarena/schema.ts";
 import {
   WebArenaAgentResponseSchema,
   WebArenaTaskSchema,
@@ -57,6 +59,23 @@ test("task verification rejects altered intents and cross-site substitution", ()
     intent: spec.public_intent,
   });
   assert.equal(verifyPublicPilotTask(task).task_id, 284);
+  const config = WebArenaConfigSchema.parse(
+    JSON.parse(readFileSync("config/webarena.example.json", "utf8")),
+  );
+  assert.deepEqual(Object.keys(config.environments), ["__SHOPPING__"]);
+  assert.deepEqual(taskAllowedOrigins(task), ["http://localhost:7770"]);
+  assert.equal(
+    authHeadersForTask(task, config)["X-M2-Customer-Auto-Login"],
+    "emma.lopez@gmail.com:Password.123",
+  );
+  assert.throws(
+    () => taskAllowedOrigins({ ...task, sites: ["gitlab"] }),
+    /Shopping-only/,
+  );
+  assert.throws(
+    () => authHeadersForTask({ ...task, sites: ["reddit"] }, config),
+    /Shopping-only/,
+  );
   assert.throws(
     () => verifyPublicPilotTask({ ...task, intent: "changed" }),
     /re-audit/,
