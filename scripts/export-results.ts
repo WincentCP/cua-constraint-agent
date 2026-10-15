@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { buildResultsDataset } from "../src/experiment/results.ts";
-import { defaultOutputRoot, defaultReportRoot } from "../src/experiment/artifacts.ts";
+import {
+  defaultOutputRoot,
+  defaultReportRoot,
+} from "../src/experiment/artifacts.ts";
 
 function option(name: string, fallback?: string) {
   const index = process.argv.indexOf("--" + name);
@@ -14,18 +17,30 @@ try {
     throw new Error("Use --stage pilot or main");
   }
   const experimentId = option("experiment-id");
-  const models = JSON.parse(readFileSync("config/models.json", "utf8")) as Array<{
+  const models = JSON.parse(
+    readFileSync("config/models.json", "utf8"),
+  ) as Array<{
     label: string;
     name: string;
   }>;
   const result = buildResultsDataset({
     stage,
     models,
-    outputRoot: resolve(option("output", defaultOutputRoot(stage, experimentId))!),
-    reportRoot: resolve(option("reports", defaultReportRoot(stage, experimentId))!),
+    outputRoot: resolve(
+      option("output", defaultOutputRoot(stage, experimentId))!,
+    ),
+    reportRoot: resolve(
+      option("reports", defaultReportRoot(stage, experimentId))!,
+    ),
     catalogPath: option("catalog"),
   });
-  console.log("Result inventory: " + result.valid + "/" + result.expected + " valid official episodes");
+  console.log(
+    "Result inventory: " +
+      result.valid +
+      "/" +
+      result.expected +
+      " valid official episodes",
+  );
   console.log("Official successes among valid: " + result.success);
   console.log("Reports: " + result.reports);
   if (result.valid !== result.expected) {

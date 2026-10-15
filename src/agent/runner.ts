@@ -2,8 +2,14 @@ import type { Page } from "playwright";
 import { EvidenceStore } from "../core/evidence.ts";
 import { selectProbe } from "../core/policy.ts";
 import type { ConstraintSpec, Policy, Probe } from "../core/types.ts";
-import { extractControls, probesFromControls } from "../browser/accessibility.ts";
-import type { WebArenaTask, WebArenaAgentResponse } from "../webarena/schema.ts";
+import {
+  extractControls,
+  probesFromControls,
+} from "../browser/accessibility.ts";
+import type {
+  WebArenaTask,
+  WebArenaAgentResponse,
+} from "../webarena/schema.ts";
 import { WebArenaAgentResponseSchema } from "../webarena/schema.ts";
 import type { RunRecorder } from "../experiment/recorder.ts";
 import type { ModelClient } from "./ollama.ts";
@@ -26,16 +32,23 @@ const SYSTEM = [
 ].join("\n");
 
 function validEvidence(
-  proposed: Array<{ constraint_id: string; state: "SATISFIED" | "REFUTED"; quote: string }>,
+  proposed: Array<{
+    constraint_id: string;
+    state: "SATISFIED" | "REFUTED";
+    quote: string;
+  }>,
   snapshot: string,
   constraints: ConstraintSpec[],
 ) {
   const visible = snapshot.toLocaleLowerCase("en-US").replace(/\s+/g, " ");
   const ids = new Set(constraints.map((constraint) => constraint.id));
-  return proposed.filter((entry) =>
-    ids.has(entry.constraint_id) &&
-    entry.quote.trim().length >= 3 &&
-    visible.includes(entry.quote.toLocaleLowerCase("en-US").replace(/\s+/g, " ").trim()),
+  return proposed.filter(
+    (entry) =>
+      ids.has(entry.constraint_id) &&
+      entry.quote.trim().length >= 3 &&
+      visible.includes(
+        entry.quote.toLocaleLowerCase("en-US").replace(/\s+/g, " ").trim(),
+      ),
   );
 }
 
@@ -52,7 +65,10 @@ function userPrompt(
     current_step: step,
     action_budget: maxSteps,
     observable_accessibility_tree: snapshot.slice(0, 14_000),
-    public_requirements: constraints.map((c) => ({ id: c.id, description: c.description })),
+    public_requirements: constraints.map((c) => ({
+      id: c.id,
+      description: c.description,
+    })),
     eligible_probes: probes.map((p) => ({
       id: p.id,
       label: p.label,
@@ -69,13 +85,15 @@ async function executeProbe(page: Page, probe: Probe, input?: string) {
     ? page.getByRole(control.role, { name: control.name, exact: true }).first()
     : page.getByRole(control.role).first();
   if (control.role === "textbox") {
-    if (!input?.trim()) throw new Error("Model did not provide input for textbox");
+    if (!input?.trim())
+      throw new Error("Model did not provide input for textbox");
     await locator.fill(input);
     await locator.press("Enter");
     return "fill-and-enter";
   }
   if (control.role === "combobox") {
-    if (!input?.trim()) throw new Error("Model did not provide an option for combobox");
+    if (!input?.trim())
+      throw new Error("Model did not provide an option for combobox");
     try {
       await locator.selectOption({ label: input }, { timeout: 4_000 });
       return "select-option";
@@ -108,17 +126,26 @@ export async function runAgentLoop(options: {
   screenshotLimit?: number;
   onProgress?: (stats: RunnerStats) => void;
 }): Promise<{ response: WebArenaAgentResponse; stats: RunnerStats }> {
-  const { page, task, model, policy, constraints, recorder, maxSteps } = options;
+  const { page, task, model, policy, constraints, recorder, maxSteps } =
+    options;
   const screenshotLimit = options.screenshotLimit ?? 3;
   if (!Number.isInteger(maxSteps) || maxSteps < 1 || maxSteps > 60) {
     throw new Error("maxSteps must be from 1 to 60");
   }
   if (task.start_urls.length !== 1) {
-    throw new Error("Development runner currently handles only single-start-URL Shopping tasks");
+    throw new Error(
+      "Development runner currently handles only single-start-URL Shopping tasks",
+    );
   }
   const evidence = new EvidenceStore();
   const attempted = new Set<string>();
-  const stats: RunnerStats = { steps: 0, actions: 0, probes: 0, model_calls: 0, claimed_success: false };
+  const stats: RunnerStats = {
+    steps: 0,
+    actions: 0,
+    probes: 0,
+    model_calls: 0,
+    claimed_success: false,
+  };
   let screenshotsTaken = 0;
   await recorder.screenshot(page, "initial.png");
 
@@ -127,7 +154,8 @@ export async function runAgentLoop(options: {
     const url = page.url();
     const snapshot = await page.locator("body").ariaSnapshot();
     const observation = recorder.accessibility(step, snapshot);
-    const probes = probesFromControls(extractControls(snapshot), constraints).slice(0, 40)
+    const probes = probesFromControls(extractControls(snapshot), constraints)
+      .slice(0, 40)
       .filter((probe) => !attempted.has(url + "::" + probe.id));
     stats.model_calls++;
     const raw = await model.complete(
@@ -136,16 +164,18 @@ export async function runAgentLoop(options: {
     );
     const plan = parseAgentPlan(raw);
     const accepted = validEvidence(plan.evidence, snapshot, constraints);
-    evidence.add(accepted.map((item) => ({
-      subject: "task",
-      constraint: item.constraint_id,
-      state: item.state,
-      value: { visible_quote: item.quote },
-      source: url,
-      observation_id: "aria-step-" + step,
-      step,
-      timestamp: new Date().toISOString(),
-    })));
+    evidence.add(
+      accepted.map((item) => ({
+        subject: "task",
+        constraint: item.constraint_id,
+        state: item.state,
+        value: { visible_quote: item.quote },
+        source: url,
+        observation_id: "aria-step-" + step,
+        step,
+        timestamp: new Date().toISOString(),
+      })),
+    );
     const ledger = evidence.ledger(["task"], constraints);
     const states = Object.fromEntries(
       constraints.map((constraint) => [
@@ -157,18 +187,26 @@ export async function runAgentLoop(options: {
       const response = WebArenaAgentResponseSchema.parse(plan.final_response);
       stats.claimed_success = response.status === "SUCCESS";
       recorder.decision({
-        event: "FINAL", at: new Date().toISOString(), step,
-        page_url: url, observation_file: observation, screenshot_file: null,
-        constraints: states, eligible_probe_ids: probes.map((probe) => probe.id),
+        event: "FINAL",
+        at: new Date().toISOString(),
+        step,
+        page_url: url,
+        observation_file: observation,
+        screenshot_file: null,
+        constraints: states,
+        eligible_probe_ids: probes.map((probe) => probe.id),
         progress_scores: plan.progress_scores,
-        selected_probe_id: null, selected_probe_label: null,
+        selected_probe_id: null,
+        selected_probe_label: null,
         model_rationale: plan.rationale,
-        action: "final-response", evidence_updates: accepted,
+        action: "final-response",
+        evidence_updates: accepted,
       });
       options.onProgress?.({ ...stats });
       return { response, stats };
     }
-    if (!probes.length) throw new Error("No eligible controls left; task unfinished");
+    if (!probes.length)
+      throw new Error("No eligible controls left; task unfinished");
     const selected = selectProbe(policy, probes, ledger, plan.progress_scores);
     attempted.add(url + "::" + selected.id);
     stats.probes++;
@@ -181,15 +219,27 @@ export async function runAgentLoop(options: {
         "decision-" + String(screenshotsTaken).padStart(4, "0") + ".png",
       );
     }
-    const action = await executeProbe(page, selected, plan.input_text_by_probe[selected.id]);
+    const action = await executeProbe(
+      page,
+      selected,
+      plan.input_text_by_probe[selected.id],
+    );
     stats.actions++;
     recorder.decision({
-      event: "DECISION", at: new Date().toISOString(), step,
-      page_url: url, observation_file: observation, screenshot_file: screenshot,
-      constraints: states, eligible_probe_ids: probes.map((probe) => probe.id),
+      event: "DECISION",
+      at: new Date().toISOString(),
+      step,
+      page_url: url,
+      observation_file: observation,
+      screenshot_file: screenshot,
+      constraints: states,
+      eligible_probe_ids: probes.map((probe) => probe.id),
       progress_scores: plan.progress_scores,
-      selected_probe_id: selected.id, selected_probe_label: selected.label,
-      model_rationale: plan.rationale, action, evidence_updates: accepted,
+      selected_probe_id: selected.id,
+      selected_probe_label: selected.label,
+      model_rationale: plan.rationale,
+      action,
+      evidence_updates: accepted,
     });
     options.onProgress?.({ ...stats });
   }

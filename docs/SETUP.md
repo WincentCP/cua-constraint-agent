@@ -151,4 +151,4 @@ After approved live pilot episodes (not during initial setup):
 npm.cmd run results:export -- --stage pilot
 ```
 
-The exporter creates `reports/pilot/run-inventory.csv`, `analysis-results.csv`, and `analysis-summary.md`. Upload the first two *sanitized CSVs*, not HAR, into `notebooks/thesis_analysis.ipynb` on Google Colab. See `docs/EVIDENCE_PROTOCOL.md`.
+The exporter creates `reports/pilot/run-inventory.csv`, `analysis-results.csv`, and `analysis-summary.md`. Upload the first two _sanitized CSVs_, not HAR, into `notebooks/thesis_analysis.ipynb` on Google Colab. See `docs/EVIDENCE_PROTOCOL.md`.

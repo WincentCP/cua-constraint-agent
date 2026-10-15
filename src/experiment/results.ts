@@ -24,22 +24,30 @@ export type ResultsRow = {
   issue: string;
 };
 
-const EvalSchema = z.object({
-  task_id: z.number().int(),
-  intent_template_id: z.number().int(),
-  sites: z.tuple([z.literal("shopping")]),
-  task_revision: z.literal(2),
-  status: z.enum(["success", "failure", "partial_match", "error"]),
-  score: z.number().min(0).max(1),
-  evaluators_results: z.array(z.object({
-    evaluator_name: z.string(),
+const EvalSchema = z
+  .object({
+    task_id: z.number().int(),
+    intent_template_id: z.number().int(),
+    sites: z.tuple([z.literal("shopping")]),
+    task_revision: z.literal(2),
     status: z.enum(["success", "failure", "partial_match", "error"]),
-    score: z.number(),
-  }).passthrough()).min(1),
-  webarena_verified_version: z.string(),
-  webarena_verified_evaluator_checksum: z.string().regex(/^[a-f0-9]{64}$/i),
-  webarena_verified_data_checksum: z.string().regex(/^[a-f0-9]{64}$/i),
-}).passthrough();
+    score: z.number().min(0).max(1),
+    evaluators_results: z
+      .array(
+        z
+          .object({
+            evaluator_name: z.string(),
+            status: z.enum(["success", "failure", "partial_match", "error"]),
+            score: z.number(),
+          })
+          .passthrough(),
+      )
+      .min(1),
+    webarena_verified_version: z.string(),
+    webarena_verified_evaluator_checksum: z.string().regex(/^[a-f0-9]{64}$/i),
+    webarena_verified_data_checksum: z.string().regex(/^[a-f0-9]{64}$/i),
+  })
+  .passthrough();
 
 function csvValue(value: unknown): string {
   if (value === null || value === undefined) return "";
@@ -51,14 +59,28 @@ function csvValue(value: unknown): string {
 
 function writeCsv(path: string, rows: ResultsRow[]) {
   const columns: Array<keyof ResultsRow> = [
-    "stage", "task_id", "model", "method", "technical_valid",
-    "official_success", "official_status", "duration_ms", "actions",
-    "probes", "model_calls", "run_id", "issue",
+    "stage",
+    "task_id",
+    "model",
+    "method",
+    "technical_valid",
+    "official_success",
+    "official_status",
+    "duration_ms",
+    "actions",
+    "probes",
+    "model_calls",
+    "run_id",
+    "issue",
   ];
-  writeFileSync(path, [
-    columns.join(","),
-    ...rows.map((row) => columns.map((key) => csvValue(row[key])).join(",")),
-  ].join("\n") + "\n", "utf8");
+  writeFileSync(
+    path,
+    [
+      columns.join(","),
+      ...rows.map((row) => columns.map((key) => csvValue(row[key])).join(",")),
+    ].join("\n") + "\n",
+    "utf8",
+  );
 }
 
 export function buildResultsDataset(args: {
@@ -70,8 +92,10 @@ export function buildResultsDataset(args: {
 }) {
   const protocol = loadStudyProtocol();
   const pilot = loadPilotManifest();
-  if (args.models.length !== protocol.scope.model_count ||
-    new Set(args.models.map((model) => model.label)).size !== args.models.length) {
+  if (
+    args.models.length !== protocol.scope.model_count ||
+    new Set(args.models.map((model) => model.label)).size !== args.models.length
+  ) {
     throw new Error("Expected the four configured unique models");
   }
 
@@ -83,11 +107,20 @@ export function buildResultsDataset(args: {
       : (() => {
           const path = join(root, "stage-manifest.json");
           if (!existsSync(path)) throw new Error("Missing main stage manifest");
-          const main = JSON.parse(readFileSync(path, "utf8")) as { task_ids?: number[] };
+          const main = JSON.parse(readFileSync(path, "utf8")) as {
+            task_ids?: number[];
+          };
           const selected = main.task_ids ?? [];
-          assertMainTaskSelection(selected, pilot.tasks.map((task) => task.task_id), protocol);
-          const catalogFile = resolve(args.catalogPath ?? "output/catalog/shopping-tasks.json");
-          if (!existsSync(catalogFile)) throw new Error("Missing official Shopping catalog");
+          assertMainTaskSelection(
+            selected,
+            pilot.tasks.map((task) => task.task_id),
+            protocol,
+          );
+          const catalogFile = resolve(
+            args.catalogPath ?? "output/catalog/shopping-tasks.json",
+          );
+          if (!existsSync(catalogFile))
+            throw new Error("Missing official Shopping catalog");
           const catalog = readTasks(catalogFile);
           return selected.map((id) => {
             const t = catalog.find((task) => task.task_id === id);
@@ -102,21 +135,40 @@ export function buildResultsDataset(args: {
   for (const task of taskSpecs) {
     for (const model of args.models) {
       for (const method of protocol.scope.methods) {
-        const dir = join(root, "runs", model.label, method.toLowerCase(), String(task.task_id));
+        const dir = join(
+          root,
+          "runs",
+          model.label,
+          method.toLowerCase(),
+          String(task.task_id),
+        );
         const row: ResultsRow = {
-          stage: args.stage, task_id: task.task_id, model: model.label, method,
-          technical_valid: false, official_success: null, official_status: null,
-          duration_ms: null, actions: null, probes: null, model_calls: null,
-          run_id: null, issue: "MISSING",
+          stage: args.stage,
+          task_id: task.task_id,
+          model: model.label,
+          method,
+          technical_valid: false,
+          official_success: null,
+          official_status: null,
+          duration_ms: null,
+          actions: null,
+          probes: null,
+          model_calls: null,
+          run_id: null,
+          issue: "MISSING",
         };
         try {
           const meta = RunMetadataSchema.parse(
             JSON.parse(readFileSync(join(dir, "run_metadata.json"), "utf8")),
           );
           row.run_id = meta.run_id;
-          if (meta.stage !== args.stage || meta.task_id !== task.task_id ||
-              meta.model_label !== model.label || meta.method !== method ||
-              meta.benchmark_version !== protocol.benchmark.pypi_version) {
+          if (
+            meta.stage !== args.stage ||
+            meta.task_id !== task.task_id ||
+            meta.model_label !== model.label ||
+            meta.method !== method ||
+            meta.benchmark_version !== protocol.benchmark.pypi_version
+          ) {
             throw new Error("RUN_METADATA_MISMATCH");
           }
           row.duration_ms = meta.duration_ms;
@@ -126,12 +178,16 @@ export function buildResultsDataset(args: {
           if (meta.execution_state !== "COMPLETED" || !meta.ended_at) {
             throw new Error("RUN_INCOMPLETE");
           }
-          if (!existsSync(join(dir, "trace.jsonl")) ||
-              !existsSync(join(dir, "agent_response.json")) ||
-              !existsSync(join(dir, "network.har"))) {
+          if (
+            !existsSync(join(dir, "trace.jsonl")) ||
+            !existsSync(join(dir, "agent_response.json")) ||
+            !existsSync(join(dir, "network.har"))
+          ) {
             throw new Error("MISSING_AGENT_EVIDENCE");
           }
-          const har = JSON.parse(readFileSync(join(dir, "network.har"), "utf8")) as {
+          const har = JSON.parse(
+            readFileSync(join(dir, "network.har"), "utf8"),
+          ) as {
             log?: { entries?: unknown[] };
           };
           if (!Array.isArray(har.log?.entries) || !har.log.entries.length) {
@@ -140,9 +196,11 @@ export function buildResultsDataset(args: {
           const result = EvalSchema.parse(
             JSON.parse(readFileSync(join(dir, "eval_result.json"), "utf8")),
           );
-          if (result.task_id !== task.task_id ||
-              result.intent_template_id !== task.intent_template_id ||
-              result.webarena_verified_version !== protocol.benchmark.pypi_version) {
+          if (
+            result.task_id !== task.task_id ||
+            result.intent_template_id !== task.intent_template_id ||
+            result.webarena_verified_version !== protocol.benchmark.pypi_version
+          ) {
             throw new Error("OFFICIAL_METADATA_MISMATCH");
           }
           if (result.status === "error") throw new Error("EVALUATOR_ERROR");
@@ -154,7 +212,10 @@ export function buildResultsDataset(args: {
           row.official_status = result.status;
           row.issue = "";
         } catch (error) {
-          row.issue = error instanceof Error ? error.message.slice(0, 100) : "INVALID_RUN";
+          row.issue =
+            error instanceof Error
+              ? error.message.slice(0, 100)
+              : "INVALID_RUN";
         }
         rows.push(row);
       }
@@ -162,22 +223,37 @@ export function buildResultsDataset(args: {
   }
   mkdirSync(reports, { recursive: true });
   writeCsv(join(reports, "run-inventory.csv"), rows);
-  writeCsv(join(reports, "analysis-results.csv"), rows.filter((row) => row.technical_valid));
+  writeCsv(
+    join(reports, "analysis-results.csv"),
+    rows.filter((row) => row.technical_valid),
+  );
   const valid = rows.filter((row) => row.technical_valid);
   const success = valid.filter((row) => row.official_success === true);
-  const expected = protocol.scope.model_count * protocol.scope.methods.length * taskSpecs.length;
+  const expected =
+    protocol.scope.model_count *
+    protocol.scope.methods.length *
+    taskSpecs.length;
   const summary = [
     "# " + args.stage.toUpperCase() + " analysis export",
     "",
     "Expected episodes: " + expected,
     "Technically valid with official evaluation: " + valid.length,
     "Official successes among valid episodes: " + success.length,
-    "Coverage: " + (valid.length === expected ? "COMPLETE" : "INCOMPLETE; do not report the observed success fraction as the study success rate"),
+    "Coverage: " +
+      (valid.length === expected
+        ? "COMPLETE"
+        : "INCOMPLETE; do not report the observed success fraction as the study success rate"),
     "",
     "run-inventory.csv includes missing/invalid cells. analysis-results.csv includes only technically valid official results.",
     "Neither file replaces raw run evidence. Never interpret missing runs as task failures.",
     "",
   ].join("\n");
   writeFileSync(join(reports, "analysis-summary.md"), summary, "utf8");
-  return { expected, valid: valid.length, success: success.length, rows, reports };
+  return {
+    expected,
+    valid: valid.length,
+    success: success.length,
+    rows,
+    reports,
+  };
 }

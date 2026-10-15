@@ -28,7 +28,8 @@ export type AgentPlan = z.infer<typeof AgentPlanSchema>;
 export function parseAgentPlan(raw: string): AgentPlan {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
-  if (start < 0 || end < start) throw new Error("Model did not return a JSON object");
+  if (start < 0 || end < start)
+    throw new Error("Model did not return a JSON object");
   return AgentPlanSchema.parse(JSON.parse(raw.slice(start, end + 1)));
 }
 
@@ -64,9 +65,16 @@ export class OllamaModel implements ModelClient {
       }),
     });
     if (!response.ok) {
-      throw new Error("Ollama HTTP " + response.status + ": " + (await response.text()).slice(0, 350));
+      throw new Error(
+        "Ollama HTTP " +
+          response.status +
+          ": " +
+          (await response.text()).slice(0, 350),
+      );
     }
-    const parsed = (await response.json()) as { message?: { content?: string } };
+    const parsed = (await response.json()) as {
+      message?: { content?: string };
+    };
     if (!parsed.message?.content) throw new Error("Empty Ollama response");
     return parsed.message.content;
   }

@@ -80,7 +80,13 @@ export function readEpisode(
     official_success: false,
     reason: "MISSING_OFFICIAL_ARTIFACT",
   };
-  const required = ["agent_response.json", "network.har", "eval_result.json", "run_metadata.json", "trace.jsonl"];
+  const required = [
+    "agent_response.json",
+    "network.har",
+    "eval_result.json",
+    "run_metadata.json",
+    "trace.jsonl",
+  ];
   if (required.some((name) => !nonempty(join(taskDir, name)))) return result;
   try {
     const meta = RunMetadataSchema.parse(

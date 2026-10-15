@@ -14,7 +14,10 @@ import {
 } from "../src/experiment/artifacts.ts";
 import { RunRecorder, type RunMetadata } from "../src/experiment/recorder.ts";
 import { loadStudyProtocol } from "../src/experiment/study.ts";
-import { authHeadersForTask, taskAllowedOrigins } from "../src/webarena/auth.ts";
+import {
+  authHeadersForTask,
+  taskAllowedOrigins,
+} from "../src/webarena/auth.ts";
 import { readConfig, readTask, writeJson } from "../src/webarena/io.ts";
 import { runCommand, webArenaVerified } from "../src/webarena/official-cli.ts";
 import { verifyPublicPilotTask } from "../src/webarena/specs.ts";
@@ -30,29 +33,41 @@ function flag(name: string) {
 
 function exactInt(value: string | undefined, label: string) {
   const result = Number(value);
-  if (!Number.isInteger(result) || result < 1) throw new Error("Invalid " + label);
+  if (!Number.isInteger(result) || result < 1)
+    throw new Error("Invalid " + label);
   return result;
 }
 
 async function main() {
   const stage = option("stage", "poc");
   if (stage !== "poc" && stage !== "pilot") {
-    throw new Error("Development runner is limited to PoC and approved single pilot episodes; main is frozen until runner validation");
+    throw new Error(
+      "Development runner is limited to PoC and approved single pilot episodes; main is frozen until runner validation",
+    );
   }
-  if (stage === "pilot" && (!flag("pilot-approved") || !flag("fresh-environment-confirmed"))) {
-    throw new Error("Pilot requires --pilot-approved and --fresh-environment-confirmed after manual site reset");
+  if (
+    stage === "pilot" &&
+    (!flag("pilot-approved") || !flag("fresh-environment-confirmed"))
+  ) {
+    throw new Error(
+      "Pilot requires --pilot-approved and --fresh-environment-confirmed after manual site reset",
+    );
   }
   const protocol = loadStudyProtocol();
   const taskId = exactInt(option("task", "284"), "task");
   if (stage === "poc" && taskId !== protocol.scope.poc_task_id) {
-    throw new Error("PoC is restricted to registered task " + protocol.scope.poc_task_id);
+    throw new Error(
+      "PoC is restricted to registered task " + protocol.scope.poc_task_id,
+    );
   }
   const method = option("method", "Baseline");
   if (method !== "Baseline" && method !== "Proposed") {
     throw new Error("Expected --method Baseline or Proposed");
   }
   const label = option("model-label", "qwen3.5-9b");
-  const models = JSON.parse(readFileSync("config/models.json", "utf8")) as Array<{
+  const models = JSON.parse(
+    readFileSync("config/models.json", "utf8"),
+  ) as Array<{
     label: string;
     name: string;
   }>;
@@ -61,16 +76,29 @@ async function main() {
   const maxSteps = exactInt(option("max-steps", "16"), "max-steps");
   if (maxSteps > 60) throw new Error("Hard cap: 60 browser decisions");
   const configPath = resolve(option("config", "config/webarena.local.json")!);
-  if (!existsSync(configPath)) throw new Error("Copy config/webarena.example.json to config/webarena.local.json");
+  if (!existsSync(configPath))
+    throw new Error(
+      "Copy config/webarena.example.json to config/webarena.local.json",
+    );
   const outputRoot = resolve(option("output", defaultOutputRoot(stage))!);
   const reportRoot = resolve(option("reports", defaultReportRoot(stage))!);
-  const input = resolve(option("tasks", join(outputRoot, "task-inputs", String(taskId) + ".json"))!);
-  if (!existsSync(input)) throw new Error("Export public task input with webarena:prepare first: " + input);
+  const input = resolve(
+    option("tasks", join(outputRoot, "task-inputs", String(taskId) + ".json"))!,
+  );
+  if (!existsSync(input))
+    throw new Error(
+      "Export public task input with webarena:prepare first: " + input,
+    );
 
   const task = readTask(input, taskId);
   const taskSpec = verifyPublicPilotTask(task);
   const siteConfig = readConfig(configPath);
-  const root = factorialTaskArtifactDir(outputRoot, model.label, method as ExperimentMethod, taskId);
+  const root = factorialTaskArtifactDir(
+    outputRoot,
+    model.label,
+    method as ExperimentMethod,
+    taskId,
+  );
   const runId = randomUUID();
   ensureArtifactLayout({
     stage,
@@ -106,7 +134,13 @@ async function main() {
   const recorder = new RunRecorder(root, metadata);
   const started = Date.now();
   let session: Awaited<ReturnType<typeof openInspectionSession>> | undefined;
-  let lastStats = { steps: 0, actions: 0, probes: 0, model_calls: 0, claimed_success: false };
+  let lastStats = {
+    steps: 0,
+    actions: 0,
+    probes: 0,
+    model_calls: 0,
+    claimed_success: false,
+  };
   let completed = false;
   try {
     // The same action and observation implementation serves both policies.
@@ -117,7 +151,10 @@ async function main() {
       allowedOrigins: taskAllowedOrigins(task),
     });
     await session.goto(task.start_urls[0]);
-    const client = new OllamaModel(model.name, option("ollama", "http://127.0.0.1:11434"));
+    const client = new OllamaModel(
+      model.name,
+      option("ollama", "http://127.0.0.1:11434"),
+    );
     const outcome = await runAgentLoop({
       page: session.page,
       task,
@@ -143,14 +180,27 @@ async function main() {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     recorder.decision({
-      event: "ERROR", at: new Date().toISOString(), step: lastStats.steps,
-      page_url: session?.page.url() ?? task.start_urls[0], observation_file: null,
-      screenshot_file: null, constraints: {}, eligible_probe_ids: [],
-      progress_scores: {}, selected_probe_id: null, selected_probe_label: null,
-      model_rationale: message.slice(0, 500), action: null, evidence_updates: [],
+      event: "ERROR",
+      at: new Date().toISOString(),
+      step: lastStats.steps,
+      page_url: session?.page.url() ?? task.start_urls[0],
+      observation_file: null,
+      screenshot_file: null,
+      constraints: {},
+      eligible_probe_ids: [],
+      progress_scores: {},
+      selected_probe_id: null,
+      selected_probe_label: null,
+      model_rationale: message.slice(0, 500),
+      action: null,
+      evidence_updates: [],
     });
     if (session) {
-      try { await recorder.screenshot(session.page, "final.png"); } catch { /* site unavailable */ }
+      try {
+        await recorder.screenshot(session.page, "final.png");
+      } catch {
+        /* site unavailable */
+      }
     }
     writeJson(recorder.path("agent_response.json"), {
       task_type: "NAVIGATE",
@@ -176,13 +226,20 @@ async function main() {
 
   if (completed && flag("evaluate")) {
     const evaluation = webArenaVerified([
-      "eval-tasks", "--config", configPath,
-      "--task-ids", String(taskId),
-      "--output-dir", resolve(outputRoot, "runs", model.label, method.toLowerCase()),
+      "eval-tasks",
+      "--config",
+      configPath,
+      "--task-ids",
+      String(taskId),
+      "--output-dir",
+      resolve(outputRoot, "runs", model.label, method.toLowerCase()),
     ]);
     if (evaluation.status !== 0) {
       recorder.update({ error_code: "EVALUATOR_ERROR" });
-      console.error("Official evaluation failed: " + (evaluation.stderr || evaluation.stdout));
+      console.error(
+        "Official evaluation failed: " +
+          (evaluation.stderr || evaluation.stdout),
+      );
     } else {
       const resultPath = recorder.path("eval_result.json");
       if (existsSync(resultPath)) {
@@ -192,10 +249,13 @@ async function main() {
         };
         recorder.update({
           official_status: result.status ?? null,
-          official_score: typeof result.score === "number" ? result.score : null,
+          official_score:
+            typeof result.score === "number" ? result.score : null,
         });
       }
-      console.log("Official evaluator invoked (result must be audited): " + resultPath);
+      console.log(
+        "Official evaluator invoked (result must be audited): " + resultPath,
+      );
     }
   }
   refreshArtifactReport({ stage, outputRoot, reportRoot });

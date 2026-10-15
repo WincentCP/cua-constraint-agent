@@ -60,7 +60,13 @@ export class RunRecorder {
 
   constructor(root: string, metadata: RunMetadata) {
     this.root = resolve(root);
-    const existing = ["run_metadata.json", "trace.jsonl", "agent_response.json", "network.har", "eval_result.json"];
+    const existing = [
+      "run_metadata.json",
+      "trace.jsonl",
+      "agent_response.json",
+      "network.har",
+      "eval_result.json",
+    ];
     if (existing.some((name) => existsSync(join(this.root, name)))) {
       throw new Error(
         "Run artifacts already exist. Archive the prior run before attempting this task/model/method again.",
@@ -95,7 +101,10 @@ export class RunRecorder {
 
   accessibility(step: number, value: string) {
     if (!Number.isInteger(step) || step < 0) throw new Error("Invalid step");
-    const file = this.path("accessibility", String(step).padStart(4, "0") + ".yaml");
+    const file = this.path(
+      "accessibility",
+      String(step).padStart(4, "0") + ".yaml",
+    );
     mkdirSync(this.path("accessibility"), { recursive: true });
     writeFileSync(file, value, "utf8");
     return this.relative(file);
@@ -103,7 +112,11 @@ export class RunRecorder {
 
   decision(event: DecisionTrace) {
     // No raw prompts, credentials or private evaluator expectations in traces.
-    appendFileSync(this.path("trace.jsonl"), JSON.stringify(event) + "\n", "utf8");
+    appendFileSync(
+      this.path("trace.jsonl"),
+      JSON.stringify(event) + "\n",
+      "utf8",
+    );
   }
 
   update(fields: Partial<RunMetadata>) {
