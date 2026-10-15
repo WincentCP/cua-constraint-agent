@@ -4,6 +4,7 @@ import { z } from "zod";
 import { loadStudyProtocol } from "./study.ts";
 import { loadPilotManifest } from "../webarena/specs.ts";
 import { WebArenaAgentResponseSchema } from "../webarena/schema.ts";
+import { RunMetadataSchema } from "./recorder.ts";
 
 const OfficialEvalSchema = z
   .object({
@@ -64,7 +65,7 @@ function nonempty(path: string) {
   return existsSync(path) && statSync(path).isFile() && statSync(path).size > 0;
 }
 
-function readEpisode(
+export function readEpisode(
   taskDir: string,
   taskId: number,
   intentTemplateId: number,
@@ -79,9 +80,30 @@ function readEpisode(
     official_success: false,
     reason: "MISSING_OFFICIAL_ARTIFACT",
   };
-  const required = ["agent_response.json", "network.har", "eval_result.json"];
+  const required = [
+    "agent_response.json",
+    "network.har",
+    "eval_result.json",
+    "run_metadata.json",
+    "trace.jsonl",
+  ];
   if (required.some((name) => !nonempty(join(taskDir, name)))) return result;
   try {
+    const meta = RunMetadataSchema.parse(
+      JSON.parse(readFileSync(join(taskDir, "run_metadata.json"), "utf8")),
+    );
+    if (
+      meta.stage !== "pilot" ||
+      meta.task_id !== taskId ||
+      meta.model_label !== model ||
+      meta.method !== method ||
+      meta.execution_state !== "COMPLETED" ||
+      meta.ended_at === null ||
+      meta.benchmark_version !== loadStudyProtocol().benchmark.pypi_version
+    ) {
+      result.reason = "RUN_METADATA_MISMATCH";
+      return result;
+    }
     WebArenaAgentResponseSchema.parse(
       JSON.parse(readFileSync(join(taskDir, "agent_response.json"), "utf8")),
     );

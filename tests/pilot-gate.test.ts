@@ -46,6 +46,38 @@ function makeEpisode(
       },
     }),
   );
+  writeFileSync(
+    join(dir, "trace.jsonl"),
+    JSON.stringify({ event: "FINAL" }) + "\n",
+  );
+  writeFileSync(
+    join(dir, "run_metadata.json"),
+    JSON.stringify({
+      schema_version: 1,
+      run_id: "11111111-1111-4111-8111-111111111111",
+      stage: "pilot",
+      task_id: taskId,
+      model_label: model,
+      model_name: model,
+      method,
+      benchmark_version: "1.2.3",
+      git_commit: "fixture",
+      started_at: "2026-10-15T01:00:00.000Z",
+      ended_at: "2026-10-15T01:00:01.000Z",
+      duration_ms: 1000,
+      max_steps: 16,
+      steps_executed: 2,
+      actions: 1,
+      probes: 1,
+      model_calls: 2,
+      claimed_success: pass,
+      execution_state: "COMPLETED",
+      error_code: null,
+      official_status: pass ? "success" : "failure",
+      official_score: pass ? 1 : 0,
+    }),
+  );
+
   const spec = loadPilotManifest().tasks.find(
     (task) => task.task_id === taskId,
   );

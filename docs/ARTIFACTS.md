@@ -86,3 +86,25 @@ npm.cmd run pilot:gate
 ```
 
 The indexes are derived reports, not ground truth. A reviewed checklist/CSV is preserved on repeated initialization. An evidence source or run result is never silently replaced by report generation.
+
+## Extended evidence capture and Colab analysis
+
+The PoC inspector also saves \`output/poc/284/screenshots/start-01.png\`, with a relative \`screenshot_file\` field in \`inspection.json\`.
+
+The development agent produces \`output/{poc|pilot}/runs/<model>/<baseline|proposed>/<task-id>/\` containing:
+
+```text
+run_metadata.json        # UUID, task/model/method, benchmark version, budget, timing
+trace.jsonl              # one auditable, publicly grounded decision/final event per step
+accessibility/0001.yaml  # visible accessibility snapshot, repeated per step
+screenshots/initial.png
+screenshots/decision-0001.png  # at most three meaningful probe checkpoints
+screenshots/final.png
+agent_response.json      # model's claim, not the evaluator result
+network.har              # Playwright agent run, not inspection
+eval_result.json         # written by official CLI only if evaluated
+```
+
+The official-results exporter creates `run-inventory.csv` (all 48 or 256 expected cells), `analysis-results.csv` (technically valid, evaluated cells only), and `analysis-summary.md` in the stage report directory. The notebook `notebooks/thesis_analysis.ipynb` reads the two CSVs, refuses confirmatory main tests for incomplete coverage, and exports thesis-ready plots and tables.
+
+**Do not commit raw evidence or upload HAR to Colab**. See `docs/EVIDENCE_PROTOCOL.md`.

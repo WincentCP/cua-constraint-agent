@@ -381,6 +381,14 @@ async function inspect() {
         `${String(index + 1).padStart(2, "0")}.yaml`,
       );
       writeFileSync(snapshotPath, snapshot.accessibility, "utf8");
+      const screenshotFile = `screenshots/start-${String(index + 1).padStart(2, "0")}.png`;
+      const screenshotPath = join(taskDir, screenshotFile);
+      mkdirSync(join(taskDir, "screenshots"), { recursive: true });
+      await session.page.screenshot({
+        path: screenshotPath,
+        fullPage: true,
+        animations: "disabled",
+      });
       observations.push({
         index,
         start_url: task.start_urls[index],
@@ -392,6 +400,7 @@ async function inspect() {
           (probe) => probe.may_answer.length === 0,
         ).length,
         snapshot_file: `accessibility/${String(index + 1).padStart(2, "0")}.yaml`,
+        screenshot_file: screenshotFile,
       });
     }
   } finally {
