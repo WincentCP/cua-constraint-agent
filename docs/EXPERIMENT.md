@@ -1,70 +1,82 @@
-# WebArena-Verified feasibility and experiment protocol
+# Research protocol — Shopping-only feasibility before main experiment
 
-## Purpose
+## Purpose and fixed scope
 
-The immediate question is not whether Proposed beats Baseline. The immediate question is whether an established interactive benchmark contains tasks for which the thesis treatment — constraint-directed evidence acquisition — can be defined objectively without leaking evaluator ground truth.
+The research tests whether **constraint-directed evidence acquisition** improves the reliability/efficiency of text Accessibility-Tree CUAs **under matched observation/action/budget conditions**.
 
-## Stage 2: one-task proof of concept
+WebArena-Verified v1.2.3 supplies a public task pool, the locally resettable **Shopping** website, and an official deterministic evaluator. LEUCO, Shopping Admin, GitLab, Reddit, Map and cross-site tasks are excluded from the current experimental scope.
 
-Primary task: **284**.
+### Methods and fairness
 
-Pass criteria:
+Both **Baseline** and **Proposed** must receive the same public task instructions, start state, browser, Accessibility Tree, evidence ledger, candidate probes, action executor, resource budgets, and evaluator. Only ranking of eligible information-acquisition probes differs:
 
-1. official task input can be exported reproducibly;
-2. the official site can be started/reset locally;
-3. Playwright obtains a usable Accessibility Tree;
-4. task requirements can be decomposed into public, auditable constraints;
-5. at least two meaningful information-acquisition choices can occur before terminal completion;
-6. HAR output is produced in the official evaluator format;
-7. no private reference answer/evaluator expectation is exposed to the agent.
+- Baseline: generic model-estimated task progress.
+- Proposed: coverage of unresolved public requirements, then lower estimated forward cost, then stable discovery order.
 
-## Stage 3: six-task suitability pilot
+The `may_answer` annotation indicates only **possible relevance** based on public task text/current visible UI. It is never evidence of satisfaction, never an oracle action→answer map, and never derived from hidden reference answers. Every action and terminal outcome must be logged.
 
-Pre-registered task IDs: **284, 323, 493, 523, 552, 562**.
+The scientific hypothesis is about **method**, not which model is best. Four local Q4_K_M model candidates test robustness and are not selected because Proposed happens to win.
 
-A task is eligible for the final candidate pool only if all are true:
+## Stage 1 — task 284 PoC (Shopping)
 
-- objective official evaluator exists;
-- at least three required facts/rules can be stated before execution;
-- evidence can be acquired from public UI observations;
-- there are at least two plausible inspection/navigation choices at one or more states;
-- task is not reducible to a single direct click or direct form copy;
-- constraint annotations can be defined without consulting the hidden expected answer at runtime;
-- task can be reset/replayed locally;
-- Baseline and Proposed can share the same observation, action, budget, and eligible-probe construction.
+**Inspection (zero agent runs)** is structurally eligible only when all hold:
 
-Task removal must be justified by these criteria before main results exist. "Proposed does not win" is never a removal criterion.
+1. pinned official CLI exports public task 284 and it matches the pre-reviewed instruction;
+2. Shopping starts, responds and can be reset locally;
+3. Playwright captures meaningful Accessibility Tree and controls;
+4. public instruction decomposes into three auditable constraints;
+5. **at least two meaningful evidence-acquisition choices** are observed in a reachable state (not merely two arbitrary links);
+6. `inspection.har` and inspection report are saved without treating inspection as an agent run;
+7. no hidden expected answer or evaluator target is visible to the agent.
 
-## Treatment boundary
+The automatically generated `reports/poc/poc-review.md` is a **manual review template**, not automatic PASS. Then, separately, a **PoC end-to-end agent run** must be built to navigate, produce `agent_response.json` and `network.har`, run the official evaluator, and record a technically valid outcome. Official task failure is distinguishable from evaluator failure.
 
-Both conditions share task intent, start state, browser, Accessibility Tree, public evidence store, eligible probes, `may_answer` annotations, action executor, resource budget, and evaluators.
+If any essential precondition fails, **MODIFY or REJECT** WebArena before expanding scope.
 
-Only probe ranking differs:
+## Stage 2 — six Shopping-only pilot candidates
 
-- **Baseline**: generic model-estimated progress score.
-- **Proposed**: unresolved constraint coverage, then lower forward cost, then stable order.
+Registered public task IDs (from v1.2.3), chosen by task text alone for diverse requirements and intent templates:
 
-`may_answer` is metadata about possible relevance, never proof that a constraint is satisfied.
+| ID | Intended evidence-acquisition challenge | Site |
+| --- | --- | --- |
+| 279 | Sony Bluetooth models, full names and min/max prices | shopping |
+| 284 | shoe-storage capacity and minimum feasible price (PoC reuse) | shopping |
+| 323 | March 2022 canceled orders, retained item, shipping and refund | shopping |
+| 436 | identify and reorder a canceled historical mattress order | shopping |
+| 506 | highest-rated feasible product, budget and cart cleanup | shopping |
+| 528 | recover prior order details, draft refund form without submitting | shopping |
 
-## Stage 4: design finalization
+These are **pilot candidates, not presumed eligible**. Each must pass an independent, recorded, live-site suitability screen: official evaluator exists; ≥3 public requirements; evidence available through UI; ≥2 meaningful inspection choices; not trivial single click/copy; no hidden answer leakage; deterministic reset/replay; and matched observation/actions/budgets. Record eligibility in `reports/pilot/task-screening.csv`, before interpreting method results. Never remove a task because Proposed lost.
 
-Only after the six-task pilot:
+The pilot includes **6 tasks × 4 model candidates × 2 methods = 48 agent episodes**, assuming suitability and runner readiness. Reusing task 284 from PoC is allowed for development; **no pilot task enters main**.
 
-1. define the final task-selection rule;
-2. select the held-out main subset before viewing main results;
-3. lock exactly four model IDs/configurations;
-4. lock prompts, parsing rules, budgets, browser version, WebArena-Verified version, task list, constraint specs, and run order;
-5. hash the complete research identity;
-6. run competence/repeatability checks on development tasks;
-7. create the research freeze;
-8. begin main experiment.
+### Proposed operational pilot gate (requires supervisor approval before pilot)
 
-A likely final factorial design is `task × 4 models × 2 methods`, but task count is intentionally **not frozen yet**.
+- All 48 expected combinations are accounted for and at least **46/48 (95%)** produce valid technical outputs with a successful official evaluator invocation (task score zero can still be technically valid).
+- At least **10/48** official task successes, spanning **≥2 distinct tasks and ≥2 distinct models**.
+- Check per-model and per-task floor effects; a model with zero successes remains a competence concern, even if aggregate threshold passes.
+- Validated task suitability, fair method boundaries, reproducible reset, and 32 independent main-eligible tasks are reviewed **separately**, not inferred from aggregate successes.
 
-## Evaluation layers
+These are **pragmatic feasibility thresholds, not WebArena standards or evidence that Proposed is superior**. Their small sample cannot prove success rate/power; revise only by documented supervisor decision **before** looking at pilot method outcomes. `npm run pilot:gate` produces a `PROVISIONAL_PASS` or `FAIL`; provisional pass is **not** authorization for main.
 
-**Official benchmark layer:** WebArena-Verified owns task success through `agent_response.json` + `network.har`.
+Pilot runs are evaluated under `output/pilot/runs/<model>/<baseline|proposed>/<task-id>/` using the official `agent_response.json`, `network.har`, and `eval_result.json`. The future autonomous runner must generate them and reset the environment between conditions. Manual inspection artifacts do not count as runs.
 
-**Research layer:** the thesis may additionally measure evidence completeness before consequential action, probe/action count, budget exhaustion, invalid model output, correct abstention/refusal, and method effect across the four models.
+## Stage 3 — supervisor-required main experiment
 
-The research layer must never redefine an official failure as official success.
+- **Exactly 32 distinct Shopping task IDs**, held out from PoC/pilot, selected using predeclared suitability criteria independently of method outcomes.
+- Prefer non-overlapping intent templates where feasible to reduce development–test leakage; document any overlap.
+- Freeze the 32 task IDs, public annotations, four exact local model digests/quantizations, prompt and budgets, randomized or balanced run order, browser/Docker/benchmark versions, reset protocol and evaluator checksums.
+- **32 × 4 × 2 = 256 episodes**. Each task/model pair is evaluated with both methods under the same conditions.
+- Primary measure: official verified task success. Secondary: evidence completeness before consequential actions, probes/actions, model calls, time, invalid outputs and budget exhaustion.
+- Analysis: paired exact McNemar by model with multiplicity control; interaction/aggregate inference should account for repeated task IDs. No claim that 256 episodes are 256 independent tasks.
+- Record both successes and failures, including timeouts/error types, without censoring losing runs.
+
+`artifacts:init --stage main` **only creates directory structure**, checks exact count and official Shopping catalog identity, and is not a runnable main experiment. The autonomous runner, freeze command and statistical exports remain future work after PoC/pilot.
+
+## Decision checkpoints
+
+1. PoC inspection + end-to-end feasibility: **GO / MODIFY / REJECT**.
+2. Six-task pilot: **PROVISIONAL_PASS / FAIL** with qualitative task/model review.
+3. Supervisor approves 32-task held-out set and study freeze **before** collecting main data.
+
+The official benchmark evaluator alone defines official task success; never convert self-reported success or diagnostic hint coverage into official success.

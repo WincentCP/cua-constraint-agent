@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { chromium } from "playwright";
 import { probesFromControls } from "../src/browser/accessibility.ts";
@@ -16,17 +16,22 @@ import {
   authHeadersForTask,
   taskAllowedOrigins,
 } from "../src/webarena/auth.ts";
-import { readConfig, readTask, writeJson } from "../src/webarena/io.ts";
+import { readConfig, readTask, readTasks, writeJson } from "../src/webarena/io.ts";
 import {
   requireSuccess,
   runCommand,
   webArenaVerified,
 } from "../src/webarena/official-cli.ts";
-import { loadPilotManifest } from "../src/webarena/specs.ts";
+import { loadPilotManifest, verifyPublicPilotTask } from "../src/webarena/specs.ts";
+import { loadStudyProtocol } from "../src/experiment/study.ts";
 
 function option(name: string, fallback?: string) {
   const index = process.argv.indexOf(`--${name}`);
   return index >= 0 ? process.argv[index + 1] : fallback;
+}
+
+function force() {
+  return process.argv.includes("--force");
 }
 
 function taskId() {
@@ -114,6 +119,7 @@ async function doctor() {
   const checks = [
     ["Node", runCommand(process.execPath, ["--version"])],
     ["Docker", runCommand("docker", ["--version"])],
+    ["Docker daemon", runCommand("docker", ["info", "--format", "{{.OSType}}"])],
     ["uvx", runCommand("uvx", ["--version"])],
     ["Ollama (later stage)", runCommand("ollama", ["--version"])],
   ] as const;
@@ -147,41 +153,76 @@ async function doctor() {
 
 function validate() {
   const manifest = loadPilotManifest();
-  if (manifest.primary_poc_task !== 284) {
-    throw new Error("PoC task must remain 284 until pilot review");
-  }
-  if (manifest.tasks.length !== 6) {
-    throw new Error(
-      "Pilot manifest must contain exactly 6 pre-registered tasks",
-    );
-  }
-
+  const protocol = loadStudyProtocol();
   const models = JSON.parse(
     readFileSync("config/models.json", "utf8"),
-  ) as Array<{
-    label: string;
-    name: string;
-  }>;
-  if (models.length !== 4) {
-    throw new Error("Main design requires exactly four pre-registered models");
+  ) as Array<{ label: string; name: string }>;
+
+  if (models.length !== protocol.scope.model_count) {
+    throw new Error("Study requires exactly four local model candidates");
   }
   if (new Set(models.map((model) => model.label)).size !== models.length) {
     throw new Error("Model labels must be unique");
   }
   if (models.some((model) => !/q4[_-]k[_-]m/i.test(model.name))) {
-    throw new Error("All local model candidates must use the Q4_K_M class");
+    throw new Error("All model candidates must use the Q4_K_M class");
   }
+  if (manifest.tasks.length !== protocol.scope.pilot_task_count) {
+    throw new Error("Pilot must have six tasks");
+  }
+  if (manifest.tasks.some((task) => task.sites.join(",") !== "shopping")) {
+    throw new Error("Pilot scope is Shopping-only");
+  }
+  const expectedPilotRuns = manifest.tasks.length * models.length * protocol.scope.methods.length;
+  const expectedMainRuns = protocol.scope.main_task_count * models.length * protocol.scope.methods.length;
+  console.log(`PoC task: ${manifest.primary_poc_task} (Shopping)`);
+  console.log(`Pilot task IDs: ${manifest.tasks.map((task) => task.task_id).join(", ")} (Shopping only)`);
+  console.log(`Model candidates: ${models.map((model) => model.label).join(", ")}`);
+  console.log(`Benchmark CLI pinned: ${protocol.benchmark.name} ${protocol.benchmark.pypi_version}`);
+  console.log(`Design: ${expectedPilotRuns} pilot runs; ${expectedMainRuns} main runs (32 distinct held-out tasks)`);
+  console.log("Pilot task suitability and model competence still require live validation.");
+}
 
-  console.log(
-    `Pilot manifest valid: ${manifest.tasks
-      .map((task) => task.task_id)
-      .join(", ")}`,
-  );
-  console.log(`Primary PoC task: ${manifest.primary_poc_task}`);
-  console.log(
-    `Model manifest valid: ${models.map((model) => model.label).join(", ")}`,
-  );
-  console.log("No main experiment is frozen by this command.");
+function catalog() {
+  const config = configPath();
+  if (!existsSync(config)) throw new Error(`Missing ${config}`);
+  const catalogPath = resolve(option("catalog", "output/catalog/shopping-tasks.json")!);
+  if (existsSync(catalogPath) && !force()) {
+    throw new Error(`Catalog already exists: ${catalogPath}; use --force to refresh`);
+  }
+  mkdirSync(resolve(catalogPath, ".."), { recursive: true });
+  const temporary = `${catalogPath}.tmp-${process.pid}.json`;
+  try {
+    requireSuccess(webArenaVerified([
+      "agent-input-get", "--sites", "shopping", "--config", config, "--output", temporary,
+    ]));
+    const tasks = readTasks(temporary);
+    if (!tasks.length || tasks.some((task) => task.sites.length !== 1 || task.sites[0] !== "shopping")) {
+      throw new Error("Official task catalog did not return Shopping-only public inputs");
+    }
+    if (force()) rmSync(catalogPath, { force: true });
+    renameSync(temporary, catalogPath);
+    const reportPath = resolve("reports/catalog/shopping-task-index.csv");
+    mkdirSync(resolve(reportPath, ".."), { recursive: true });
+    const cell = (value: string | number) =>
+      `"${String(value).replaceAll('"', '""')}"`;
+    writeFileSync(
+      reportPath,
+      [
+        "task_id,intent_template_id,site,public_intent,screening_status",
+        ...tasks.map((task) =>
+          [task.task_id, task.intent_template_id, task.sites.join("+"), task.intent, "UNREVIEWED"]
+            .map(cell)
+            .join(","),
+        ),
+      ].join("\n") + "\n",
+      "utf8",
+    );
+    console.log(`Shopping public task catalog: ${tasks.length} tasks -> ${catalogPath}`);
+    console.log(`Screening index (not eligibility proof): ${reportPath}`);
+  } finally {
+    rmSync(temporary, { force: true });
+  }
 }
 
 function prepare() {
@@ -197,21 +238,31 @@ function prepare() {
     );
   }
   const tasks = taskInputPath(id);
+  if (existsSync(tasks) && !force()) {
+    throw new Error(`Public task input already exists: ${tasks}; use --force only for an intentional repeat`);
+  }
   mkdirSync(resolve(tasks, ".."), { recursive: true });
-  const result = requireSuccess(
-    webArenaVerified([
-      "agent-input-get",
-      "--task-ids",
-      String(id),
-      "--config",
-      config,
-      "--output",
-      tasks,
-    ]),
-  );
-  if (result.stdout.trim()) console.log(result.stdout.trim());
+  const temporary = `${tasks}.tmp-${process.pid}.json`;
+  try {
+    const result = requireSuccess(
+      webArenaVerified([
+        "agent-input-get", "--task-ids", String(id),
+        "--config", config, "--output", temporary,
+      ]),
+    );
+    const exported = readTasks(temporary);
+    if (exported.length !== 1 || exported[0].task_id !== id) {
+      throw new Error("Official CLI returned unexpected public task input");
+    }
+    verifyPublicPilotTask(exported[0]);
+    if (force()) rmSync(tasks, { force: true });
+    renameSync(temporary, tasks);
+    if (result.stdout.trim()) console.log(result.stdout.trim());
+  } finally {
+    rmSync(temporary, { force: true });
+  }
   refreshCurrentReport(stage);
-  console.log(`Task ${id} exported to ${tasks}`);
+  console.log(`Official public task ${id} exported to ${tasks}`);
 }
 
 async function inspect() {
@@ -230,13 +281,21 @@ async function inspect() {
   const task = readTask(tasks, id);
   const localConfig = readConfig(config);
   const manifest = loadPilotManifest();
-  const spec = manifest.tasks.find((candidate) => candidate.task_id === id);
-  if (!spec) throw new Error(`Task ${id} is not in pilot manifest`);
+  const spec = verifyPublicPilotTask(task, manifest);
 
   const taskDir = taskArtifactDir(outputRoot(), id);
   const accessibilityDir = join(taskDir, "accessibility");
+  const reportPath = join(taskDir, "inspection.json");
+  const harPath = join(taskDir, "inspection.har");
+  if (!force() && (existsSync(reportPath) || existsSync(harPath))) {
+    throw new Error(`Inspection artifacts already exist in ${taskDir}; use --force to repeat deliberately`);
+  }
+  if (force()) {
+    rmSync(reportPath, { force: true });
+    rmSync(harPath, { force: true });
+    rmSync(accessibilityDir, { recursive: true, force: true });
+  }
   mkdirSync(accessibilityDir, { recursive: true });
-  const harPath = join(taskDir, "network.har");
   const session = await openInspectionSession({
     harPath,
     extraHTTPHeaders: authHeadersForTask(task, localConfig),
@@ -264,7 +323,7 @@ async function inspect() {
         unmapped_control_count: probes.filter(
           (probe) => probe.may_answer.length === 0,
         ).length,
-        snapshot_file: snapshotPath,
+        snapshot_file: `accessibility/${String(index + 1).padStart(2, "0")}.yaml`,
       });
     }
   } finally {
@@ -295,11 +354,10 @@ async function inspect() {
       note: "Initial-page hint mapping is diagnostic only. It is not evidence and is not a task-success score.",
     },
   };
-  const reportPath = join(taskDir, "inspection.json");
   writeJson(reportPath, report);
   refreshCurrentReport(stage);
   console.log(`Inspection written to ${reportPath}`);
-  console.log(`HAR written to ${harPath}`);
+  console.log(`Inspection HAR written to ${harPath} (not an agent network.har)`);
 }
 
 function evaluate() {
@@ -341,6 +399,7 @@ const command = process.argv[2] ?? "help";
 try {
   if (command === "doctor") await doctor();
   else if (command === "validate") validate();
+  else if (command === "catalog") catalog();
   else if (command === "prepare") prepare();
   else if (command === "inspect") await inspect();
   else if (command === "evaluate") evaluate();
@@ -349,8 +408,9 @@ try {
       "Usage:\n" +
         "  npm run webarena:doctor\n" +
         "  npm run webarena:validate\n" +
-        "  npm run webarena:prepare -- --task 284 [--stage poc|pilot]\n" +
-        "  npm run webarena:inspect -- --task 284 [--stage poc|pilot]\n" +
+        "  npm run webarena:catalog\n" +
+        "  npm run webarena:prepare -- --task 284 [--stage poc|pilot] [--force]\n" +
+        "  npm run webarena:inspect -- --task 284 [--stage poc|pilot] [--force]\n" +
         "  npm run webarena:evaluate -- --task 284 [--stage poc|pilot]",
     );
   }

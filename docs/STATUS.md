@@ -1,35 +1,35 @@
 # Research implementation status
 
-## Active direction
+## Scoped study
 
-`main` targets **WebArena-Verified feasibility validation**. The former LEUCO storefront is preserved intact on `leuco-legacy`.
+WebArena-Verified **v1.2.3 Shopping only**; no LEUCO in main evaluation. Six public-intent pilot candidates: 279, 284, 323, 436, 506, 528. Supervisor-mandated main design: 32 distinct Shopping tasks × 4 model candidates × 2 methods = 256 episodes.
 
-## Completed in code
+## Implemented and unit/integration tested
 
-- generic evidence ledger;
-- generic Baseline/Proposed selection rule;
-- Accessibility Tree parser and control extraction;
-- Playwright inspection session with HAR recording;
-- WebArena-Verified task/config/response schemas;
-- official CLI wrappers for task export and evaluation;
-- six-task pilot manifest with task 284 as the first PoC;
-- four-model pre-registration file;
-- research freeze hashing utility;
-- automatic PoC/pilot/main artifact directory scaffolding;
-- generated artifact inventory for audit, Bab IV, and appendix preparation;
-- offline/unit/integration CI coverage.
+- public Shopping-only manifest with six distinct intent templates and ≥3 instruction-derived requirements per task;
+- pre-registered protocol and operational pilot decision thresholds;
+- evidence ledger and shared candidate-probe ranking boundary;
+- Accessibility Tree capture/control extraction, session isolation and diagnostic hints;
+- official pinned `uvx` CLI handoff and public task input validation;
+- `inspection.har` separated from the real agent `network.har`;
+- public Shopping catalog export for later 32-task held-out screening;
+- stage-isolated PoC/pilot/main folder layouts and appendix indexes;
+- manual PoC and task suitability checklists that are not overwritten;
+- pilot result checker that reads official evaluation status (distinguishes task failure vs evaluator error);
+- main selection guard: exactly 32 distinct, pilot-disjoint public Shopping task IDs;
+- basic research identity SHA-256 freeze utilities;
+- offline unit and browser/HAR integration CI.
 
-## Not yet completed — intentionally
+## Not yet completed / not to be claimed
 
-- live execution of task 284 on the target research device;
-- final `may_answer` annotation rules derived from live UI inspection;
-- automated model-driven WebArena action runner;
-- run-level result aggregation/statistical tables for the main runner;
-- six-task pilot results;
-- final held-out task subset;
-- final sample size/power justification;
-- four-model competence/repeatability gate;
-- main experiment freeze;
-- main experiment data.
+- live Shopping Docker task 284 inspection on the target Windows device;
+- actual ≥2 meaningful evidence-choice verification in the live UI;
+- automated model-driven browser/action runner;
+- valid end-to-end PoC run and official evaluator result;
+- real 48-run pilot and suitability approvals;
+- four-model WebArena competence/repeatability checks (older LEUCO run times do not prove WebArena ability);
+- screened and frozen 32-task main subset;
+- complete protocol/prompt/hardware/evaluator and model digest freeze;
+- 256 real main-experiment results, statistical analysis and Bab IV exports.
 
-None of those should be claimed complete until device-side evidence exists.
+No synthetic test or CI success is represented as a WebArena official task success. If PoC/pilot fails, reassess benchmark scope with supervisor rather than forcing the main experiment.

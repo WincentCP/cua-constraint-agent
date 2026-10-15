@@ -21,3 +21,6 @@ jobs:
       - run: npm test
       - run: npm run test:integration
       - run: npm run webarena:validate
+      - run: npm run artifacts:init -- --stage poc
+      - run: npm run artifacts:init -- --stage pilot
+      - run: npm run artifacts:report -- --stage pilot
