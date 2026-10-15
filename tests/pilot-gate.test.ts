@@ -93,6 +93,25 @@ test("official task failure is valid, evaluator errors are invalid", () => {
   }
 });
 
+test("official partial-match result is technically valid but not success", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cua-gate-partial-"));
+  try {
+    makeEpisode(dir, 279, models[0].label, "Baseline", false);
+    const evalPath = join(dir, "runs", models[0].label, "baseline", "279", "eval_result.json");
+    writeFileSync(
+      evalPath,
+      JSON.stringify({ task_id: 279, status: "partial_match", score: 0.5 }),
+    );
+    const result = evaluatePilotGate(dir, models);
+    assert.equal(result.completed_valid, 1);
+    assert.equal(result.official_successes, 0);
+    assert.equal(result.episodes.find((episode) => episode.task_id === 279 &&
+      episode.model === models[0].label && episode.method === "Baseline")?.reason, "PARTIAL_TASK_MATCH");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("pilot gate passes when preregistered operational checks pass", () => {
   const dir = mkdtempSync(join(tmpdir(), "cua-gate-pass-"));
   try {

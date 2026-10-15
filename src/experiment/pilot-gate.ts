@@ -8,7 +8,7 @@ import { WebArenaAgentResponseSchema } from "../webarena/schema.ts";
 const OfficialEvalSchema = z
   .object({
     task_id: z.number().int().nonnegative(),
-    status: z.enum(["success", "failure", "error"]),
+    status: z.enum(["success", "failure", "partial_match", "error"]),
     score: z.number().min(0).max(1),
   })
   .passthrough();
@@ -95,14 +95,20 @@ function readEpisode(
     }
     if (
       (evaluation.status === "success" && evaluation.score !== 1) ||
-      (evaluation.status === "failure" && evaluation.score !== 0)
+      (evaluation.status === "failure" && evaluation.score !== 0) ||
+      (evaluation.status === "partial_match" && evaluation.score === 1)
     ) {
       result.reason = "INCONSISTENT_EVALUATOR_STATUS";
       return result;
     }
     result.valid = true;
     result.official_success = evaluation.status === "success";
-    result.reason = evaluation.status === "success" ? "PASS" : "TASK_FAILURE";
+    result.reason =
+      evaluation.status === "success"
+        ? "PASS"
+        : evaluation.status === "partial_match"
+          ? "PARTIAL_TASK_MATCH"
+          : "TASK_FAILURE";
     return result;
   } catch {
     result.reason = "INVALID_ARTIFACT_OR_SCHEMA";
