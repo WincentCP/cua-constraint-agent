@@ -20,7 +20,7 @@ winget install --id astral-sh.uv -e
 winget install --id Docker.DockerDesktop -e
 ```
 
-Close and reopen PowerShell to refresh PATH. Start Docker Desktop manually, enable **WSL 2 based engine / Linux containers**, and wait for the service to say *Running*. If WinGet is unavailable, use the official installers linked from Git, Node.js, uv and Docker Desktop websites instead.
+Close and reopen PowerShell to refresh PATH. Start Docker Desktop manually, enable **WSL 2 based engine / Linux containers**, and wait for the service to say _Running_. If WinGet is unavailable, use the official installers linked from Git, Node.js, uv and Docker Desktop websites instead.
 
 **Do not download four local LLMs yet.** Ollama and model checkpoint downloads are later-stage dependencies; they are not needed for the first PoC inspection. Budget sufficient Docker storage (tens of GB, beyond the ~13 GB Shopping image).
 

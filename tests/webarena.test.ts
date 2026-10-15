@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { authHeadersForTask, taskAllowedOrigins } from "../src/webarena/auth.ts";
+import {
+  authHeadersForTask,
+  taskAllowedOrigins,
+} from "../src/webarena/auth.ts";
 import { WebArenaConfigSchema } from "../src/webarena/schema.ts";
 import {
   WebArenaAgentResponseSchema,
