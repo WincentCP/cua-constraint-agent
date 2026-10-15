@@ -76,7 +76,7 @@ export function taskArtifactDir(outputRoot: string, taskId: number) {
   return join(resolve(outputRoot), String(taskId));
 }
 
-export function mainRunRoot(
+export function factorialRunRoot(
   outputRoot: string,
   modelLabel: string,
   method: ExperimentMethod,
@@ -89,13 +89,16 @@ export function mainRunRoot(
   );
 }
 
-export function mainTaskArtifactDir(
+export function factorialTaskArtifactDir(
   outputRoot: string,
   modelLabel: string,
   method: ExperimentMethod,
   taskId: number,
 ) {
-  return taskArtifactDir(mainRunRoot(outputRoot, modelLabel, method), taskId);
+  return taskArtifactDir(
+    factorialRunRoot(outputRoot, modelLabel, method),
+    taskId,
+  );
 }
 
 function readManifest(path: string): StageManifest | null {
@@ -124,6 +127,19 @@ export function ensureArtifactLayout(options: ArtifactLayoutOptions) {
 
   const manifestPath = join(outputRoot, "stage-manifest.json");
   const previous = readManifest(manifestPath);
+  if (
+    options.stage === "main" &&
+    previous &&
+    previous.task_ids.length > 0 &&
+    taskIds.length > 0 &&
+    (previous.task_ids.length !== taskIds.length ||
+      previous.task_ids.some((id) => !taskIds.includes(id)))
+  ) {
+    throw new Error(
+      "Main task selection already registered under this experiment ID; " +
+        "keep the same selection or use a new experiment ID",
+    );
+  }
   if (previous && previous.stage !== options.stage) {
     throw new Error(
       `Artifact root already belongs to stage ${previous.stage}: ${outputRoot}`,
@@ -155,16 +171,69 @@ export function ensureArtifactLayout(options: ArtifactLayoutOptions) {
   };
   writeJson(manifestPath, manifest);
 
+  // Human feasibility judgments are never fabricated from a successful
+  // inspection. Generate a checklist once and preserve manual edits.
+  if (options.stage === "poc") {
+    const review = join(reportRoot, "poc-review.md");
+    if (!existsSync(review)) {
+      writeFileSync(
+        review,
+        [
+          "# PoC manual feasibility review",
+          "",
+          "Status: PENDING (set PASS / MODIFY / REJECT only after live inspection)",
+          "",
+          "- [ ] Official public task input matches the pinned manifest",
+          "- [ ] Shopping starts and can reset locally",
+          "- [ ] Accessibility Tree contains usable controls and evidence",
+          "- [ ] Requirements are grounded in the public task instruction",
+          "- [ ] At least two meaningful evidence-acquisition choices are observed",
+          "- [ ] inspection.har exists (not the agent evaluation trace)",
+          "- [ ] No evaluator ground truth is available to the agent",
+          "- [ ] End-to-end agent and official evaluation checked separately",
+          "",
+          "Evidence and observations:",
+          "",
+        ].join("\n"),
+        "utf8",
+      );
+    }
+  } else if (options.stage === "pilot") {
+    const screening = join(reportRoot, "task-screening.csv");
+    if (!existsSync(screening)) {
+      const columns = [
+        "task_id",
+        "public_requirements",
+        "public_ui_evidence",
+        "at_least_two_choices",
+        "repeatable_reset",
+        "shared_actions_budgets",
+        "official_evaluator",
+        "no_hidden_answer_leak",
+        "decision",
+        "notes",
+      ];
+      const rows = mergedTaskIds.map((taskId) =>
+        [String(taskId), "", "", "", "", "", "", "", "PENDING", ""].join(","),
+      );
+      writeFileSync(
+        screening,
+        [columns.join(","), ...rows].join("\n") + "\n",
+        "utf8",
+      );
+    }
+  }
+
   return { outputRoot, reportRoot, manifestPath };
 }
 
-export function ensureMainRunLayout(options: {
+export function ensureFactorialRunLayout(options: {
   outputRoot: string;
   modelLabel: string;
   method: ExperimentMethod;
   taskIds: number[];
 }) {
-  const runRoot = mainRunRoot(
+  const runRoot = factorialRunRoot(
     options.outputRoot,
     options.modelLabel,
     options.method,
@@ -173,7 +242,7 @@ export function ensureMainRunLayout(options: {
   for (const taskId of options.taskIds) {
     mkdirSync(
       join(
-        mainTaskArtifactDir(
+        factorialTaskArtifactDir(
           options.outputRoot,
           options.modelLabel,
           options.method,
@@ -278,6 +347,7 @@ export function refreshArtifactReport(options: {
     "## Key artifact counts",
     "",
     `- inspection.json: ${count("inspection.json")}`,
+    `- inspection.har: ${count("inspection.har")} (not an agent run)`,
     `- network.har: ${count("network.har")}`,
     `- agent_response.json: ${count("agent_response.json")}`,
     `- eval_result.json: ${count("eval_result.json")}`,

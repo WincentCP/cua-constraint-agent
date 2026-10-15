@@ -1,30 +1,25 @@
 import type { WebArenaConfig, WebArenaTask } from "./schema.ts";
 
-const siteKeys: Record<string, string> = {
-  shopping: "__SHOPPING__",
-  shopping_admin: "__SHOPPING_ADMIN__",
-  reddit: "__REDDIT__",
-  gitlab: "__GITLAB__",
-  wikipedia: "__WIKIPEDIA__",
-  map: "__MAP__",
-};
+function assertShoppingOnly(task: WebArenaTask) {
+  if (task.sites.length !== 1 || task.sites[0] !== "shopping") {
+    throw new Error(
+      `Shopping-only scope does not allow sites: ${task.sites.join(", ")}`,
+    );
+  }
+}
 
 export function taskAllowedOrigins(task: WebArenaTask) {
+  assertShoppingOnly(task);
   return [...new Set(task.start_urls.map((url) => new URL(url).origin))];
 }
 
 export function authHeadersForTask(task: WebArenaTask, config: WebArenaConfig) {
-  const headers: Record<string, string> = {};
-  for (const site of task.sites) {
-    const environment = config.environments[siteKeys[site] ?? site];
-    const credentials = environment?.credentials;
-    if (!credentials) continue;
-    const value = `${credentials.username}:${credentials.password}`;
-    if (site === "shopping") headers["X-M2-Customer-Auto-Login"] = value;
-    if (site === "shopping_admin") {
-      headers["X-M2-Admin-Auto-Login"] = value;
-    }
-    if (site === "reddit") headers["X-Postmill-Auto-Login"] = value;
+  assertShoppingOnly(task);
+  const credentials = config.environments["__SHOPPING__"]?.credentials;
+  if (!credentials) {
+    throw new Error("Missing Shopping credentials in local config");
   }
-  return headers;
+  return {
+    "X-M2-Customer-Auto-Login": `${credentials.username}:${credentials.password}`,
+  };
 }

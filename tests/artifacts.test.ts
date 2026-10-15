@@ -11,8 +11,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   ensureArtifactLayout,
-  ensureMainRunLayout,
-  mainTaskArtifactDir,
+  ensureFactorialRunLayout,
+  factorialTaskArtifactDir,
   refreshArtifactReport,
   taskArtifactDir,
 } from "../src/experiment/artifacts.ts";
@@ -33,8 +33,9 @@ test("artifact layout separates research stages and generates an audit index", (
     assert(existsSync(join(taskDir, "accessibility")));
     assert(existsSync(join(outputRoot, "task-inputs")));
     assert(existsSync(join(outputRoot, "stage-manifest.json")));
+    assert(existsSync(join(reportRoot, "poc-review.md")));
 
-    writeFileSync(join(taskDir, "network.har"), "{}", "utf8");
+    writeFileSync(join(taskDir, "inspection.har"), "{}", "utf8");
     const report = refreshArtifactReport({
       stage: "poc",
       outputRoot,
@@ -45,7 +46,19 @@ test("artifact layout separates research stages and generates an audit index", (
     assert(existsSync(report.indexJson));
     assert(existsSync(report.indexCsv));
     assert(existsSync(report.summary));
-    assert.match(readFileSync(report.indexCsv, "utf8"), /284\/network\.har/);
+    assert(
+      readFileSync(report.indexCsv, "utf8").includes("284/inspection.har"),
+    );
+
+    const pilotRoot = join(dir, "output", "pilot");
+    const pilotReports = join(dir, "reports", "pilot");
+    ensureArtifactLayout({
+      stage: "pilot",
+      outputRoot: pilotRoot,
+      reportRoot: pilotReports,
+      taskIds: [279, 284, 323, 436, 506, 528],
+    });
+    assert(existsSync(join(pilotReports, "task-screening.csv")));
 
     const mainRoot = join(dir, "output", "main", "exp-001");
     const mainReports = join(dir, "reports", "main", "exp-001");
@@ -56,7 +69,7 @@ test("artifact layout separates research stages and generates an audit index", (
       reportRoot: mainReports,
       taskIds: [284, 323],
     });
-    ensureMainRunLayout({
+    ensureFactorialRunLayout({
       outputRoot: mainRoot,
       modelLabel: "qwen3.5-9b",
       method: "Baseline",
@@ -66,11 +79,52 @@ test("artifact layout separates research stages and generates an audit index", (
     assert(
       existsSync(
         join(
-          mainTaskArtifactDir(mainRoot, "qwen3.5-9b", "Baseline", 284),
+          factorialTaskArtifactDir(mainRoot, "qwen3.5-9b", "Baseline", 284),
           "accessibility",
         ),
       ),
     );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("main artifact manifest rejects changes to a previously registered task set", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cua-main-immutable-"));
+  try {
+    const root = join(dir, "main", "thesis-1");
+    const reports = join(dir, "reports");
+    ensureArtifactLayout({
+      stage: "main",
+      experimentId: "thesis-1",
+      outputRoot: root,
+      reportRoot: reports,
+      taskIds: [600, 601],
+    });
+    assert.doesNotThrow(() =>
+      ensureArtifactLayout({
+        stage: "main",
+        experimentId: "thesis-1",
+        outputRoot: root,
+        reportRoot: reports,
+        taskIds: [601, 600],
+      }),
+    );
+    assert.throws(
+      () =>
+        ensureArtifactLayout({
+          stage: "main",
+          experimentId: "thesis-1",
+          outputRoot: root,
+          reportRoot: reports,
+          taskIds: [600, 602],
+        }),
+      /already registered/,
+    );
+    const saved = JSON.parse(
+      readFileSync(join(root, "stage-manifest.json"), "utf8"),
+    );
+    assert.deepEqual(saved.task_ids, [600, 601]);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

@@ -1,72 +1,50 @@
-# CUA Constraint Agent — WebArena-Verified Transition
+# CUA Constraint Agent — WebArena-Verified Shopping Feasibility
 
-This is the active research codebase for the thesis **Computer-Use Agent with Constraint-Directed Evidence Acquisition**.
+Research prototype for **constraint-directed evidence acquisition in text/Accessibility-Tree Computer-Use Agents**.
 
-The previous LEUCO synthetic e-commerce implementation is preserved on the `leuco-legacy` branch. `main` is intentionally focused on validating whether the research treatment can be transferred to an established benchmark before any new main experiment is frozen.
+**Current scope:** local WebArena-Verified **Shopping only**. LEUCO is historical work on the `leuco-legacy` branch; it is **not** used for main experimental scores.
 
-## Current research stage
+## Current stage — PoC first, not main-data collection
 
-**WebArena-Verified PoC → feasibility pilot.**
+The core evidence ledger, Baseline/Proposed probe ranking, browser inspection, official CLI handoff and reproducible artifact layout have been implemented. **The autonomous model-driven browser runner and 48/256-run execution pipeline have not yet been implemented or validated on the target Windows device.** CI passing is not the same as solving task 284 live.
 
-The repository currently supports:
+- PoC: inspect official Shopping task **284** (zero model runs during inspection), then separately build and test an end-to-end agent run.
+- Pilot: six **Shopping-only candidate** tasks **279, 284, 323, 436, 506, 528** (six different public intent templates). Task eligibility is pending live review. Planned design: **6 × 4 models × 2 methods = 48 agent runs**.
+- Main: supervisor-required **32 Shopping tasks**, different from pilot, selected by fixed public-UI suitability criteria **before** main data collection. Planned design: **32 × 4 × 2 = 256 agent runs**.
+- The four 8–9B Q4_K_M models are candidates pending model-competence checks. The scientific treatment is **Baseline vs Proposed**; model is a robustness factor.
+- WebArena-Verified supplies task instructions, environments and objective evaluation. **It does not supply the proposed method.**
 
-- a generic evidence ledger (`SATISFIED` / `REFUTED` / `UNKNOWN`);
-- capability-matched Baseline vs Proposed probe selection;
-- official WebArena-Verified task input contracts;
-- Playwright Accessibility Tree inspection and HAR recording;
-- a pre-registered six-task pilot manifest;
-- a pre-registered four-model manifest for the later main experiment;
-- official WebArena-Verified CLI handoff for task export and evaluation;
-- research-identity hashing/freeze utilities;
-- automatic, stage-separated experiment artifacts and generated audit indexes.
+The benchmark CLI is pinned to **WebArena-Verified v1.2.3** (see `config/study.json`). No hidden reference answers/evaluator expectations may enter agent observations, task annotations or prompt context.
 
-It **does not yet claim** that the six pilot tasks are suitable for the final experiment. Suitability must be established by running the pilot on the target device. Pilot output is not main-experiment data.
+## Setup and first PoC
 
-## Branches
-
-- `main` — active WebArena-Verified research direction.
-- `leuco-legacy` — complete snapshot of the former LEUCO implementation before migration.
-
-## Device setup
-
-Requirements:
-
-- Windows 10/11 + PowerShell
-- Node.js 24+
-- Docker Desktop / WSL2
-- `uv` / `uvx`
-- Playwright Chromium
-- Ollama is only required when model-driven pilot execution is added after feasibility is confirmed
+On Windows PowerShell with Git, Node **24+**, Docker Desktop/WSL2, uvx and Playwright:
 
 ```powershell
-npm ci
-npx playwright install chromium
+git clone https://github.com/WincentCP/cua-constraint-agent.git
+cd cua-constraint-agent
+npm.cmd ci
+npx.cmd playwright install chromium
 Copy-Item config/webarena.example.json config/webarena.local.json
-npm run webarena:doctor
-npm run webarena:validate
+npm.cmd run webarena:doctor
+npm.cmd run webarena:validate
 ```
 
-## Stage 2 — primary PoC task 284
-
-Start the official Shopping environment:
+Start **Shopping only**:
 
 ```powershell
-uvx webarena-verified env start --site shopping
+uvx --from webarena-verified==1.2.3 webarena-verified env start --site shopping
+uvx --from webarena-verified==1.2.3 webarena-verified env status --site shopping
 ```
 
-Export only public task input from the official benchmark:
+Export public task instruction and inspect initial visible Accessibility Tree:
 
 ```powershell
-npm run webarena:prepare -- --task 284
+npm.cmd run webarena:prepare -- --task 284 --stage poc
+npm.cmd run webarena:inspect -- --task 284 --stage poc
 ```
 
-Capture the initial Accessibility Tree, visible controls, constraint-hint mapping, and HAR trace:
-
-```powershell
-npm run webarena:inspect -- --task 284
-```
-
-PoC artifacts are created automatically:
+Expected outputs (generated on device, not checked into Git):
 
 ```text
 output/poc/
@@ -75,85 +53,42 @@ output/poc/
   284/
     accessibility/01.yaml
     inspection.json
-    network.har
-
+    inspection.har            # NOT the agent's network.har
 reports/poc/
+  poc-review.md               # manual PASS/MODIFY/REJECT checklist
   artifact-index.json
   artifact-index.csv
   stage-summary.md
 ```
 
-`inspection.json` is diagnostic. A `may_answer` mapping is never treated as evidence.
-
-See `docs/ARTIFACTS.md` for the full PoC → pilot → main directory convention.
-
-## Stage 3 — six-task pilot
-
-The pre-registered pilot IDs are:
-
-```text
-284, 323, 493, 523, 552, 562
-```
-
-Initialize the complete pilot artifact layout:
+Inspection does **not** produce `agent_response.json` or an official success score. The official evaluator requires a real agent run with `agent_response.json` + `network.har` and writes `eval_result.json`.
 
 ```powershell
-npm run artifacts:init -- --stage pilot
+uvx --from webarena-verified==1.2.3 webarena-verified env stop --site shopping
 ```
 
-Then use the same WebArena commands with `--stage pilot`, for example:
+**Stop for PoC review before launching pilot.** See [docs/SETUP.md](docs/SETUP.md), [docs/EXPERIMENT.md](docs/EXPERIMENT.md), [docs/ARTIFACTS.md](docs/ARTIFACTS.md) and [docs/STATUS.md](docs/STATUS.md).
+
+## Later stages (not commands to run yet)
 
 ```powershell
-npm run webarena:prepare -- --task 323 --stage pilot
-npm run webarena:inspect -- --task 323 --stage pilot
+npm.cmd run webarena:catalog
+npm.cmd run artifacts:init -- --stage pilot
+npm.cmd run pilot:gate
 ```
 
-The pilot tasks were chosen for feasibility auditing because their official tasks contain multiple requirements and objective evaluator outputs. They are **not automatically accepted as the final thesis subset**.
+The catalog exports only public Shopping task inputs; it **does not** automatically approve task eligibility. Pilot run directories can be scaffolded, but run/evaluation artifacts require the future agent runner. The gate prints FAIL when no valid runs exist, never an invented pass.
 
-See `docs/EXPERIMENT.md`.
-
-## Stage 4 — freeze only after pilot
-
-If the pilot confirms construct validity, then and only then:
-
-- choose the final held-out task subset;
-- lock four models/configurations;
-- lock Baseline/Proposed prompts and budgets;
-- lock task annotations and evaluator versions;
-- generate a research freeze before main data collection.
-
-The planned main artifact layout is `output/main/<experiment-id>/runs/<model>/<method>/<task-id>/`. It is scaffolded only after final task selection; the autonomous main runner and run-level statistical aggregation are intentionally not claimed complete yet.
-
-No main results should be collected from the current pilot configuration.
-
-## Official WebArena-Verified outputs
-
-The official evaluator expects, per task:
-
-```text
-<output-root>/<task-id>/
-  agent_response.json
-  network.har
-```
-
-After both exist:
+## Local tests and CI
 
 ```powershell
-npm run webarena:evaluate -- --task 284
+npm.cmd run format:check
+npm.cmd run build
+npm.cmd test
+npm.cmd run test:integration
+npm.cmd run webarena:validate
 ```
 
-This calls the official `webarena-verified eval-tasks` CLI. Our research layer may add evidence/process metrics later, but it must not replace the official task-success evaluator.
+CI covers code, schemas, artifact generation and browser/HAR plumbing against a local test page. **It cannot validate actual Shopping Docker or Ollama performance on your device.**
 
-## Verification
-
-CI checks:
-
-```powershell
-npm run format:check
-npm run build
-npm test
-npm run test:integration
-npm run webarena:validate
-```
-
-The integration test launches Chromium locally against a synthetic `data:` page only to verify the Accessibility Tree + HAR plumbing. CI deliberately does **not** claim that WebArena task 284 has been solved; live benchmark execution requires the official Docker environment on the research device.
+Large/raw `output/`, `reports/`, and machine-specific `config/webarena.local.json` are gitignored. Back up these folders separately. Do not publicly share HAR files containing authentication/session details.

@@ -1,13 +1,13 @@
-name: WebArena transition invariants
+name: Shopping feasibility invariants
 on:
   push:
   pull_request:
 permissions:
   contents: read
 jobs:
-  validation:
+  linux-validation:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,3 +21,50 @@ jobs:
       - run: npm test
       - run: npm run test:integration
       - run: npm run webarena:validate
+      - run: npm run artifacts:init -- --stage poc
+      - run: npm run artifacts:init -- --stage pilot
+      - run: npm run artifacts:report -- --stage pilot
+      - name: Fail closed when pilot has zero evaluated runs
+        shell: bash
+        run: |
+          if npm run pilot:gate; then
+            echo "pilot:gate unexpectedly passed with no runs"
+            exit 1
+          fi
+          node --input-type=module -e 'import fs from "node:fs"; const j=JSON.parse(fs.readFileSync("reports/pilot/pilot-gate.json","utf8")); if(j.status!=="FAIL" || j.completed_valid!==0) process.exit(1);'
+      - uses: astral-sh/setup-uv@v6
+      - name: Official public Shopping input smoke (no live Docker)
+        run: |
+          cp config/webarena.example.json config/webarena.local.json
+          npm run webarena:prepare -- --task 284 --stage poc
+          npm run webarena:catalog
+          node --input-type=module -e 'import fs from "node:fs"; const t=JSON.parse(fs.readFileSync("output/catalog/shopping-tasks.json","utf8")); if(t.length<38 || t.some(x=>x.sites.length!==1 || x.sites[0]!=="shopping"))process.exit(1); console.log("Verified "+t.length+" public Shopping tasks")'
+
+  windows-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run build
+      - run: npm test
+      - run: npm run webarena:validate
+      - run: npm run artifacts:init -- --stage poc
+      - run: npm run artifacts:init -- --stage pilot
+      - run: npm run artifacts:report -- --stage pilot
+      - uses: astral-sh/setup-uv@v6
+      - name: Windows pinned CLI input with spaces in path
+        shell: pwsh
+        run: |
+          $configDir = Join-Path $env:RUNNER_TEMP "webarena config with spaces"
+          New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+          $configPath = Join-Path $configDir "webarena.local.json"
+          $taskPath = Join-Path $configDir "284.json"
+          Copy-Item config/webarena.example.json $configPath
+          npm run webarena:prepare -- --task 284 --stage poc --config $configPath --tasks $taskPath
+          if (-not (Test-Path $taskPath)) { throw "Public task export missing" }

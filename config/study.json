@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "benchmark": {
+    "name": "WebArena-Verified",
+    "pypi_version": "1.2.3",
+    "site": "shopping",
+    "dataset_tag": "v1.2.3"
+  },
+  "scope": {
+    "poc_task_id": 284,
+    "pilot_task_count": 6,
+    "main_task_count": 32,
+    "model_count": 4,
+    "methods": ["Baseline", "Proposed"]
+  },
+  "suitability": {
+    "min_required_constraints": 3,
+    "min_information_choices": 2
+  },
+  "pilot_gate": {
+    "min_valid_run_fraction": 0.95,
+    "min_official_successes": 10,
+    "min_successful_models": 2,
+    "min_successful_tasks": 2,
+    "caveat": "Pragmatic pre-main feasibility threshold; not a benchmark standard or evidence Proposed outperforms Baseline. Requires supervisor review."
+  }
+}
