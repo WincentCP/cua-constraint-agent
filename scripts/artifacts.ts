@@ -74,6 +74,22 @@ try {
         "Pilot artifacts must use the six registered Shopping tasks",
       );
     }
+    if (stage === "pilot") {
+      const existingManifestPath = resolve(outputRoot, "stage-manifest.json");
+      if (existsSync(existingManifestPath)) {
+        const previous = JSON.parse(
+          readFileSync(existingManifestPath, "utf8"),
+        ) as { task_ids?: number[] };
+        const retired = (previous.task_ids ?? []).filter(
+          (id) => !pilotIds.includes(id),
+        );
+        if (retired.length) {
+          throw new Error(
+            `Existing pilot output contains retired tasks: ${retired.join(", ")}. Archive it instead of mixing protocols.`,
+          );
+        }
+      }
+    }
     if (command === "init" && stage === "main") {
       assertMainTaskSelection(taskIds, pilotIds, protocol);
       const catalogPath = resolve(

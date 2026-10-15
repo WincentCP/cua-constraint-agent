@@ -8,8 +8,25 @@ import { WebArenaAgentResponseSchema } from "../webarena/schema.ts";
 const OfficialEvalSchema = z
   .object({
     task_id: z.number().int().nonnegative(),
+    intent_template_id: z.number().int().nonnegative(),
+    sites: z.tuple([z.literal("shopping")]),
+    task_revision: z.literal(2),
     status: z.enum(["success", "failure", "partial_match", "error"]),
     score: z.number().min(0).max(1),
+    evaluators_results: z
+      .array(
+        z
+          .object({
+            evaluator_name: z.string().min(1),
+            status: z.enum(["success", "failure", "partial_match", "error"]),
+            score: z.number().min(0).max(1),
+          })
+          .passthrough(),
+      )
+      .min(1),
+    webarena_verified_version: z.string().min(1),
+    webarena_verified_evaluator_checksum: z.string().regex(/^[a-f0-9]{64}$/i),
+    webarena_verified_data_checksum: z.string().regex(/^[a-f0-9]{64}$/i),
   })
   .passthrough();
 
@@ -50,6 +67,7 @@ function nonempty(path: string) {
 function readEpisode(
   taskDir: string,
   taskId: number,
+  intentTemplateId: number,
   model: string,
   method: "Baseline" | "Proposed",
 ): PilotEpisode {
@@ -77,7 +95,8 @@ function readEpisode(
       !har.log ||
       typeof har.log !== "object" ||
       !("entries" in har.log) ||
-      !Array.isArray(har.log.entries)
+      !Array.isArray(har.log.entries) ||
+      har.log.entries.length === 0
     ) {
       throw new Error("Invalid HAR structure");
     }
@@ -86,8 +105,19 @@ function readEpisode(
     const evaluation = OfficialEvalSchema.parse(
       JSON.parse(readFileSync(join(taskDir, "eval_result.json"), "utf8")),
     );
-    if (evaluation.task_id !== taskId) {
-      throw new Error("Evaluator task ID mismatch");
+    if (
+      evaluation.task_id !== taskId ||
+      evaluation.intent_template_id !== intentTemplateId
+    ) {
+      result.reason = "EVALUATOR_TASK_MISMATCH";
+      return result;
+    }
+    if (
+      evaluation.webarena_verified_version !==
+      loadStudyProtocol().benchmark.pypi_version
+    ) {
+      result.reason = "EVALUATOR_VERSION_MISMATCH";
+      return result;
     }
     if (evaluation.status === "error") {
       result.reason = "EVALUATOR_ERROR";
@@ -143,6 +173,7 @@ export function evaluatePilotGate(
               String(task.task_id),
             ),
             task.task_id,
+            task.intent_template_id,
             model.label,
             method,
           ),

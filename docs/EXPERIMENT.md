@@ -59,7 +59,7 @@ The pilot includes **6 tasks × 4 model candidates × 2 methods = 48 agent episo
 
 These are **pragmatic feasibility thresholds, not WebArena standards or evidence that Proposed is superior**. Their small sample cannot prove success rate/power; revise only by documented supervisor decision **before** looking at pilot method outcomes. `npm run pilot:gate` produces a `PROVISIONAL_PASS` or `FAIL`; provisional pass is **not** authorization for main.
 
-Pilot runs are evaluated under `output/pilot/runs/<model>/<baseline|proposed>/<task-id>/` using the official `agent_response.json`, `network.har`, and `eval_result.json`. The future autonomous runner must generate them and reset the environment between conditions. Manual inspection artifacts do not count as runs.
+Pilot runs are evaluated under `output/pilot/runs/<model>/<baseline|proposed>/<task-id>/` using the official `agent_response.json`, `network.har`, and `eval_result.json`. The checker requires non-empty HAR entries, matching task/template and Shopping metadata, the pinned evaluator package version, and official-style checksum fields. It records evaluator errors, task failures, partial matches and successes separately. These structural checks do not independently authenticate arbitrary fabricated files; live evaluator execution and audit logs remain necessary. The future autonomous runner must generate them and reset the environment between conditions. Manual inspection artifacts do not count as runs.
 
 ## Stage 3 — supervisor-required main experiment
 

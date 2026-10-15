@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { evaluatePilotGate } from "../src/experiment/pilot-gate.ts";
@@ -33,14 +33,27 @@ function makeEpisode(
   );
   writeFileSync(
     join(dir, "network.har"),
-    JSON.stringify({ log: { entries: [] } }),
+    JSON.stringify({
+      log: { version: "1.2", entries: [{ request: { url: "http://localhost:7770/" } }] },
+    }),
   );
+  const spec = loadPilotManifest().tasks.find((task) => task.task_id === taskId);
+  assert(spec);
+  const status = pass ? "success" : "failure";
+  const score = pass ? 1 : 0;
   writeFileSync(
     join(dir, "eval_result.json"),
     JSON.stringify({
       task_id: taskId,
-      status: pass ? "success" : "failure",
-      score: pass ? 1 : 0,
+      intent_template_id: spec.intent_template_id,
+      sites: ["shopping"],
+      task_revision: 2,
+      status,
+      score,
+      evaluators_results: [{ evaluator_name: "AgentResponseEvaluator", status, score }],
+      webarena_verified_version: "1.2.3",
+      webarena_verified_evaluator_checksum: "a".repeat(64),
+      webarena_verified_data_checksum: "b".repeat(64),
     }),
   );
 }
@@ -78,9 +91,20 @@ test("official task failure is valid, evaluator errors are invalid", () => {
     assert.equal(pass.status, "FAIL"); // 8 successful runs, below 10
     assert.equal(pass.official_successes, 8);
     const dirForFirst = join(dir, "runs", "qwen3.5-9b", "baseline", "279");
+    const resultPath = join(dirForFirst, "eval_result.json");
+    const official = JSON.parse(readFileSync(resultPath, "utf8"));
     writeFileSync(
-      join(dirForFirst, "eval_result.json"),
-      JSON.stringify({ task_id: 279, status: "error", score: 0 }),
+      resultPath,
+      JSON.stringify({
+        ...official,
+        status: "error",
+        score: 0,
+        evaluators_results: [{
+          evaluator_name: "AgentResponseEvaluator",
+          status: "error",
+          score: 0,
+        }],
+      }),
     );
     const error = evaluatePilotGate(dir, models);
     assert.equal(error.completed_valid, 47);
@@ -105,9 +129,19 @@ test("official partial-match result is technically valid but not success", () =>
       "279",
       "eval_result.json",
     );
+    const official = JSON.parse(readFileSync(evalPath, "utf8"));
     writeFileSync(
       evalPath,
-      JSON.stringify({ task_id: 279, status: "partial_match", score: 0.5 }),
+      JSON.stringify({
+        ...official,
+        status: "partial_match",
+        score: 0.5,
+        evaluators_results: [{
+          evaluator_name: "AgentResponseEvaluator",
+          status: "partial_match",
+          score: 0.5,
+        }],
+      }),
     );
     const result = evaluatePilotGate(dir, models);
     assert.equal(result.completed_valid, 1);
@@ -142,6 +176,41 @@ test("pilot gate passes when preregistered operational checks pass", () => {
     assert.equal(result.completed_valid, 48);
     assert.equal(result.official_successes, 12);
     assert.equal(result.status, "PROVISIONAL_PASS");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("pilot gate rejects wrong evaluator version, task template and empty HAR", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cua-gate-provenance-"));
+  try {
+    const { label } = models[0];
+    makeEpisode(dir, 284, label, "Baseline", true);
+    const root = join(dir, "runs", label, "baseline", "284");
+    const resultPath = join(root, "eval_result.json");
+    const official = JSON.parse(readFileSync(resultPath, "utf8"));
+
+    writeFileSync(resultPath, JSON.stringify({
+      ...official, webarena_verified_version: "1.0.0",
+    }));
+    let result = evaluatePilotGate(dir, models);
+    assert.equal(result.completed_valid, 0);
+    assert.equal(result.episodes.find((x) => x.task_id === 284 &&
+      x.model === label && x.method === "Baseline")?.reason, "EVALUATOR_VERSION_MISMATCH");
+
+    writeFileSync(resultPath, JSON.stringify({
+      ...official, intent_template_id: 9999,
+    }));
+    result = evaluatePilotGate(dir, models);
+    assert.equal(result.completed_valid, 0);
+    assert.equal(result.episodes.find((x) => x.task_id === 284 &&
+      x.model === label && x.method === "Baseline")?.reason, "EVALUATOR_TASK_MISMATCH");
+
+    writeFileSync(resultPath, JSON.stringify(official));
+    writeFileSync(join(root, "network.har"), JSON.stringify({ log: { entries: [] } }));
+    result = evaluatePilotGate(dir, models);
+    assert.equal(result.completed_valid, 0);
+    assert.equal(result.official_successes, 0);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

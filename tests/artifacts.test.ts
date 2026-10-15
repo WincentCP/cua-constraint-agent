@@ -88,3 +88,30 @@ test("artifact layout separates research stages and generates an audit index", (
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("main artifact manifest rejects changes to a previously registered task set", () => {
+  const dir = mkdtempSync(join(tmpdir(), "cua-main-immutable-"));
+  try {
+    const root = join(dir, "main", "thesis-1");
+    const reports = join(dir, "reports");
+    ensureArtifactLayout({
+      stage: "main",
+      experimentId: "thesis-1",
+      outputRoot: root,
+      reportRoot: reports,
+      taskIds: [600, 601],
+    });
+    assert.doesNotThrow(() => ensureArtifactLayout({
+      stage: "main", experimentId: "thesis-1",
+      outputRoot: root, reportRoot: reports, taskIds: [601, 600],
+    }));
+    assert.throws(() => ensureArtifactLayout({
+      stage: "main", experimentId: "thesis-1",
+      outputRoot: root, reportRoot: reports, taskIds: [600, 602],
+    }), /already registered/);
+    const saved = JSON.parse(readFileSync(join(root, "stage-manifest.json"), "utf8"));
+    assert.deepEqual(saved.task_ids, [600, 601]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
