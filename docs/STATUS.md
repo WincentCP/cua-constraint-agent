@@ -18,15 +18,21 @@ WebArena-Verified **v1.2.3 Shopping only**; no LEUCO in main evaluation. Six pub
 - pilot result checker that reads official evaluation status (distinguishes task failure vs evaluator error);
 - main selection guard: exactly 32 distinct, pilot-disjoint public Shopping task IDs;
 - basic research identity SHA-256 freeze utilities;
-- offline unit and browser/HAR integration CI.
+- initial-page PoC screenshot capture;
+- **development-only single-task** Ollama browser runner with matched Baseline/Proposed model prompts, bounded action budget and evidence-state tracking;
+- bounded decision checkpoint screenshots, run metadata and JSONL decision traces;
+- pilot/main CSV exporter with missing-run inventory and official-evaluation validation;
+- Google Colab notebook with graphics, descriptive tables and conditional paired McNemar tests;
+- evidence preservation and appendix protocol in docs/EVIDENCE_PROTOCOL.md;
+- offline unit and synthetic browser/HAR integration CI.
 
 ## Not yet completed / not to be claimed
 
 - live Shopping Docker task 284 inspection on the target Windows device;
 - actual ≥2 meaningful evidence-choice verification in the live UI;
-- automated model-driven browser/action runner;
+- **live validation and debugging** of the newly added development-only model-driven runner on actual Shopping;
 - valid end-to-end PoC run and official evaluator result;
-- real 48-run pilot and suitability approvals;
+- approved reset-safe batch orchestrator and actual 48-run pilot with suitability approvals;
 - four-model WebArena competence/repeatability checks (older LEUCO run times do not prove WebArena ability);
 - screened and frozen 32-task main subset;
 - complete protocol/prompt/hardware/evaluator and model digest freeze;

@@ -23,7 +23,9 @@
     "webarena:inspect": "node --import tsx scripts/webarena.ts inspect",
     "webarena:evaluate": "node --import tsx scripts/webarena.ts evaluate",
     "webarena:catalog": "node --import tsx scripts/webarena.ts catalog",
-    "pilot:gate": "node --import tsx scripts/pilot-gate.ts"
+    "pilot:gate": "node --import tsx scripts/pilot-gate.ts",
+    "agent:run": "node --import tsx scripts/agent.ts",
+    "results:export": "node --import tsx scripts/export-results.ts"
   },
   "dependencies": {
     "playwright": "^1.58.0",

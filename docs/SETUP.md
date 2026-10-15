@@ -133,3 +133,22 @@ ollama run hf.co/Salesforce/Llama-xLAM-2-8b-fc-r-gguf:Q4_K_M
 ```
 
 After the last command enters the model chat, type `/bye`, then check `ollama list`. Run only one model at a time on 16 GB RAM and check actual GPU/VRAM utilization before attempting batch experiments. Keep the four checkpoint names in `config/models.json` consistent with `ollama list`; freeze exact digests only after competence testing.
+
+## Development-only agent episode after PoC inspection PASS
+
+The command below requires a locally running Shopping Docker website, Ollama, a downloaded Q4_K_M model, and a successful public task export. It is not the six-task pilot or an unattended main runner:
+
+```powershell
+ollama list
+npm.cmd run agent:run -- --stage poc --task 284 --model-label qwen3.5-9b --method Baseline --max-steps 16 --evaluate
+```
+
+A new method run requires the **Shopping persistent environment to be reset**, not merely Playwright restarted. The runner refuses to overwrite a previous method/model/task cell; preserve evidence before restarting. Results are stored in `output/poc/runs/<model>/<method>/284/`.
+
+After approved live pilot episodes (not during initial setup):
+
+```powershell
+npm.cmd run results:export -- --stage pilot
+```
+
+The exporter creates `reports/pilot/run-inventory.csv`, `analysis-results.csv`, and `analysis-summary.md`. Upload the first two *sanitized CSVs*, not HAR, into `notebooks/thesis_analysis.ipynb` on Google Colab. See `docs/EVIDENCE_PROTOCOL.md`.

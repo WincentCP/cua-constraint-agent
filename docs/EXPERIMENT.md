@@ -80,3 +80,11 @@ Pilot runs are evaluated under `output/pilot/runs/<model>/<baseline|proposed>/<t
 3. Supervisor approves 32-task held-out set and study freeze **before** collecting main data.
 
 The official benchmark evaluator alone defines official task success; never convert self-reported success or diagnostic hint coverage into official success.
+
+## Thesis evidence instrumentation (development update)
+
+A single-task model-driven runner is now implemented behind `npm run agent:run` for local PoC and explicitly approved individual pilot attempts. It records initial/final screenshot, up to three selected meaningful probe screenshots, per-step Accessibility Trees, JSONL decision trace, and typed metadata. It is a **development implementation**, not proof of valid WebArena task completion.
+
+The operational evaluator remains the only source of official task success. Run evidence and task outcomes can be exported with `npm run results:export` and analyzed with the committed Google Colab notebook. Missing, incomplete, or invalid cells must remain missing, not scored as zeros. The actual 48/256-run reset-safe orchestration and main freeze remain future work.
+
+See `docs/EVIDENCE_PROTOCOL.md`.
