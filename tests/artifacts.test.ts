@@ -101,15 +101,29 @@ test("main artifact manifest rejects changes to a previously registered task set
       reportRoot: reports,
       taskIds: [600, 601],
     });
-    assert.doesNotThrow(() => ensureArtifactLayout({
-      stage: "main", experimentId: "thesis-1",
-      outputRoot: root, reportRoot: reports, taskIds: [601, 600],
-    }));
-    assert.throws(() => ensureArtifactLayout({
-      stage: "main", experimentId: "thesis-1",
-      outputRoot: root, reportRoot: reports, taskIds: [600, 602],
-    }), /already registered/);
-    const saved = JSON.parse(readFileSync(join(root, "stage-manifest.json"), "utf8"));
+    assert.doesNotThrow(() =>
+      ensureArtifactLayout({
+        stage: "main",
+        experimentId: "thesis-1",
+        outputRoot: root,
+        reportRoot: reports,
+        taskIds: [601, 600],
+      }),
+    );
+    assert.throws(
+      () =>
+        ensureArtifactLayout({
+          stage: "main",
+          experimentId: "thesis-1",
+          outputRoot: root,
+          reportRoot: reports,
+          taskIds: [600, 602],
+        }),
+      /already registered/,
+    );
+    const saved = JSON.parse(
+      readFileSync(join(root, "stage-manifest.json"), "utf8"),
+    );
     assert.deepEqual(saved.task_ids, [600, 601]);
   } finally {
     rmSync(dir, { recursive: true, force: true });

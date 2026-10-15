@@ -132,14 +132,12 @@ export function ensureArtifactLayout(options: ArtifactLayoutOptions) {
     previous &&
     previous.task_ids.length > 0 &&
     taskIds.length > 0 &&
-    (
-      previous.task_ids.length !== taskIds.length ||
-      previous.task_ids.some((id) => !taskIds.includes(id))
-    )
+    (previous.task_ids.length !== taskIds.length ||
+      previous.task_ids.some((id) => !taskIds.includes(id)))
   ) {
     throw new Error(
       "Main task selection already registered under this experiment ID; " +
-      "keep the same selection or use a new experiment ID",
+        "keep the same selection or use a new experiment ID",
     );
   }
   if (previous && previous.stage !== options.stage) {
