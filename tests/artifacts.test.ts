@@ -46,12 +46,16 @@ test("artifact layout separates research stages and generates an audit index", (
     assert(existsSync(report.indexJson));
     assert(existsSync(report.indexCsv));
     assert(existsSync(report.summary));
-    assert(readFileSync(report.indexCsv, "utf8").includes("284/inspection.har"));
+    assert(
+      readFileSync(report.indexCsv, "utf8").includes("284/inspection.har"),
+    );
 
     const pilotRoot = join(dir, "output", "pilot");
     const pilotReports = join(dir, "reports", "pilot");
     ensureArtifactLayout({
-      stage: "pilot", outputRoot: pilotRoot, reportRoot: pilotReports,
+      stage: "pilot",
+      outputRoot: pilotRoot,
+      reportRoot: pilotReports,
       taskIds: [279, 284, 323, 436, 506, 528],
     });
     assert(existsSync(join(pilotReports, "task-screening.csv")));

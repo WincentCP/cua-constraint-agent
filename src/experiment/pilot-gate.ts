@@ -67,7 +67,9 @@ function readEpisode(
     WebArenaAgentResponseSchema.parse(
       JSON.parse(readFileSync(join(taskDir, "agent_response.json"), "utf8")),
     );
-    const har = JSON.parse(readFileSync(join(taskDir, "network.har"), "utf8")) as unknown;
+    const har = JSON.parse(
+      readFileSync(join(taskDir, "network.har"), "utf8"),
+    ) as unknown;
     if (
       !har ||
       typeof har !== "object" ||
@@ -114,8 +116,10 @@ export function evaluatePilotGate(
 ): PilotGateReport {
   const protocol = loadStudyProtocol();
   const manifest = loadPilotManifest();
-  if (models.length !== protocol.scope.model_count || 
-      new Set(models.map((model) => model.label)).size !== models.length) {
+  if (
+    models.length !== protocol.scope.model_count ||
+    new Set(models.map((model) => model.label)).size !== models.length
+  ) {
     throw new Error("Pilot requires four distinct model labels");
   }
   const root = resolve(outputRoot);
@@ -125,7 +129,13 @@ export function evaluatePilotGate(
       for (const method of protocol.scope.methods) {
         episodes.push(
           readEpisode(
-            join(root, "runs", model.label, method.toLowerCase(), String(task.task_id)),
+            join(
+              root,
+              "runs",
+              model.label,
+              method.toLowerCase(),
+              String(task.task_id),
+            ),
             task.task_id,
             model.label,
             method,
@@ -137,10 +147,12 @@ export function evaluatePilotGate(
 
   const successful = episodes.filter((episode) => episode.official_success);
   const valid = episodes.filter((episode) => episode.valid);
-  const successfulModels = [...new Set(successful.map((episode) => episode.model))].sort();
-  const successfulTasks = [...new Set(successful.map((episode) => episode.task_id))].sort(
-    (a, b) => a - b,
-  );
+  const successfulModels = [
+    ...new Set(successful.map((episode) => episode.model)),
+  ].sort();
+  const successfulTasks = [
+    ...new Set(successful.map((episode) => episode.task_id)),
+  ].sort((a, b) => a - b);
   const minValid = Math.ceil(
     episodes.length * protocol.pilot_gate.min_valid_run_fraction,
   );

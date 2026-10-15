@@ -10,7 +10,10 @@ import {
   type ExperimentMethod,
 } from "../src/experiment/artifacts.ts";
 import { loadPilotManifest } from "../src/webarena/specs.ts";
-import { assertMainTaskSelection, loadStudyProtocol } from "../src/experiment/study.ts";
+import {
+  assertMainTaskSelection,
+  loadStudyProtocol,
+} from "../src/experiment/study.ts";
 import { readTasks } from "../src/webarena/io.ts";
 
 function option(name: string, fallback?: string) {
@@ -54,14 +57,22 @@ try {
     const pilot = loadPilotManifest();
     const pilotIds = pilot.tasks.map((task) => task.task_id);
 
-    if (stage === "poc" &&
-        (taskIds.length !== 1 || taskIds[0] !== protocol.scope.poc_task_id)) {
-      throw new Error("PoC artifacts must use only the pre-registered primary task");
+    if (
+      stage === "poc" &&
+      (taskIds.length !== 1 || taskIds[0] !== protocol.scope.poc_task_id)
+    ) {
+      throw new Error(
+        "PoC artifacts must use only the pre-registered primary task",
+      );
     }
-    if (stage === "pilot" &&
-        (taskIds.length !== pilotIds.length ||
-         taskIds.some((id) => !pilotIds.includes(id)))) {
-      throw new Error("Pilot artifacts must use the six registered Shopping tasks");
+    if (
+      stage === "pilot" &&
+      (taskIds.length !== pilotIds.length ||
+        taskIds.some((id) => !pilotIds.includes(id)))
+    ) {
+      throw new Error(
+        "Pilot artifacts must use the six registered Shopping tasks",
+      );
     }
     if (command === "init" && stage === "main") {
       assertMainTaskSelection(taskIds, pilotIds, protocol);
@@ -76,7 +87,9 @@ try {
       const catalog = readTasks(catalogPath);
       const knownShopping = new Set(
         catalog
-          .filter((task) => task.sites.length === 1 && task.sites[0] === "shopping")
+          .filter(
+            (task) => task.sites.length === 1 && task.sites[0] === "shopping",
+          )
           .map((task) => task.task_id),
       );
       const invalid = taskIds.filter((id) => !knownShopping.has(id));
@@ -85,7 +98,9 @@ try {
           `Main selection includes non-Shopping or unknown task IDs: ${invalid.join(", ")}`,
         );
       }
-      console.log("Main artifact scaffold only: task suitability, freeze and live runner are not automatically approved.");
+      console.log(
+        "Main artifact scaffold only: task suitability, freeze and live runner are not automatically approved.",
+      );
     }
 
     ensureArtifactLayout({

@@ -37,13 +37,13 @@ If any essential precondition fails, **MODIFY or REJECT** WebArena before expand
 
 Registered public task IDs (from v1.2.3), chosen by task text alone for diverse requirements and intent templates:
 
-| ID | Intended evidence-acquisition challenge | Site |
-| --- | --- | --- |
-| 279 | Sony Bluetooth models, full names and min/max prices | shopping |
-| 284 | shoe-storage capacity and minimum feasible price (PoC reuse) | shopping |
-| 323 | March 2022 canceled orders, retained item, shipping and refund | shopping |
-| 436 | identify and reorder a canceled historical mattress order | shopping |
-| 506 | highest-rated feasible product, budget and cart cleanup | shopping |
+| ID  | Intended evidence-acquisition challenge                           | Site     |
+| --- | ----------------------------------------------------------------- | -------- |
+| 279 | Sony Bluetooth models, full names and min/max prices              | shopping |
+| 284 | shoe-storage capacity and minimum feasible price (PoC reuse)      | shopping |
+| 323 | March 2022 canceled orders, retained item, shipping and refund    | shopping |
+| 436 | identify and reorder a canceled historical mattress order         | shopping |
+| 506 | highest-rated feasible product, budget and cart cleanup           | shopping |
 | 528 | recover prior order details, draft refund form without submitting | shopping |
 
 These are **pilot candidates, not presumed eligible**. Each must pass an independent, recorded, live-site suitability screen: official evaluator exists; ≥3 public requirements; evidence available through UI; ≥2 meaningful inspection choices; not trivial single click/copy; no hidden answer leakage; deterministic reset/replay; and matched observation/actions/budgets. Record eligibility in `reports/pilot/task-screening.csv`, before interpreting method results. Never remove a task because Proposed lost.

@@ -6,9 +6,7 @@
   "tasks": [
     {
       "task_id": 279,
-      "sites": [
-        "shopping"
-      ],
+      "sites": ["shopping"],
       "intent_template_id": 204,
       "public_intent": "Provide me with the full names of Bluetooth headphones from Sony, and also share the price range for the available models. Return an object with keys \"names\" (list of product names), \"min\" and \"max\" (as numbers, e.g., 10.99) only, without any additional details.",
       "rationale": "Public shopping retrieval task requiring a Sony + Bluetooth-headphone filter and cross-product name and price-range evidence; suitability awaits live UI review.",
@@ -17,48 +15,31 @@
           "id": "brand",
           "description": "Products are from Sony.",
           "required": true,
-          "hints": [
-            "sony",
-            "brand"
-          ]
+          "hints": ["sony", "brand"]
         },
         {
           "id": "type",
           "description": "Products are Bluetooth headphones.",
           "required": true,
-          "hints": [
-            "bluetooth",
-            "headphone",
-            "audio"
-          ]
+          "hints": ["bluetooth", "headphone", "audio"]
         },
         {
           "id": "available_names",
           "description": "Full names of all matching available models are collected.",
           "required": true,
-          "hints": [
-            "name",
-            "model",
-            "result"
-          ]
+          "hints": ["name", "model", "result"]
         },
         {
           "id": "price_range",
           "description": "Minimum and maximum prices are computed from the matching models.",
           "required": true,
-          "hints": [
-            "price",
-            "sort",
-            "$"
-          ]
+          "hints": ["price", "sort", "$"]
         }
       ]
     },
     {
       "task_id": 284,
-      "sites": [
-        "shopping"
-      ],
+      "sites": ["shopping"],
       "intent_template_id": 207,
       "public_intent": "View the product page for the least expensive shoe storage with a minimum storage capacity of 12 pairs.",
       "rationale": "Primary PoC: compare candidate shoe-storage products against a minimum capacity and lowest-price requirement; suitability awaits live UI review.",
@@ -67,38 +48,25 @@
           "id": "category",
           "description": "Selected item is shoe storage.",
           "required": true,
-          "hints": [
-            "shoe",
-            "storage"
-          ]
+          "hints": ["shoe", "storage"]
         },
         {
           "id": "capacity",
           "description": "Storage supports at least 12 pairs.",
           "required": true,
-          "hints": [
-            "12",
-            "pair",
-            "capacity"
-          ]
+          "hints": ["12", "pair", "capacity"]
         },
         {
           "id": "price_optimality",
           "description": "Selected feasible product is the least expensive.",
           "required": true,
-          "hints": [
-            "price",
-            "sort",
-            "$"
-          ]
+          "hints": ["price", "sort", "$"]
         }
       ]
     },
     {
       "task_id": 323,
-      "sites": [
-        "shopping"
-      ],
+      "sites": ["shopping"],
       "intent_template_id": 160,
       "public_intent": "How much refund should I expect from my orders canceled, if any, in March 2022? I only kept the AC-DC Adapter and the shop told me that I cannot get the shipping fee back.. Return the value as a number (e.g., 10.99) only, without any additional details.",
       "rationale": "Order-history retrieval and arithmetic with status, period, retained item and shipping exclusions; suitability awaits live UI review.",
@@ -107,59 +75,37 @@
           "id": "period",
           "description": "Relevant orders fall in March 2022.",
           "required": true,
-          "hints": [
-            "march",
-            "2022",
-            "date"
-          ]
+          "hints": ["march", "2022", "date"]
         },
         {
           "id": "cancellation",
           "description": "Relevant orders were canceled.",
           "required": true,
-          "hints": [
-            "cancel",
-            "status",
-            "order"
-          ]
+          "hints": ["cancel", "status", "order"]
         },
         {
           "id": "retained_item",
           "description": "The retained AC-DC Adapter is excluded from the refund.",
           "required": true,
-          "hints": [
-            "ac-dc",
-            "adapter",
-            "item"
-          ]
+          "hints": ["ac-dc", "adapter", "item"]
         },
         {
           "id": "shipping",
           "description": "Shipping costs are not refunded.",
           "required": true,
-          "hints": [
-            "shipping",
-            "fee",
-            "delivery"
-          ]
+          "hints": ["shipping", "fee", "delivery"]
         },
         {
           "id": "total",
           "description": "Refund amount is computed from all eligible components.",
           "required": true,
-          "hints": [
-            "refund",
-            "total",
-            "amount"
-          ]
+          "hints": ["refund", "total", "amount"]
         }
       ]
     },
     {
       "task_id": 436,
-      "sites": [
-        "shopping"
-      ],
+      "sites": ["shopping"],
       "intent_template_id": 156,
       "public_intent": "I previously ordered a mattress foundation around Feb or March 2023 and later cancelled. Can you reorder it for me?",
       "rationale": "Order-history mutation that requires identifying an earlier canceled mattress-foundation order within an approximate date range; suitability awaits live UI review.",
@@ -168,49 +114,31 @@
           "id": "product",
           "description": "Previous order contains a mattress foundation.",
           "required": true,
-          "hints": [
-            "mattress",
-            "foundation",
-            "product"
-          ]
+          "hints": ["mattress", "foundation", "product"]
         },
         {
           "id": "period",
           "description": "Relevant order is around February or March 2023.",
           "required": true,
-          "hints": [
-            "feb",
-            "mar",
-            "2023",
-            "date"
-          ]
+          "hints": ["feb", "mar", "2023", "date"]
         },
         {
           "id": "cancelled",
           "description": "Relevant previous order was canceled.",
           "required": true,
-          "hints": [
-            "cancel",
-            "status"
-          ]
+          "hints": ["cancel", "status"]
         },
         {
           "id": "reorder",
           "description": "Only the verified matching order is reordered.",
           "required": true,
-          "hints": [
-            "reorder",
-            "order",
-            "cart"
-          ]
+          "hints": ["reorder", "order", "cart"]
         }
       ]
     },
     {
       "task_id": 506,
-      "sites": [
-        "shopping"
-      ],
+      "sites": ["shopping"],
       "intent_template_id": 172,
       "public_intent": "Buy the highest rated product from the meat substitute category within a budget between 100 and 200. Discard any items in your cart if it is not empty.",
       "rationale": "Shopping mutation with rating optimization, bounded price, category selection and initial-cart cleanup; stress test for floor effect, not presumed feasible.",
@@ -219,61 +147,37 @@
           "id": "category",
           "description": "Candidate product belongs to the meat-substitute category.",
           "required": true,
-          "hints": [
-            "meat",
-            "substitute",
-            "category"
-          ]
+          "hints": ["meat", "substitute", "category"]
         },
         {
           "id": "budget",
           "description": "Candidate price falls between 100 and 200.",
           "required": true,
-          "hints": [
-            "100",
-            "200",
-            "price",
-            "$"
-          ]
+          "hints": ["100", "200", "price", "$"]
         },
         {
           "id": "rating",
           "description": "Product is highest rated among feasible candidates.",
           "required": true,
-          "hints": [
-            "rating",
-            "review",
-            "star",
-            "sort"
-          ]
+          "hints": ["rating", "review", "star", "sort"]
         },
         {
           "id": "cart",
           "description": "Existing cart items are removed if present.",
           "required": true,
-          "hints": [
-            "cart",
-            "remove",
-            "delete"
-          ]
+          "hints": ["cart", "remove", "delete"]
         },
         {
           "id": "purchase",
           "description": "The verified matching product is purchased.",
           "required": true,
-          "hints": [
-            "buy",
-            "checkout",
-            "purchase"
-          ]
+          "hints": ["buy", "checkout", "purchase"]
         }
       ]
     },
     {
       "task_id": 528,
-      "sites": [
-        "shopping"
-      ],
+      "sites": ["shopping"],
       "intent_template_id": 154,
       "public_intent": "Fill out the contact us form with this refund message for the phone screen protector bought March 2023: \"I need a refund. Order: <order_id>. Amount: <amount>. Reason: It broke after three days of use.\" Leave the filled form ready for review and do not submit it.",
       "rationale": "Cross-page retrieval of prior order metadata followed by a draft contact form that must not be submitted; suitability awaits live UI review.",
@@ -282,62 +186,37 @@
           "id": "product",
           "description": "The prior purchase is a phone screen protector.",
           "required": true,
-          "hints": [
-            "screen protector",
-            "phone",
-            "order"
-          ]
+          "hints": ["screen protector", "phone", "order"]
         },
         {
           "id": "period",
           "description": "Purchase occurred in March 2023.",
           "required": true,
-          "hints": [
-            "march",
-            "2023",
-            "date"
-          ]
+          "hints": ["march", "2023", "date"]
         },
         {
           "id": "order_id",
           "description": "Form contains the matching historical order number.",
           "required": true,
-          "hints": [
-            "order",
-            "number",
-            "id"
-          ]
+          "hints": ["order", "number", "id"]
         },
         {
           "id": "amount",
           "description": "Form contains the matching historical purchase amount.",
           "required": true,
-          "hints": [
-            "amount",
-            "total",
-            "price"
-          ]
+          "hints": ["amount", "total", "price"]
         },
         {
           "id": "draft_message",
           "description": "Contact form uses the requested refund-message text.",
           "required": true,
-          "hints": [
-            "contact",
-            "refund",
-            "message",
-            "form"
-          ]
+          "hints": ["contact", "refund", "message", "form"]
         },
         {
           "id": "not_submitted",
           "description": "Form remains a draft and is not submitted.",
           "required": true,
-          "hints": [
-            "submit",
-            "review",
-            "form"
-          ]
+          "hints": ["submit", "review", "form"]
         }
       ]
     }

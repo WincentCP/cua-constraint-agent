@@ -76,8 +76,11 @@ export function verifyPublicPilotTask(
   task: WebArenaTask,
   manifest = loadPilotManifest(),
 ) {
-  const spec = manifest.tasks.find((candidate) => candidate.task_id === task.task_id);
-  if (!spec) throw new Error(`Task ${task.task_id} is not in the pilot manifest`);
+  const spec = manifest.tasks.find(
+    (candidate) => candidate.task_id === task.task_id,
+  );
+  if (!spec)
+    throw new Error(`Task ${task.task_id} is not in the pilot manifest`);
   if (
     task.sites.length !== 1 ||
     task.sites[0] !== "shopping" ||

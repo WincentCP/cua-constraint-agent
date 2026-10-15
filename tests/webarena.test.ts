@@ -14,7 +14,10 @@ import {
   assertMainTaskSelection,
 } from "../src/experiment/study.ts";
 import { webArenaInvocation } from "../src/webarena/official-cli.ts";
-import { extractControls, probesFromControls } from "../src/browser/accessibility.ts";
+import {
+  extractControls,
+  probesFromControls,
+} from "../src/browser/accessibility.ts";
 
 const pilotIds = [279, 284, 323, 436, 506, 528];
 
@@ -25,12 +28,20 @@ test("the six development tasks are Shopping-only and have distinct templates", 
   assert.equal(manifest.source_dataset_tag, "v1.2.3");
   assert.equal(manifest.status, "PILOT_ONLY");
   assert.equal(manifest.primary_poc_task, 284);
-  assert.deepEqual(manifest.tasks.map((task) => task.task_id), pilotIds);
-  assert.equal(new Set(manifest.tasks.map((task) => task.intent_template_id)).size, 6);
+  assert.deepEqual(
+    manifest.tasks.map((task) => task.task_id),
+    pilotIds,
+  );
+  assert.equal(
+    new Set(manifest.tasks.map((task) => task.intent_template_id)).size,
+    6,
+  );
   for (const task of manifest.tasks) {
     assert.deepEqual(task.sites, ["shopping"]);
     assert(task.public_intent.length > 25);
-    assert(task.constraints.length >= protocol.suitability.min_required_constraints);
+    assert(
+      task.constraints.length >= protocol.suitability.min_required_constraints,
+    );
     assert(task.constraints.every((constraint) => constraint.required));
   }
 });
@@ -46,15 +57,23 @@ test("task verification rejects altered intents and cross-site substitution", ()
     intent: spec.public_intent,
   });
   assert.equal(verifyPublicPilotTask(task).task_id, 284);
-  assert.throws(() => verifyPublicPilotTask({ ...task, intent: "changed" }), /re-audit/);
-  assert.throws(() => verifyPublicPilotTask({ ...task, sites: ["gitlab"] }), /re-audit/);
+  assert.throws(
+    () => verifyPublicPilotTask({ ...task, intent: "changed" }),
+    /re-audit/,
+  );
+  assert.throws(
+    () => verifyPublicPilotTask({ ...task, sites: ["gitlab"] }),
+    /re-audit/,
+  );
   assert.throws(() =>
     WebArenaTaskSchema.parse({ ...task, hidden_answer: "leak" }),
   );
 });
 
 test("four Q4_K_M local models and two methods are explicit", () => {
-  const models = JSON.parse(readFileSync("config/models.json", "utf8")) as Array<{
+  const models = JSON.parse(
+    readFileSync("config/models.json", "utf8"),
+  ) as Array<{
     label: string;
     name: string;
   }>;
@@ -70,8 +89,14 @@ test("four Q4_K_M local models and two methods are explicit", () => {
 test("main requires exactly 32 tasks, none reused from development", () => {
   const nonPilot = Array.from({ length: 32 }, (_, i) => i + 600);
   assert.doesNotThrow(() => assertMainTaskSelection(nonPilot, pilotIds));
-  assert.throws(() => assertMainTaskSelection(nonPilot.slice(0, 31), pilotIds), /32/);
-  assert.throws(() => assertMainTaskSelection([...nonPilot.slice(0, 31), 284], pilotIds), /overlap/);
+  assert.throws(
+    () => assertMainTaskSelection(nonPilot.slice(0, 31), pilotIds),
+    /32/,
+  );
+  assert.throws(
+    () => assertMainTaskSelection([...nonPilot.slice(0, 31), 284], pilotIds),
+    /overlap/,
+  );
 });
 
 test("official response remains structurally strict", () => {
@@ -89,7 +114,9 @@ test("Accessibility Tree mapping is diagnostic and not ground truth", () => {
     '- main:\n  - textbox "Search"\n  - link "Shoe storage 12 pairs":\n    - /url: /shoe-storage\n  - button "Sort by price"';
   const controls = extractControls(snapshot);
   assert.equal(controls.length, 3);
-  const constraints = loadPilotManifest().tasks.find((t) => t.task_id === 284)!.constraints;
+  const constraints = loadPilotManifest().tasks.find(
+    (t) => t.task_id === 284,
+  )!.constraints;
   const probes = probesFromControls(controls, constraints);
   assert(probes.some((probe) => probe.may_answer.includes("category")));
   assert(probes.some((probe) => probe.may_answer.includes("capacity")));

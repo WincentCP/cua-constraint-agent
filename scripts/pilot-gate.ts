@@ -5,19 +5,27 @@ import { writeJson } from "../src/webarena/io.ts";
 
 function option(name: string, fallback: string) {
   const index = process.argv.indexOf(`--${name}`);
-  return index >= 0 ? process.argv[index + 1] ?? fallback : fallback;
+  return index >= 0 ? (process.argv[index + 1] ?? fallback) : fallback;
 }
 
 try {
-  const models = JSON.parse(readFileSync("config/models.json", "utf8")) as
-    Array<{ label: string; name: string }>;
+  const models = JSON.parse(
+    readFileSync("config/models.json", "utf8"),
+  ) as Array<{ label: string; name: string }>;
   const outputRoot = resolve(option("output", "output/pilot"));
   const reportsRoot = resolve(option("reports", "reports/pilot"));
   mkdirSync(reportsRoot, { recursive: true });
   const report = evaluatePilotGate(outputRoot, models);
   writeJson(join(reportsRoot, "pilot-gate.json"), report);
 
-  const columns = ["task_id", "model", "method", "technical_valid", "official_success", "reason"];
+  const columns = [
+    "task_id",
+    "model",
+    "method",
+    "technical_valid",
+    "official_success",
+    "reason",
+  ];
   const rows = report.episodes.map((episode) =>
     [
       episode.task_id,
@@ -45,7 +53,9 @@ try {
     `Models with zero official success: ${report.models_with_zero_success.join(", ") || "none"}`,
     "",
     "## Operational checks",
-    ...Object.entries(report.checks).map(([name, passed]) => `- ${name}: ${passed ? "PASS" : "FAIL"}`),
+    ...Object.entries(report.checks).map(
+      ([name, passed]) => `- ${name}: ${passed ? "PASS" : "FAIL"}`,
+    ),
     "",
     `**Limitation:** ${report.disclaimer}`,
     "",
@@ -53,7 +63,9 @@ try {
     "",
   ].join("\n");
   writeFileSync(join(reportsRoot, "pilot-gate.md"), markdown, "utf8");
-  console.log(`Pilot gate: ${report.status} (${report.completed_valid}/${report.expected} technically valid; ${report.official_successes} official successes)`);
+  console.log(
+    `Pilot gate: ${report.status} (${report.completed_valid}/${report.expected} technically valid; ${report.official_successes} official successes)`,
+  );
   console.log(`Report: ${join(reportsRoot, "pilot-gate.md")}`);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);

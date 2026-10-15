@@ -95,7 +95,10 @@ export function factorialTaskArtifactDir(
   method: ExperimentMethod,
   taskId: number,
 ) {
-  return taskArtifactDir(factorialRunRoot(outputRoot, modelLabel, method), taskId);
+  return taskArtifactDir(
+    factorialRunRoot(outputRoot, modelLabel, method),
+    taskId,
+  );
 }
 
 function readManifest(path: string): StageManifest | null {
@@ -186,14 +189,25 @@ export function ensureArtifactLayout(options: ArtifactLayoutOptions) {
     const screening = join(reportRoot, "task-screening.csv");
     if (!existsSync(screening)) {
       const columns = [
-        "task_id", "public_requirements", "public_ui_evidence",
-        "at_least_two_choices", "repeatable_reset", "shared_actions_budgets",
-        "official_evaluator", "no_hidden_answer_leak", "decision", "notes",
+        "task_id",
+        "public_requirements",
+        "public_ui_evidence",
+        "at_least_two_choices",
+        "repeatable_reset",
+        "shared_actions_budgets",
+        "official_evaluator",
+        "no_hidden_answer_leak",
+        "decision",
+        "notes",
       ];
       const rows = mergedTaskIds.map((taskId) =>
         [String(taskId), "", "", "", "", "", "", "", "PENDING", ""].join(","),
       );
-      writeFileSync(screening, [columns.join(","), ...rows].join("\n") + "\n", "utf8");
+      writeFileSync(
+        screening,
+        [columns.join(","), ...rows].join("\n") + "\n",
+        "utf8",
+      );
     }
   }
 

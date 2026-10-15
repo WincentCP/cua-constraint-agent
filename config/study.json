@@ -11,10 +11,7 @@
     "pilot_task_count": 6,
     "main_task_count": 32,
     "model_count": 4,
-    "methods": [
-      "Baseline",
-      "Proposed"
-    ]
+    "methods": ["Baseline", "Proposed"]
   },
   "suitability": {
     "min_required_constraints": 3,

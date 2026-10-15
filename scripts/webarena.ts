@@ -1,4 +1,11 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 import { chromium } from "playwright";
 import { probesFromControls } from "../src/browser/accessibility.ts";
@@ -16,13 +23,21 @@ import {
   authHeadersForTask,
   taskAllowedOrigins,
 } from "../src/webarena/auth.ts";
-import { readConfig, readTask, readTasks, writeJson } from "../src/webarena/io.ts";
+import {
+  readConfig,
+  readTask,
+  readTasks,
+  writeJson,
+} from "../src/webarena/io.ts";
 import {
   requireSuccess,
   runCommand,
   webArenaVerified,
 } from "../src/webarena/official-cli.ts";
-import { loadPilotManifest, verifyPublicPilotTask } from "../src/webarena/specs.ts";
+import {
+  loadPilotManifest,
+  verifyPublicPilotTask,
+} from "../src/webarena/specs.ts";
 import { loadStudyProtocol } from "../src/experiment/study.ts";
 
 function option(name: string, fallback?: string) {
@@ -119,7 +134,10 @@ async function doctor() {
   const checks = [
     ["Node", runCommand(process.execPath, ["--version"])],
     ["Docker", runCommand("docker", ["--version"])],
-    ["Docker daemon", runCommand("docker", ["info", "--format", "{{.OSType}}"])],
+    [
+      "Docker daemon",
+      runCommand("docker", ["info", "--format", "{{.OSType}}"]),
+    ],
     ["uvx", runCommand("uvx", ["--version"])],
     ["Ollama (later stage)", runCommand("ollama", ["--version"])],
   ] as const;
@@ -173,32 +191,65 @@ function validate() {
   if (manifest.tasks.some((task) => task.sites.join(",") !== "shopping")) {
     throw new Error("Pilot scope is Shopping-only");
   }
-  const expectedPilotRuns = manifest.tasks.length * models.length * protocol.scope.methods.length;
-  const expectedMainRuns = protocol.scope.main_task_count * models.length * protocol.scope.methods.length;
+  const expectedPilotRuns =
+    manifest.tasks.length * models.length * protocol.scope.methods.length;
+  const expectedMainRuns =
+    protocol.scope.main_task_count *
+    models.length *
+    protocol.scope.methods.length;
   console.log(`PoC task: ${manifest.primary_poc_task} (Shopping)`);
-  console.log(`Pilot task IDs: ${manifest.tasks.map((task) => task.task_id).join(", ")} (Shopping only)`);
-  console.log(`Model candidates: ${models.map((model) => model.label).join(", ")}`);
-  console.log(`Benchmark CLI pinned: ${protocol.benchmark.name} ${protocol.benchmark.pypi_version}`);
-  console.log(`Design: ${expectedPilotRuns} pilot runs; ${expectedMainRuns} main runs (32 distinct held-out tasks)`);
-  console.log("Pilot task suitability and model competence still require live validation.");
+  console.log(
+    `Pilot task IDs: ${manifest.tasks.map((task) => task.task_id).join(", ")} (Shopping only)`,
+  );
+  console.log(
+    `Model candidates: ${models.map((model) => model.label).join(", ")}`,
+  );
+  console.log(
+    `Benchmark CLI pinned: ${protocol.benchmark.name} ${protocol.benchmark.pypi_version}`,
+  );
+  console.log(
+    `Design: ${expectedPilotRuns} pilot runs; ${expectedMainRuns} main runs (32 distinct held-out tasks)`,
+  );
+  console.log(
+    "Pilot task suitability and model competence still require live validation.",
+  );
 }
 
 function catalog() {
   const config = configPath();
   if (!existsSync(config)) throw new Error(`Missing ${config}`);
-  const catalogPath = resolve(option("catalog", "output/catalog/shopping-tasks.json")!);
+  const catalogPath = resolve(
+    option("catalog", "output/catalog/shopping-tasks.json")!,
+  );
   if (existsSync(catalogPath) && !force()) {
-    throw new Error(`Catalog already exists: ${catalogPath}; use --force to refresh`);
+    throw new Error(
+      `Catalog already exists: ${catalogPath}; use --force to refresh`,
+    );
   }
   mkdirSync(resolve(catalogPath, ".."), { recursive: true });
   const temporary = `${catalogPath}.tmp-${process.pid}.json`;
   try {
-    requireSuccess(webArenaVerified([
-      "agent-input-get", "--sites", "shopping", "--config", config, "--output", temporary,
-    ]));
+    requireSuccess(
+      webArenaVerified([
+        "agent-input-get",
+        "--sites",
+        "shopping",
+        "--config",
+        config,
+        "--output",
+        temporary,
+      ]),
+    );
     const tasks = readTasks(temporary);
-    if (!tasks.length || tasks.some((task) => task.sites.length !== 1 || task.sites[0] !== "shopping")) {
-      throw new Error("Official task catalog did not return Shopping-only public inputs");
+    if (
+      !tasks.length ||
+      tasks.some(
+        (task) => task.sites.length !== 1 || task.sites[0] !== "shopping",
+      )
+    ) {
+      throw new Error(
+        "Official task catalog did not return Shopping-only public inputs",
+      );
     }
     if (force()) rmSync(catalogPath, { force: true });
     renameSync(temporary, catalogPath);
@@ -211,14 +262,22 @@ function catalog() {
       [
         "task_id,intent_template_id,site,public_intent,screening_status",
         ...tasks.map((task) =>
-          [task.task_id, task.intent_template_id, task.sites.join("+"), task.intent, "UNREVIEWED"]
+          [
+            task.task_id,
+            task.intent_template_id,
+            task.sites.join("+"),
+            task.intent,
+            "UNREVIEWED",
+          ]
             .map(cell)
             .join(","),
         ),
       ].join("\n") + "\n",
       "utf8",
     );
-    console.log(`Shopping public task catalog: ${tasks.length} tasks -> ${catalogPath}`);
+    console.log(
+      `Shopping public task catalog: ${tasks.length} tasks -> ${catalogPath}`,
+    );
     console.log(`Screening index (not eligibility proof): ${reportPath}`);
   } finally {
     rmSync(temporary, { force: true });
@@ -239,15 +298,22 @@ function prepare() {
   }
   const tasks = taskInputPath(id);
   if (existsSync(tasks) && !force()) {
-    throw new Error(`Public task input already exists: ${tasks}; use --force only for an intentional repeat`);
+    throw new Error(
+      `Public task input already exists: ${tasks}; use --force only for an intentional repeat`,
+    );
   }
   mkdirSync(resolve(tasks, ".."), { recursive: true });
   const temporary = `${tasks}.tmp-${process.pid}.json`;
   try {
     const result = requireSuccess(
       webArenaVerified([
-        "agent-input-get", "--task-ids", String(id),
-        "--config", config, "--output", temporary,
+        "agent-input-get",
+        "--task-ids",
+        String(id),
+        "--config",
+        config,
+        "--output",
+        temporary,
       ]),
     );
     const exported = readTasks(temporary);
@@ -288,7 +354,9 @@ async function inspect() {
   const reportPath = join(taskDir, "inspection.json");
   const harPath = join(taskDir, "inspection.har");
   if (!force() && (existsSync(reportPath) || existsSync(harPath))) {
-    throw new Error(`Inspection artifacts already exist in ${taskDir}; use --force to repeat deliberately`);
+    throw new Error(
+      `Inspection artifacts already exist in ${taskDir}; use --force to repeat deliberately`,
+    );
   }
   if (force()) {
     rmSync(reportPath, { force: true });
@@ -357,7 +425,9 @@ async function inspect() {
   writeJson(reportPath, report);
   refreshCurrentReport(stage);
   console.log(`Inspection written to ${reportPath}`);
-  console.log(`Inspection HAR written to ${harPath} (not an agent network.har)`);
+  console.log(
+    `Inspection HAR written to ${harPath} (not an agent network.har)`,
+  );
 }
 
 function evaluate() {

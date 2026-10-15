@@ -44,10 +44,10 @@ export type StudyProtocol = z.infer<typeof StudySchema>;
 export function loadStudyProtocol(
   path = new URL("../../config/study.json", import.meta.url),
 ): StudyProtocol {
-  const protocol = StudySchema.parse(
-    JSON.parse(readFileSync(path, "utf8")),
-  );
-  if (protocol.benchmark.dataset_tag !== `v${protocol.benchmark.pypi_version}`) {
+  const protocol = StudySchema.parse(JSON.parse(readFileSync(path, "utf8")));
+  if (
+    protocol.benchmark.dataset_tag !== `v${protocol.benchmark.pypi_version}`
+  ) {
     throw new Error("Dataset tag and pinned CLI version disagree");
   }
   return protocol;
@@ -69,6 +69,8 @@ export function assertMainTaskSelection(
   }
   const excluded = taskIds.filter((id) => pilotIds.includes(id));
   if (excluded.length) {
-    throw new Error(`Main tasks overlap the development/pilot set: ${excluded.join(", ")}`);
+    throw new Error(
+      `Main tasks overlap the development/pilot set: ${excluded.join(", ")}`,
+    );
   }
 }

@@ -13,15 +13,36 @@ const models = [
   { label: "xlam2-8b" },
 ];
 
-function makeEpisode(root: string, taskId: number, model: string, method: string, pass: boolean) {
+function makeEpisode(
+  root: string,
+  taskId: number,
+  model: string,
+  method: string,
+  pass: boolean,
+) {
   const dir = join(root, "runs", model, method.toLowerCase(), String(taskId));
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "agent_response.json"),
-    JSON.stringify({ task_type: "NAVIGATE", status: "SUCCESS", retrieved_data: null, error_details: null }));
-  writeFileSync(join(dir, "network.har"), JSON.stringify({ log: { entries: [] } }));
-  writeFileSync(join(dir, "eval_result.json"), JSON.stringify({
-    task_id: taskId, status: pass ? "success" : "failure", score: pass ? 1 : 0
-  }));
+  writeFileSync(
+    join(dir, "agent_response.json"),
+    JSON.stringify({
+      task_type: "NAVIGATE",
+      status: "SUCCESS",
+      retrieved_data: null,
+      error_details: null,
+    }),
+  );
+  writeFileSync(
+    join(dir, "network.har"),
+    JSON.stringify({ log: { entries: [] } }),
+  );
+  writeFileSync(
+    join(dir, "eval_result.json"),
+    JSON.stringify({
+      task_id: taskId,
+      status: pass ? "success" : "failure",
+      score: pass ? 1 : 0,
+    }),
+  );
 }
 
 test("pilot gate stays FAIL with no results; no invented successes", () => {
@@ -31,7 +52,9 @@ test("pilot gate stays FAIL with no results; no invented successes", () => {
     assert.equal(report.expected, 48);
     assert.equal(report.completed_valid, 0);
     assert.equal(report.status, "FAIL");
-  } finally { rmSync(dir, {recursive:true, force:true}); }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("official task failure is valid, evaluator errors are invalid", () => {
@@ -41,7 +64,8 @@ test("official task failure is valid, evaluator errors are invalid", () => {
     for (const task of loadPilotManifest().tasks) {
       for (const model of models) {
         for (const method of ["Baseline", "Proposed"]) {
-          const pass = (task.task_id === 279 || task.task_id === 284) &&
+          const pass =
+            (task.task_id === 279 || task.task_id === 284) &&
             (model.label === "qwen3.5-9b" || model.label === "ministral3-8b") &&
             passCount < 10;
           if (pass) passCount++;
@@ -54,19 +78,25 @@ test("official task failure is valid, evaluator errors are invalid", () => {
     assert.equal(pass.status, "FAIL"); // 8 successful runs, below 10
     assert.equal(pass.official_successes, 8);
     const dirForFirst = join(dir, "runs", "qwen3.5-9b", "baseline", "279");
-    writeFileSync(join(dirForFirst, "eval_result.json"),
-      JSON.stringify({ task_id: 279, status:"error", score:0 }));
+    writeFileSync(
+      join(dirForFirst, "eval_result.json"),
+      JSON.stringify({ task_id: 279, status: "error", score: 0 }),
+    );
     const error = evaluatePilotGate(dir, models);
     assert.equal(error.completed_valid, 47);
     assert.equal(error.invalid_or_missing, 1);
-    assert(error.episodes.some((episode) => episode.reason === "EVALUATOR_ERROR"));
-  } finally { rmSync(dir, {recursive:true, force:true}); }
+    assert(
+      error.episodes.some((episode) => episode.reason === "EVALUATOR_ERROR"),
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("pilot gate passes when preregistered operational checks pass", () => {
   const dir = mkdtempSync(join(tmpdir(), "cua-gate-pass-"));
   try {
-    let count=0;
+    let count = 0;
     for (const task of loadPilotManifest().tasks) {
       for (const model of models) {
         for (const method of ["Baseline", "Proposed"]) {
@@ -75,9 +105,11 @@ test("pilot gate passes when preregistered operational checks pass", () => {
         }
       }
     }
-    const result=evaluatePilotGate(dir,models);
-    assert.equal(result.completed_valid,48);
-    assert.equal(result.official_successes,12);
-    assert.equal(result.status,"PROVISIONAL_PASS");
-  } finally { rmSync(dir, {recursive:true, force:true}); }
+    const result = evaluatePilotGate(dir, models);
+    assert.equal(result.completed_valid, 48);
+    assert.equal(result.official_successes, 12);
+    assert.equal(result.status, "PROVISIONAL_PASS");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
