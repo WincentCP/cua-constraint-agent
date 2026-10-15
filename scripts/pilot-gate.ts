@@ -67,6 +67,9 @@ try {
     `Pilot gate: ${report.status} (${report.completed_valid}/${report.expected} technically valid; ${report.official_successes} official successes)`,
   );
   console.log(`Report: ${join(reportsRoot, "pilot-gate.md")}`);
+  if (report.status !== "PROVISIONAL_PASS") {
+    process.exitCode = 2;
+  }
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;

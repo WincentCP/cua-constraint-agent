@@ -35,8 +35,6 @@ npm.cmd test
 npm.cmd run test:integration
 ```
 
-`webareana:doctor` is NOT a command: the correct prefix is `webarena:`.
-
 ## 2. Run only Shopping (version pinned)
 
 ```powershell

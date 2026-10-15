@@ -24,6 +24,14 @@ jobs:
       - run: npm run artifacts:init -- --stage poc
       - run: npm run artifacts:init -- --stage pilot
       - run: npm run artifacts:report -- --stage pilot
+      - name: Fail closed when pilot has zero evaluated runs
+        shell: bash
+        run: |
+          if npm run pilot:gate; then
+            echo "pilot:gate unexpectedly passed with no runs"
+            exit 1
+          fi
+          node --input-type=module -e 'import fs from "node:fs"; const j=JSON.parse(fs.readFileSync("reports/pilot/pilot-gate.json","utf8")); if(j.status!=="FAIL" || j.completed_valid!==0) process.exit(1);'
       - uses: astral-sh/setup-uv@v6
       - name: Official public Shopping input smoke (no live Docker)
         run: |
