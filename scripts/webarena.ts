@@ -13,6 +13,7 @@ import { openInspectionSession } from "../src/browser/session.ts";
 import {
   defaultOutputRoot,
   defaultReportRoot,
+  factorialTaskArtifactDir,
   ensureArtifactLayout,
   parseExperimentStage,
   refreshArtifactReport,
@@ -35,8 +36,11 @@ import {
   webArenaVerified,
 } from "../src/webarena/official-cli.ts";
 import {
+  developmentManifest,
+  loadMainCandidateManifest,
   loadPilotManifest,
-  verifyPublicPilotTask,
+  loadPocManifest,
+  verifyPublicStageTask,
 } from "../src/webarena/specs.ts";
 import { loadStudyProtocol } from "../src/experiment/study.ts";
 
@@ -106,18 +110,9 @@ function refreshCurrentReport(stage: "poc" | "pilot") {
 }
 
 function assertStageTask(stage: "poc" | "pilot", id: number) {
-  const manifest = loadPilotManifest();
-  if (stage === "poc" && id !== manifest.primary_poc_task) {
+  if (!developmentManifest(stage).tasks.some((task) => task.task_id === id)) {
     throw new Error(
-      `PoC is fixed to task ${manifest.primary_poc_task}; received task ${id}`,
-    );
-  }
-  if (
-    stage === "pilot" &&
-    !manifest.tasks.some((task) => task.task_id === id)
-  ) {
-    throw new Error(
-      `Task ${id} is not pre-registered in config/pilot-tasks.json`,
+      `Task ${id} is not registered for ${stage}; see config/${stage}-tasks.json`,
     );
   }
 }
@@ -170,7 +165,9 @@ async function doctor() {
 }
 
 function validate() {
+  const poc = loadPocManifest();
   const manifest = loadPilotManifest();
+  const main = loadMainCandidateManifest();
   const protocol = loadStudyProtocol();
   const models = JSON.parse(
     readFileSync("config/models.json", "utf8"),
@@ -197,9 +194,14 @@ function validate() {
     protocol.scope.main_task_count *
     models.length *
     protocol.scope.methods.length;
-  console.log(`PoC task: ${manifest.primary_poc_task} (Shopping)`);
+  console.log(
+    `PoC task IDs: ${poc.tasks.map((task) => task.task_id).join(", ")} (Shopping; development only)`,
+  );
   console.log(
     `Pilot task IDs: ${manifest.tasks.map((task) => task.task_id).join(", ")} (Shopping only)`,
+  );
+  console.log(
+    `Main candidate IDs: ${main.tasks.map((task) => task.task_id).join(", ")} (32 UNREVIEWED)`,
   );
   console.log(
     `Model candidates: ${models.map((model) => model.label).join(", ")}`,
@@ -320,7 +322,7 @@ function prepare() {
     if (exported.length !== 1 || exported[0].task_id !== id) {
       throw new Error("Official CLI returned unexpected public task input");
     }
-    verifyPublicPilotTask(exported[0]);
+    verifyPublicStageTask(exported[0], stage);
     if (force()) rmSync(tasks, { force: true });
     renameSync(temporary, tasks);
     if (result.stdout.trim()) console.log(result.stdout.trim());
@@ -346,8 +348,7 @@ async function inspect() {
 
   const task = readTask(tasks, id);
   const localConfig = readConfig(config);
-  const manifest = loadPilotManifest();
-  const spec = verifyPublicPilotTask(task, manifest);
+  const spec = verifyPublicStageTask(task, stage);
 
   const taskDir = taskArtifactDir(outputRoot(), id);
   const accessibilityDir = join(taskDir, "accessibility");
@@ -362,6 +363,7 @@ async function inspect() {
     rmSync(reportPath, { force: true });
     rmSync(harPath, { force: true });
     rmSync(accessibilityDir, { recursive: true, force: true });
+    rmSync(join(taskDir, "screenshots"), { recursive: true, force: true });
   }
   mkdirSync(accessibilityDir, { recursive: true });
   const session = await openInspectionSession({
@@ -443,35 +445,45 @@ function evaluate() {
   const id = taskId();
   const stage = currentStage();
   assertStageTask(stage, id);
-  ensureCurrentLayout(stage, [id]);
-
-  const config = configPath();
+  const label = option("model-label");
+  const method = option("method");
+  if (!label || (method !== "Baseline" && method !== "Proposed")) {
+    throw new Error("Official evaluation requires --model-label and --method Baseline|Proposed");
+  }
+  const models = JSON.parse(readFileSync("config/models.json", "utf8")) as Array<{label:string}>;
+  if (!models.some((model) => model.label === label)) {
+    throw new Error("Unknown model label: " + label);
+  }
   const output = outputRoot();
-  const taskDir = taskArtifactDir(output, id);
-  for (const required of ["agent_response.json", "network.har"]) {
-    if (!existsSync(join(taskDir, required))) {
-      throw new Error(
-        `Missing ${join(
-          taskDir,
-          required,
-        )}; official evaluation requires both files.`,
-      );
+  const runDir = factorialTaskArtifactDir(output, label, method, id);
+  for (const required of ["run_metadata.json", "agent_response.json", "network.har"]) {
+    if (!existsSync(join(runDir, required))) {
+      throw new Error("Missing agent-run artifact: " + join(runDir, required));
     }
   }
-  const result = requireSuccess(
-    webArenaVerified([
-      "eval-tasks",
-      "--config",
-      config,
-      "--task-ids",
-      String(id),
-      "--output-dir",
-      output,
-    ]),
-  );
+  const metadata = JSON.parse(readFileSync(join(runDir, "run_metadata.json"), "utf8")) as {
+    stage: string; task_id: number; model_label: string; method: string; execution_state: string;
+  };
+  if (metadata.stage !== stage || metadata.task_id !== id ||
+      metadata.model_label !== label || metadata.method !== method ||
+      metadata.execution_state !== "COMPLETED") {
+    throw new Error("Refusing evaluation: run metadata does not match requested cell");
+  }
+  if (existsSync(join(runDir, "eval_result.json")) && !force()) {
+    throw new Error("Official evaluation already exists; preserve evidence or explicitly use --force");
+  }
+  const result = requireSuccess(webArenaVerified([
+    "eval-tasks",
+    "--config",
+    configPath(),
+    "--task-ids",
+    String(id),
+    "--output-dir",
+    join(output, "runs", label, method.toLowerCase()),
+  ]));
   refreshCurrentReport(stage);
   console.log(result.stdout.trim());
-  console.log(`Official evaluation completed for task ${id}`);
+  console.log("Official evaluation output: " + join(runDir, "eval_result.json"));
 }
 
 const command = process.argv[2] ?? "help";
@@ -488,9 +500,9 @@ try {
         "  npm run webarena:doctor\n" +
         "  npm run webarena:validate\n" +
         "  npm run webarena:catalog\n" +
-        "  npm run webarena:prepare -- --task 284 [--stage poc|pilot] [--force]\n" +
-        "  npm run webarena:inspect -- --task 284 [--stage poc|pilot] [--force]\n" +
-        "  npm run webarena:evaluate -- --task 284 [--stage poc|pilot]",
+        "  npm run webarena:prepare -- --task 279|284|528 --stage poc [--force]\n" +
+        "  npm run webarena:inspect -- --task 279|284|528 --stage poc [--force]\n" +
+        "  npm run webarena:evaluate -- --task 284 --stage poc --model-label qwen3.5-9b --method Baseline",
     );
   }
 } catch (error) {

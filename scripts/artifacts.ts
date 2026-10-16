@@ -9,7 +9,14 @@ import {
   refreshArtifactReport,
   type ExperimentMethod,
 } from "../src/experiment/artifacts.ts";
-import { loadPilotManifest } from "../src/webarena/specs.ts";
+import {
+  loadPocManifest,
+  loadPilotManifest,
+  loadMainCandidateManifest,
+  verifyPublicMainCandidate,
+} from "../src/webarena/specs.ts";
+import { requireMainFreeze } from "../src/experiment/main-freeze.ts";
+import { join } from "node:path";
 import {
   assertMainTaskSelection,
   loadStudyProtocol,
@@ -31,10 +38,9 @@ function parseTaskIds(value?: string) {
 }
 
 function defaultTaskIds(stage: "poc" | "pilot" | "main") {
-  const manifest = loadPilotManifest();
-  if (stage === "poc") return [manifest.primary_poc_task];
-  if (stage === "pilot") return manifest.tasks.map((task) => task.task_id);
-  return [];
+  if (stage === "poc") return loadPocManifest().tasks.map((task) => task.task_id);
+  if (stage === "pilot") return loadPilotManifest().tasks.map((task) => task.task_id);
+  return loadMainCandidateManifest().tasks.map((task) => task.task_id);
 }
 
 const command = process.argv[2] ?? "help";
@@ -54,15 +60,16 @@ try {
     );
 
     const protocol = loadStudyProtocol();
+    const pocIds = loadPocManifest().tasks.map((task) => task.task_id);
     const pilot = loadPilotManifest();
     const pilotIds = pilot.tasks.map((task) => task.task_id);
 
     if (
       stage === "poc" &&
-      (taskIds.length !== 1 || taskIds[0] !== protocol.scope.poc_task_id)
+      (taskIds.length !== pocIds.length || taskIds.some((id) => !pocIds.includes(id)))
     ) {
       throw new Error(
-        "PoC artifacts must use only the pre-registered primary task",
+        "PoC artifacts require exactly three registered development tasks",
       );
     }
     if (
@@ -74,24 +81,26 @@ try {
         "Pilot artifacts must use the six registered Shopping tasks",
       );
     }
-    if (stage === "pilot") {
+    if (stage === "poc" || stage === "pilot") {
+      const currentIds = stage === "poc" ? pocIds : pilotIds;
       const existingManifestPath = resolve(outputRoot, "stage-manifest.json");
       if (existsSync(existingManifestPath)) {
         const previous = JSON.parse(
           readFileSync(existingManifestPath, "utf8"),
         ) as { task_ids?: number[] };
         const retired = (previous.task_ids ?? []).filter(
-          (id) => !pilotIds.includes(id),
+          (id) => !currentIds.includes(id),
         );
         if (retired.length) {
           throw new Error(
-            `Existing pilot output contains retired tasks: ${retired.join(", ")}. Archive it instead of mixing protocols.`,
+            `Existing ${stage} output contains retired tasks: ${retired.join(", ")}. Archive it instead of mixing protocols.`,
           );
         }
       }
     }
     if (command === "init" && stage === "main") {
       assertMainTaskSelection(taskIds, pilotIds, protocol);
+      requireMainFreeze(join(outputRoot, "research-freeze.json"), taskIds);
       const catalogPath = resolve(
         option("catalog", "output/catalog/shopping-tasks.json")!,
       );
@@ -101,21 +110,13 @@ try {
         );
       }
       const catalog = readTasks(catalogPath);
-      const knownShopping = new Set(
-        catalog
-          .filter(
-            (task) => task.sites.length === 1 && task.sites[0] === "shopping",
-          )
-          .map((task) => task.task_id),
-      );
-      const invalid = taskIds.filter((id) => !knownShopping.has(id));
-      if (invalid.length) {
-        throw new Error(
-          `Main selection includes non-Shopping or unknown task IDs: ${invalid.join(", ")}`,
-        );
+      for (const id of taskIds) {
+        const task = catalog.find((entry) => entry.task_id === id);
+        if (!task) throw new Error("Missing official Shopping task " + id);
+        verifyPublicMainCandidate(task);
       }
       console.log(
-        "Main artifact scaffold only: task suitability, freeze and live runner are not automatically approved.",
+        "Main scaffold uses previously screened/frozen tasks only; does not execute any model.",
       );
     }
 
@@ -158,7 +159,7 @@ try {
       "Usage:\n" +
         "  npm run artifacts:init -- --stage poc\n" +
         "  npm run artifacts:init -- --stage pilot\n" +
-        "  npm run artifacts:init -- --stage main --experiment-id thesis-v1 --tasks <32-comma-separated-shopping-ids>\n" +
+        "  npm run artifacts:init -- --stage main --experiment-id thesis-v1 [--tasks <32-registered-ids>] (requires freeze)\n" +
         "  npm run artifacts:report -- --stage pilot",
     );
   }

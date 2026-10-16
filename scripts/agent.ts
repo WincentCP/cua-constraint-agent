@@ -20,7 +20,8 @@ import {
 } from "../src/webarena/auth.ts";
 import { readConfig, readTask, writeJson } from "../src/webarena/io.ts";
 import { runCommand, webArenaVerified } from "../src/webarena/official-cli.ts";
-import { verifyPublicPilotTask } from "../src/webarena/specs.ts";
+import { verifyPublicStageTask } from "../src/webarena/specs.ts";
+import { defaultScreeningPath, requireApprovedScreening } from "../src/experiment/screening.ts";
 
 function option(name: string, fallback?: string) {
   const idx = process.argv.indexOf("--" + name);
@@ -55,11 +56,6 @@ async function main() {
   }
   const protocol = loadStudyProtocol();
   const taskId = exactInt(option("task", "284"), "task");
-  if (stage === "poc" && taskId !== protocol.scope.poc_task_id) {
-    throw new Error(
-      "PoC is restricted to registered task " + protocol.scope.poc_task_id,
-    );
-  }
   const method = option("method", "Baseline");
   if (method !== "Baseline" && method !== "Proposed") {
     throw new Error("Expected --method Baseline or Proposed");
@@ -75,6 +71,11 @@ async function main() {
   if (!model) throw new Error("Unknown model label: " + label);
   const maxSteps = exactInt(option("max-steps", "16"), "max-steps");
   if (maxSteps > 60) throw new Error("Hard cap: 60 browser decisions");
+  if (stage === "pilot" && maxSteps !== protocol.execution.max_steps) {
+    throw new Error(
+      "Pilot requires the preregistered matched decision budget of " + protocol.execution.max_steps,
+    );
+  }
   const configPath = resolve(option("config", "config/webarena.local.json")!);
   if (!existsSync(configPath))
     throw new Error(
@@ -91,7 +92,12 @@ async function main() {
     );
 
   const task = readTask(input, taskId);
-  const taskSpec = verifyPublicPilotTask(task);
+  const taskSpec = verifyPublicStageTask(task, stage);
+  if (stage === "pilot") {
+    const catalog = resolve(option("catalog", "output/catalog/shopping-tasks.json")!);
+    requireApprovedScreening(defaultScreeningPath("poc"), "poc", catalog);
+    requireApprovedScreening(defaultScreeningPath("pilot"), "pilot", catalog);
+  }
   const siteConfig = readConfig(configPath);
   const root = factorialTaskArtifactDir(
     outputRoot,
@@ -163,6 +169,7 @@ async function main() {
       constraints: taskSpec.constraints,
       recorder,
       maxSteps,
+      screenshotLimit: protocol.execution.max_decision_screenshots,
       onProgress: (stats) => {
         lastStats = stats;
         recorder.update({

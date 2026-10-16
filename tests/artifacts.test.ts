@@ -26,7 +26,7 @@ test("artifact layout separates research stages and generates an audit index", (
       stage: "poc",
       outputRoot,
       reportRoot,
-      taskIds: [284],
+      taskIds: [279, 284, 528],
     });
 
     const taskDir = taskArtifactDir(outputRoot, 284);
@@ -56,7 +56,7 @@ test("artifact layout separates research stages and generates an audit index", (
       stage: "pilot",
       outputRoot: pilotRoot,
       reportRoot: pilotReports,
-      taskIds: [279, 284, 323, 436, 506, 528],
+      taskIds: [96, 323, 436, 506, 571, 689],
     });
     assert(existsSync(join(pilotReports, "task-screening.csv")));
 
