@@ -25,7 +25,12 @@
     "webarena:catalog": "node --import tsx scripts/webarena.ts catalog",
     "pilot:gate": "node --import tsx scripts/pilot-gate.ts",
     "agent:run": "node --import tsx scripts/agent.ts",
-    "results:export": "node --import tsx scripts/export-results.ts"
+    "results:export": "node --import tsx scripts/export-results.ts",
+    "screening:init": "node --import tsx scripts/screening.ts init",
+    "screening:check": "node --import tsx scripts/screening.ts check",
+    "screening:require": "node --import tsx scripts/screening.ts require",
+    "main:freeze": "node --import tsx scripts/main-freeze.ts",
+    "models:digests": "node --import tsx scripts/model-digests.ts"
   },
   "dependencies": {
     "playwright": "^1.58.0",

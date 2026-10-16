@@ -1,7 +1,11 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { z } from "zod";
-import { loadPilotManifest } from "../webarena/specs.ts";
+import {
+  loadPilotManifest,
+  verifyPublicMainCandidate,
+} from "../webarena/specs.ts";
+import { requireMainFreeze } from "./main-freeze.ts";
 import { readTasks } from "../webarena/io.ts";
 import { loadStudyProtocol, assertMainTaskSelection } from "./study.ts";
 import { RunMetadataSchema } from "./recorder.ts";
@@ -21,6 +25,7 @@ export type ResultsRow = {
   probes: number | null;
   model_calls: number | null;
   run_id: string | null;
+  model_digest: string | null;
   issue: string;
 };
 
@@ -71,6 +76,7 @@ function writeCsv(path: string, rows: ResultsRow[]) {
     "probes",
     "model_calls",
     "run_id",
+    "model_digest",
     "issue",
   ];
   writeFileSync(
@@ -116,6 +122,7 @@ export function buildResultsDataset(args: {
             pilot.tasks.map((task) => task.task_id),
             protocol,
           );
+          requireMainFreeze(join(root, "research-freeze.json"), selected);
           const catalogFile = resolve(
             args.catalogPath ?? "output/catalog/shopping-tasks.json",
           );
@@ -124,9 +131,8 @@ export function buildResultsDataset(args: {
           const catalog = readTasks(catalogFile);
           return selected.map((id) => {
             const t = catalog.find((task) => task.task_id === id);
-            if (!t || t.sites.length !== 1 || t.sites[0] !== "shopping") {
-              throw new Error("Unknown or non-Shopping main task: " + id);
-            }
+            if (!t) throw new Error("Missing official Shopping task: " + id);
+            verifyPublicMainCandidate(t);
             return t;
           });
         })();
@@ -155,6 +161,7 @@ export function buildResultsDataset(args: {
           probes: null,
           model_calls: null,
           run_id: null,
+          model_digest: null,
           issue: "MISSING",
         };
         try {
@@ -162,6 +169,7 @@ export function buildResultsDataset(args: {
             JSON.parse(readFileSync(join(dir, "run_metadata.json"), "utf8")),
           );
           row.run_id = meta.run_id;
+          row.model_digest = meta.model_digest ?? null;
           if (
             meta.stage !== args.stage ||
             meta.task_id !== task.task_id ||
@@ -175,6 +183,9 @@ export function buildResultsDataset(args: {
           row.actions = meta.actions;
           row.probes = meta.probes;
           row.model_calls = meta.model_calls;
+          if (!meta.model_digest) {
+            throw new Error("MISSING_MODEL_DIGEST");
+          }
           if (meta.execution_state !== "COMPLETED" || !meta.ended_at) {
             throw new Error("RUN_INCOMPLETE");
           }
@@ -184,6 +195,16 @@ export function buildResultsDataset(args: {
             !existsSync(join(dir, "network.har"))
           ) {
             throw new Error("MISSING_AGENT_EVIDENCE");
+          }
+          const traceLines = readFileSync(join(dir, "trace.jsonl"), "utf8")
+            .split(/\r?\n/)
+            .filter(Boolean);
+          if (!traceLines.length) throw new Error("MISSING_AGENT_EVIDENCE");
+          for (const line of traceLines) {
+            const event = JSON.parse(line) as { event?: string };
+            if (!["DECISION", "FINAL", "ERROR"].includes(event.event ?? "")) {
+              throw new Error("INVALID_DECISION_TRACE");
+            }
           }
           const har = JSON.parse(
             readFileSync(join(dir, "network.har"), "utf8"),
@@ -233,10 +254,79 @@ export function buildResultsDataset(args: {
     }
   }
   mkdirSync(reports, { recursive: true });
+  // Never pool or pair observations from different checkpoint digests.
+  for (const model of args.models) {
+    const validRows = rows.filter(
+      (row) => row.model === model.label && row.technical_valid,
+    );
+    if (new Set(validRows.map((row) => row.model_digest)).size > 1) {
+      for (const row of validRows) {
+        row.technical_valid = false;
+        row.official_success = null;
+        row.issue = "MODEL_DIGEST_INCONSISTENT";
+      }
+    }
+  }
   writeCsv(join(reports, "run-inventory.csv"), rows);
   writeCsv(
     join(reports, "analysis-results.csv"),
     rows.filter((row) => row.technical_valid),
+  );
+  // First-decision divergence is diagnostic only, not evidence correctness.
+  const firstProbe = (dir: string): string | null => {
+    try {
+      const lines = readFileSync(join(dir, "trace.jsonl"), "utf8")
+        .split(/\r?\n/)
+        .filter(Boolean);
+      const events = lines.map(
+        (line) =>
+          JSON.parse(line) as { event?: string; selected_probe_id?: string },
+      );
+      return (
+        events.find((item) => item.event === "DECISION")?.selected_probe_id ??
+        null
+      );
+    } catch {
+      return null;
+    }
+  };
+  const paired = [
+    "stage,task_id,model,paired_official_valid,first_decision_diverged",
+  ];
+  for (const task of taskSpecs) {
+    for (const model of args.models) {
+      const rs = rows.filter(
+        (row) => row.task_id === task.task_id && row.model === model.label,
+      );
+      const pairedValid =
+        rs.length === 2 && rs.every((row) => row.technical_valid);
+      const baseline = firstProbe(
+        join(root, "runs", model.label, "baseline", String(task.task_id)),
+      );
+      const proposed = firstProbe(
+        join(root, "runs", model.label, "proposed", String(task.task_id)),
+      );
+      const different =
+        pairedValid && baseline !== null && proposed !== null
+          ? String(baseline !== proposed)
+          : "";
+      paired.push(
+        [
+          args.stage,
+          String(task.task_id),
+          model.label,
+          String(pairedValid),
+          different,
+        ]
+          .map(csvValue)
+          .join(","),
+      );
+    }
+  }
+  writeFileSync(
+    join(reports, "paired-first-decisions.csv"),
+    paired.join("\n") + "\n",
+    "utf8",
   );
   const valid = rows.filter((row) => row.technical_valid);
   const success = valid.filter((row) => row.official_success === true);

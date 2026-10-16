@@ -52,16 +52,18 @@ function validEvidence(
   );
 }
 
-function userPrompt(
+export function buildAgentPrompt(
   task: WebArenaTask,
   snapshot: string,
   constraints: ConstraintSpec[],
   probes: Probe[],
   step: number,
   maxSteps: number,
+  priorConstraintStates: Record<string, "UNKNOWN" | "SATISFIED" | "REFUTED">,
 ) {
   return JSON.stringify({
     task_intent: task.intent,
+    previous_model_observed_constraint_states: priorConstraintStates,
     current_step: step,
     action_budget: maxSteps,
     observable_accessibility_tree: snapshot.slice(0, 14_000),
@@ -157,10 +159,26 @@ export async function runAgentLoop(options: {
     const probes = probesFromControls(extractControls(snapshot), constraints)
       .slice(0, 40)
       .filter((probe) => !attempted.has(url + "::" + probe.id));
+    // Same observation, public requirements and ledger context for both policies.
+    const previousLedger = evidence.ledger(["task"], constraints);
+    const priorStates = Object.fromEntries(
+      constraints.map((constraint) => [
+        constraint.id,
+        previousLedger.task?.[constraint.id]?.state ?? "UNKNOWN",
+      ]),
+    ) as Record<string, "UNKNOWN" | "SATISFIED" | "REFUTED">;
     stats.model_calls++;
     const raw = await model.complete(
       SYSTEM,
-      userPrompt(task, snapshot, constraints, probes, step, maxSteps),
+      buildAgentPrompt(
+        task,
+        snapshot,
+        constraints,
+        probes,
+        step,
+        maxSteps,
+        priorStates,
+      ),
     );
     const plan = parseAgentPlan(raw);
     const accepted = validEvidence(plan.evidence, snapshot, constraints);

@@ -7,3 +7,6 @@ test-results/
 config/webarena.local.json
 *.log
 .DS_Store
+
+# Local fingerprints, environments and draft research credentials
+config/*.local.json

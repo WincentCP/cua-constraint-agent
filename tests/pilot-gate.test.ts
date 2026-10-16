@@ -59,6 +59,7 @@ function makeEpisode(
       task_id: taskId,
       model_label: model,
       model_name: model,
+      model_digest: "a".repeat(64),
       method,
       benchmark_version: "1.2.3",
       git_commit: "fixture",
@@ -123,7 +124,7 @@ test("official task failure is valid, evaluator errors are invalid", () => {
       for (const model of models) {
         for (const method of ["Baseline", "Proposed"]) {
           const pass =
-            (task.task_id === 279 || task.task_id === 284) &&
+            (task.task_id === 96 || task.task_id === 323) &&
             (model.label === "qwen3.5-9b" || model.label === "ministral3-8b") &&
             passCount < 10;
           if (pass) passCount++;
@@ -135,7 +136,7 @@ test("official task failure is valid, evaluator errors are invalid", () => {
     assert.equal(pass.completed_valid, 48);
     assert.equal(pass.status, "FAIL"); // 8 successful runs, below 10
     assert.equal(pass.official_successes, 8);
-    const dirForFirst = join(dir, "runs", "qwen3.5-9b", "baseline", "279");
+    const dirForFirst = join(dir, "runs", "qwen3.5-9b", "baseline", "96");
     const resultPath = join(dirForFirst, "eval_result.json");
     const official = JSON.parse(readFileSync(resultPath, "utf8"));
     writeFileSync(
@@ -167,13 +168,13 @@ test("official task failure is valid, evaluator errors are invalid", () => {
 test("official partial-match result is technically valid but not success", () => {
   const dir = mkdtempSync(join(tmpdir(), "cua-gate-partial-"));
   try {
-    makeEpisode(dir, 279, models[0].label, "Baseline", false);
+    makeEpisode(dir, 96, models[0].label, "Baseline", false);
     const evalPath = join(
       dir,
       "runs",
       models[0].label,
       "baseline",
-      "279",
+      "96",
       "eval_result.json",
     );
     const official = JSON.parse(readFileSync(evalPath, "utf8"));
@@ -198,7 +199,7 @@ test("official partial-match result is technically valid but not success", () =>
     assert.equal(
       result.episodes.find(
         (episode) =>
-          episode.task_id === 279 &&
+          episode.task_id === 96 &&
           episode.model === models[0].label &&
           episode.method === "Baseline",
       )?.reason,
@@ -225,6 +226,22 @@ test("pilot gate passes when preregistered operational checks pass", () => {
     assert.equal(result.completed_valid, 48);
     assert.equal(result.official_successes, 12);
     assert.equal(result.status, "PROVISIONAL_PASS");
+    const target = join(
+      dir,
+      "runs",
+      "qwen3.5-9b",
+      "baseline",
+      "96",
+      "run_metadata.json",
+    );
+    const original = JSON.parse(readFileSync(target, "utf8"));
+    writeFileSync(
+      target,
+      JSON.stringify({ ...original, model_digest: "b".repeat(64) }),
+    );
+    const mismatched = evaluatePilotGate(dir, models);
+    assert.equal(mismatched.status, "FAIL");
+    assert.equal(mismatched.checks.model_checkpoint_consistency, false);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -234,8 +251,8 @@ test("pilot gate rejects wrong evaluator version, task template and empty HAR", 
   const dir = mkdtempSync(join(tmpdir(), "cua-gate-provenance-"));
   try {
     const { label } = models[0];
-    makeEpisode(dir, 284, label, "Baseline", true);
-    const root = join(dir, "runs", label, "baseline", "284");
+    makeEpisode(dir, 96, label, "Baseline", true);
+    const root = join(dir, "runs", label, "baseline", "96");
     const resultPath = join(root, "eval_result.json");
     const official = JSON.parse(readFileSync(resultPath, "utf8"));
 
@@ -250,8 +267,7 @@ test("pilot gate rejects wrong evaluator version, task template and empty HAR", 
     assert.equal(result.completed_valid, 0);
     assert.equal(
       result.episodes.find(
-        (x) =>
-          x.task_id === 284 && x.model === label && x.method === "Baseline",
+        (x) => x.task_id === 96 && x.model === label && x.method === "Baseline",
       )?.reason,
       "EVALUATOR_VERSION_MISMATCH",
     );
@@ -267,8 +283,7 @@ test("pilot gate rejects wrong evaluator version, task template and empty HAR", 
     assert.equal(result.completed_valid, 0);
     assert.equal(
       result.episodes.find(
-        (x) =>
-          x.task_id === 284 && x.model === label && x.method === "Baseline",
+        (x) => x.task_id === 96 && x.model === label && x.method === "Baseline",
       )?.reason,
       "EVALUATOR_TASK_MISMATCH",
     );

@@ -1,86 +1,93 @@
-# CUA Constraint Agent — WebArena-Verified Shopping Feasibility
+# CUA Constraint Agent — WebArena-Verified Shopping study
 
-Research prototype for **constraint-directed evidence acquisition in text/Accessibility-Tree Computer-Use Agents**.
+Research prototype comparing **Baseline** versus **constraint-directed evidence acquisition (Proposed)** in text/Accessibility-Tree computer-use agents. The benchmark supplies public tasks, the Shopping website and the official evaluator; the research method is implemented in this repository.
 
-**Current scope:** local WebArena-Verified **Shopping only**. LEUCO is historical work on the `leuco-legacy` branch; it is **not** used for main experimental scores.
+## Research design (registered candidates; not completed runs)
 
-## Current stage — PoC first, not main-data collection
+| Stage         | Official task IDs                                              | Use                                                                                        |
+| ------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **PoC (3)**   | **279, 284, 528**                                              | Development/debugging: retrieval, product comparison, draft form                           |
+| **Pilot (6)** | **96, 323, 436, 506, 571, 689**                                | Feasibility on 4 models × 2 methods = **48 runs**                                          |
+| **Main (32)** | See [config/main-candidates.json](config/main-candidates.json) | Held-out candidates on 4 models × 2 methods = **256 runs**, **NOT yet approved or frozen** |
 
-The core evidence ledger, Baseline/Proposed probe ranking, browser inspection, official CLI handoff and reproducible artifact layout have been implemented. A **development-only single-task Ollama agent runner**, screenshot capture, decision traces, run metadata, official-result CSV exporter and Google Colab notebook are now included. **The runner has not been validated against live Shopping/Ollama on the target RTX 5060 device, and there is no approved unattended 48/256-run pipeline.** CI passing is not the same as solving task 284 live.
+All 41 task IDs are distinct. The **32 main candidates also use templates disjoint from PoC and pilot**, reducing development–test leakage. All 41 candidates are sourced from the **official WebArena-Verified v1.2.3 public Shopping task dataset**. No hidden evaluator reference answers are included in manifests or agent prompts.
 
-- PoC: inspect official Shopping task **284** (zero model runs during inspection), then separately build and test an end-to-end agent run.
-- Pilot: six **Shopping-only candidate** tasks **279, 284, 323, 436, 506, 528** (six different public intent templates). Task eligibility is pending live review. Planned design: **6 × 4 models × 2 methods = 48 agent runs**.
-- Main: supervisor-required **32 Shopping tasks**, different from pilot, selected by fixed public-UI suitability criteria **before** main data collection. Planned design: **32 × 4 × 2 = 256 agent runs**.
-- The four 8–9B Q4_K_M models are candidates pending model-competence checks. The scientific treatment is **Baseline vs Proposed**; model is a robustness factor.
-- WebArena-Verified supplies task instructions, environments and objective evaluation. **It does not supply the proposed method.**
+Main candidate groups (8 each): product navigation/filtering, product comparison, order retrieval, and reviews/form/account mutations. Individual candidate suitability is **UNREVIEWED** until live UI evidence confirms ≥3 meaningful public constraints and ≥2 distinct evidence-acquisition choices, browser action support, site reset and official evaluation. **All 32 must pass to freeze this exact set**; if not, consult the supervisor and revise the preregistered design _before_ main outcomes.
 
-The benchmark CLI is pinned to **WebArena-Verified v1.2.3** (see `config/study.json`). No hidden reference answers/evaluator expectations may enter agent observations, task annotations or prompt context.
+## What works in code, and what does not
 
-## Setup and first PoC
+Implemented: public task metadata checks, stage isolation, a shared Baseline/Proposed probe-selection boundary, evidence ledger, Playwright Shopping inspector/screenshot/HAR, **development-only one-task** Ollama agent runner and decision traces, human suitability-review generator/gates, pilot operational gate, protected research-freeze workflow, official-result CSV exporter, Colab plots and paired main analysis. Synthetic integration and offline CI tests verify plumbing.
 
-On Windows PowerShell with Git, Node **24+**, Docker Desktop/WSL2, uvx and Playwright:
+**Not yet established:** live WebArena PoC success on the user's Windows RTX 5060 laptop, robust browser action handling for all task types, reproducible **persistent** Magento reset, competent four-model pilot, all 32 main UI screens, a 48/256-episode unattended runner, or final experiment outcomes. **CI PASS does not prove agent task success**. The main runner remains locked.
+
+Research methods differ **only** in probe ranking; they receive matched instructions, model, candidate controls, shared accessible observations/ledger context and configured action budget. Baseline ranks model-estimated progress; Proposed ranks unresolved constraint relevance, then forward cost/order. Model-reported grounded quotes are _diagnostic until separately audited_, never ground-truth evaluator outcomes.
+
+## New machine: PoC and screening
+
+Follow the full [PowerShell setup](docs/SETUP.md). On an existing checked-out repository:
 
 ```powershell
-git clone https://github.com/WincentCP/cua-constraint-agent.git
-cd cua-constraint-agent
+git pull origin main
 npm.cmd ci
 npx.cmd playwright install chromium
 Copy-Item config/webarena.example.json config/webarena.local.json
-npm.cmd run webarena:doctor
 npm.cmd run webarena:validate
+npm.cmd run artifacts:init -- --stage poc
 ```
 
 Start **Shopping only**:
 
 ```powershell
 uvx --from webarena-verified==1.2.3 webarena-verified env start --site shopping
-uvx --from webarena-verified==1.2.3 webarena-verified env status --site shopping
+npm.cmd run webarena:prepare -- --stage poc --task 279
+npm.cmd run webarena:inspect -- --stage poc --task 279
+npm.cmd run webarena:prepare -- --stage poc --task 284
+npm.cmd run webarena:inspect -- --stage poc --task 284
+npm.cmd run webarena:prepare -- --stage poc --task 528
+npm.cmd run webarena:inspect -- --stage poc --task 528
+npm.cmd run artifacts:report -- --stage poc
 ```
 
-Export public task instruction and inspect initial visible Accessibility Tree:
+The three PoC inspections create screenshots, public Accessibility Trees, and **inspection.har** (not an agent run). Complete [PoC screening](docs/EXPERIMENT.md) before treating any PoC as feasible.
 
-```powershell
-npm.cmd run webarena:prepare -- --task 284 --stage poc
-npm.cmd run webarena:inspect -- --task 284 --stage poc
-```
-
-Expected outputs (generated on device, not checked into Git):
-
-```text
-output/poc/
-  stage-manifest.json
-  task-inputs/284.json
-  284/
-    accessibility/01.yaml
-    inspection.json
-    inspection.har            # NOT the agent's network.har
-    screenshots/start-01.png
-reports/poc/
-  poc-review.md               # manual PASS/MODIFY/REJECT checklist
-  artifact-index.json
-  artifact-index.csv
-  stage-summary.md
-```
-
-Inspection does **not** produce `agent_response.json` or an official success score. The official evaluator requires a real agent run with `agent_response.json` + `network.har` and writes `eval_result.json`.
-
-```powershell
-uvx --from webarena-verified==1.2.3 webarena-verified env stop --site shopping
-```
-
-**Stop for PoC review before launching pilot.** See [docs/SETUP.md](docs/SETUP.md), [docs/EXPERIMENT.md](docs/EXPERIMENT.md), [docs/ARTIFACTS.md](docs/ARTIFACTS.md) and [docs/STATUS.md](docs/STATUS.md).
-
-## Later stages (not commands to run yet)
+Generate independent candidate screening reviews (all rows start **PENDING**, never auto-PASS):
 
 ```powershell
 npm.cmd run webarena:catalog
-npm.cmd run artifacts:init -- --stage pilot
-npm.cmd run pilot:gate
+npm.cmd run screening:init -- --stage poc
+npm.cmd run screening:init -- --stage pilot
+npm.cmd run screening:init -- --stage main
+npm.cmd run screening:check -- --stage main
 ```
 
-The catalog exports only public Shopping task inputs; it **does not** automatically approve task eligibility. Pilot run directories can be scaffolded, but run/evaluation artifacts require the future agent runner. The gate prints FAIL when no valid runs exist, never an invented pass.
+Review files: `reports/poc/poc-screening.json`, `reports/pilot/pilot-screening.json`, `reports/task-screening/main-review.json`. Evidence screenshots and HAR remain local/gitignored; **do not share HAR publicly or upload it to Colab**.
 
-## Local tests and CI
+## Later, after approvals and live tests
+
+```powershell
+npm.cmd run artifacts:init -- --stage pilot
+npm.cmd run agent:run -- --stage pilot --task 96 --model-label qwen3.5-9b --method Baseline --max-steps 16 --pilot-approved --fresh-environment-confirmed --evaluate
+npm.cmd run pilot:gate
+npm.cmd run results:export -- --stage pilot
+```
+
+Pilot runs require **approved human screenings of all PoC and pilot candidates**, a real reset of persistent Magento state, local Ollama and a validated evaluator. The approval flags are user attestations, not automated proof of reset. Existing run cells cannot be overwritten.
+
+**Main activation is intentionally blocked** until all 32 UI reviews PASS, the 48-run pilot reaches its provisional operational gate, supervisor signoff, model digests and reset evidence are available, and `npm run main:freeze` creates a valid research identity. `artifacts:init --stage main` refuses an unfrozen study. See [the protocol](docs/EXPERIMENT.md).
+
+For Bab IV, use [notebooks/thesis_analysis.ipynb](notebooks/thesis_analysis.ipynb) on Google Colab with **sanitized** `run-inventory.csv` and `analysis-results.csv`. The notebook does not invent scores and runs paired McNemar only for complete main data.
+
+## Evidence, reproducibility and safety
+
+- [Research protocol](docs/EXPERIMENT.md)
+- [Task screening and reset protocol](docs/RESET_PROTOCOL.md)
+- [Bab IV and appendix evidence](docs/EVIDENCE_PROTOCOL.md)
+- [Artifact layout](docs/ARTIFACTS.md)
+- [Current implementation status](docs/STATUS.md)
+
+Development outputs (`output/`, `reports/`, `config/webarena.local.json`) are gitignored. They must be backed up separately. Pilot and main runs count only **official** WebArena-Verified evaluator results; self-declared model success and hint coverage are never official success.
+
+Local validation:
 
 ```powershell
 npm.cmd run format:check
@@ -90,32 +97,4 @@ npm.cmd run test:integration
 npm.cmd run webarena:validate
 ```
 
-CI covers code, schemas, artifact generation and browser/HAR plumbing against a local test page. **It cannot validate actual Shopping Docker or Ollama performance on your device.**
-
-Large/raw `output/`, `reports/`, and machine-specific `config/webarena.local.json` are gitignored. Back up these folders separately. Do not publicly share HAR files containing authentication/session details.
-
-## Evidence, agent development and Bab IV exports (NEW)
-
-- PoC inspection now also saves a **real PNG screenshot**.
-- The single-task development runner calls a local Ollama model, uses the **same model prompt and eligible actions** for Baseline and Proposed, records decision traces/evidence and bounded screenshots, and can invoke the official evaluator. The only implemented method switch is the probe-ranking rule. Real-world effectiveness/fairness remains subject to live validation.
-- Every run has run_metadata.json, trace.jsonl, accessibility snapshots, screenshot checkpoints, agent_response.json, network.har, and optionally official eval_result.json.
-- The results exporter emits an inventory of **all** expected cells (including missing runs) plus analysis-results.csv containing **only valid official results**. Never treat absent runs as failures.
-- The Colab notebook notebooks/thesis_analysis.ipynb turns sanitized CSVs into PNG/PDF figures, descriptive tables, and exact paired McNemar tests (main only, once all 256 are complete).
-
-After successful PoC inspection, local Docker reset confirmation, and Ollama setup, one **development-only** episode can be attempted:
-
-```powershell
-npm.cmd run agent:run -- --stage poc --task 284 --model-label qwen3.5-9b --method Baseline --max-steps 16 --evaluate
-```
-
-PoC agent outputs are stored under output/poc/runs/<model>/<method>/<task-id>/, separate from inspection evidence. The corresponding Proposed episode needs a **fresh site reset**, not just a fresh browser tab.
-
-Once real, approved pilot data exist:
-
-```powershell
-npm.cmd run results:export -- --stage pilot
-```
-
-Then upload reports/pilot/run-inventory.csv and analysis-results.csv into the notebook. For main, use `--stage main --experiment-id <id>` **only after main study freeze and complete results**.
-
-Read [docs/EVIDENCE_PROTOCOL.md](docs/EVIDENCE_PROTOCOL.md) for figure conventions, security, and honest experimental evidence boundaries.
+**New checkpoint identity command:** after all four model tags are downloaded, run `npm.cmd run models:digests` to create a local, gitignored four-model SHA-256 manifest. Every runner episode records its exact local Ollama digest, pilot validation refuses missing or mixed digests, and the main freeze must match them.

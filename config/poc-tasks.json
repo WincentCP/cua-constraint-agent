@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "status": "POC_DEVELOPMENT_ONLY",
+  "source_dataset_tag": "v1.2.3",
+  "tasks": [
+    {
+      "task_id": 279,
+      "sites": ["shopping"],
+      "intent_template_id": 204,
+      "public_intent": "Provide me with the full names of Bluetooth headphones from Sony, and also share the price range for the available models. Return an object with keys \"names\" (list of product names), \"min\" and \"max\" (as numbers, e.g., 10.99) only, without any additional details.",
+      "rationale": "Public shopping retrieval task requiring a Sony + Bluetooth-headphone filter and cross-product name and price-range evidence; suitability awaits live UI review.",
+      "constraints": [
+        {
+          "id": "brand",
+          "description": "Products are from Sony.",
+          "required": true,
+          "hints": ["sony", "brand"]
+        },
+        {
+          "id": "type",
+          "description": "Products are Bluetooth headphones.",
+          "required": true,
+          "hints": ["bluetooth", "headphone", "audio"]
+        },
+        {
+          "id": "available_names",
+          "description": "Full names of all matching available models are collected.",
+          "required": true,
+          "hints": ["name", "model", "result"]
+        },
+        {
+          "id": "price_range",
+          "description": "Minimum and maximum prices are computed from the matching models.",
+          "required": true,
+          "hints": ["price", "sort", "$"]
+        }
+      ]
+    },
+    {
+      "task_id": 284,
+      "sites": ["shopping"],
+      "intent_template_id": 207,
+      "public_intent": "View the product page for the least expensive shoe storage with a minimum storage capacity of 12 pairs.",
+      "rationale": "PoC navigation: compare candidate shoe-storage products against a minimum capacity and lowest-price requirement; suitability awaits live UI review.",
+      "constraints": [
+        {
+          "id": "category",
+          "description": "Selected item is shoe storage.",
+          "required": true,
+          "hints": ["shoe", "storage"]
+        },
+        {
+          "id": "capacity",
+          "description": "Storage supports at least 12 pairs.",
+          "required": true,
+          "hints": ["12", "pair", "capacity"]
+        },
+        {
+          "id": "price_optimality",
+          "description": "Selected feasible product is the least expensive.",
+          "required": true,
+          "hints": ["price", "sort", "$"]
+        }
+      ]
+    },
+    {
+      "task_id": 528,
+      "sites": ["shopping"],
+      "intent_template_id": 154,
+      "public_intent": "Fill out the contact us form with this refund message for the phone screen protector bought March 2023: \"I need a refund. Order: <order_id>. Amount: <amount>. Reason: It broke after three days of use.\" Leave the filled form ready for review and do not submit it.",
+      "rationale": "Cross-page retrieval of prior order metadata followed by a draft contact form that must not be submitted; suitability awaits live UI review.",
+      "constraints": [
+        {
+          "id": "product",
+          "description": "The prior purchase is a phone screen protector.",
+          "required": true,
+          "hints": ["screen protector", "phone", "order"]
+        },
+        {
+          "id": "period",
+          "description": "Purchase occurred in March 2023.",
+          "required": true,
+          "hints": ["march", "2023", "date"]
+        },
+        {
+          "id": "order_id",
+          "description": "Form contains the matching historical order number.",
+          "required": true,
+          "hints": ["order", "number", "id"]
+        },
+        {
+          "id": "amount",
+          "description": "Form contains the matching historical purchase amount.",
+          "required": true,
+          "hints": ["amount", "total", "price"]
+        },
+        {
+          "id": "draft_message",
+          "description": "Contact form uses the requested refund-message text.",
+          "required": true,
+          "hints": ["contact", "refund", "message", "form"]
+        },
+        {
+          "id": "not_submitted",
+          "description": "Form remains a draft and is not submitted.",
+          "required": true,
+          "hints": ["submit", "review", "form"]
+        }
+      ]
+    }
+  ]
+}

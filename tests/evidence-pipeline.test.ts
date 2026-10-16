@@ -15,6 +15,7 @@ const example = () =>
     task_id: 284,
     model_label: "qwen3.5-9b",
     model_name: "qwen3.5:9b-q4_K_M",
+    model_digest: "a".repeat(64),
     method: "Baseline",
     benchmark_version: "1.2.3",
     git_commit: "deadbeef",

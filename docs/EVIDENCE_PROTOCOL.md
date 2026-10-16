@@ -1,52 +1,47 @@
-# Evidence collection and analysis protocol (Bab IV / Lampiran)
+# Evidence collection for Bab IV and appendices
 
-## Reproducible evidence, not decorative screenshots
+**Rule:** screenshots, quotes from an Accessibility Tree and model-declared SUCCESS are **not** official task success. Official WebArena-Verified outcomes are `eval_result.json`, generated from a real agent `agent_response.json` and agent `network.har`. All raw evidence is local/private, not Git-tracked.
 
-A screenshot proves what was rendered at a particular moment. It does **not** prove official task success. Official WebArena-Verified task success comes only from the evaluator's `eval_result.json` paired with a real agent's `agent_response.json` and `network.har`.
+## PoC (279, 284, 528 — development only)
 
-Use the same rule for both Baseline and Proposed. Capture evidence consistently; never choose only wins after seeing outcomes. Every run has a unique UUID, task ID, model label, method and benchmark version. The autonomous runner is currently **development-only** and must be validated against a live local Shopping instance before pilot collection.
+- For **each** PoC task, export the exact public task input, inspect initial page (ARIA snapshot, `screenshots/start-01.png`, `inspection.json`, `inspection.har`) and preserve the details of **two meaningful probe choices**, not just two arbitrary hyperlinks.
+- Review `reports/poc/poc-screening.json`: at least three public requirements and explicit evidence choices per task, actual evaluator availability, browser control support, persistent reset, no hidden answer leakage, real screenshots and reviewer notes. Draft fields start **PENDING**, never auto-PASS.
+- Next, separately test a **model-driven browser episode** for each task type and, if a real agent output exists, evaluate with the pinned official CLI. `inspection.har` never substitutes for agent `network.har`.
+- Suggested Bab IV visuals: environment overview (task 279), product capacity/price selection (284), form-before-submit checkpoint (528), sample model decision trace and honest GO/MODIFY/REJECT review outcomes.
 
-## PoC — Task 284
+## Pilot (96, 323, 436, 506, 571, 689)
 
-- `npm run webarena:prepare -- --task 284 --stage poc` exports only the **public** task input.
-- `npm run webarena:inspect -- --task 284 --stage poc` captures initial accessibility snapshots, **screenshots/start-01.png**, and `inspection.har`. This is not an agent run.
-- The generated `reports/poc/poc-review.md` must be completed by a human with PASS/MODIFY/REJECT, examples of at least two meaningful evidence-acquisition choices and reset observations.
-- The development runner can later create one PoC agent episode with `runs/<model>/<baseline|proposed>/284/`, containing initial/final screenshots, selected decision checkpoints, public ARIA snapshots, `trace.jsonl`, `run_metadata.json`, `agent_response.json`, agent `network.har`, and (only after official evaluation) `eval_result.json`.
-- Do not call an inspected site or a screenshot a solved task.
+**6 × 4 × 2 = 48 registered episodes**, held out from PoC by task and template. The pilot review `reports/pilot/pilot-screening.json` records all eligibility evidence independently of success. If difficult mutations are unsupported by the runner, mark **REJECT**; do not mislabel technical errors as Proposed failing. The operational pilot gate must be approved by the supervisor before collecting pilot outcomes.
 
-Suggested Bab IV figures: site screenshot, ARIA Tree excerpt, a visibly grounded candidate probe and the PoC decision checklist.
+Every valid episode lives at `output/pilot/runs/<model>/<baseline|proposed>/<task-id>/`. `pilot:gate` counts official successes, technical validity, model and task diversity. If no valid official evaluator outputs exist, FAIL is correct. `results:export -- --stage pilot` creates `run-inventory.csv` (all 48), `analysis-results.csv` (valid official only) and `paired-first-decisions.csv` (diagnostic, not evidence accuracy).
 
-## Pilot — 6 tasks × 4 models × 2 methods = 48 expected independent episodes
+Suggested Bab IV visuals: 48-run coverage, per-model successes and floor effects, error categories, median actions/runtime, first-decision divergence, evidence-quality audit exemplars and conditional GO/NO-GO.
 
-Pilot candidate IDs: `279, 284, 323, 436, 506, 528`. Eligibility requires manual review of public-UI task requirements, multiple meaningful probe choices, and repeatable Shopping resets. The development runner currently handles **one task/model/method at a time**; it does not provide a validated 48-run unattended orchestrator.
+## Main (32 candidates; not frozen yet)
 
-Every completed agent episode is stored under `output/pilot/runs/<model>/<method>/<task-id>/`. A model can claim SUCCESS in `agent_response.json` and still fail officially. `npm run pilot:gate` and `npm run results:export -- --stage pilot` must not be interpreted as evidence of successful execution when official per-run artifacts are absent.
+`config/main-candidates.json` names all **32 public Shopping candidate IDs**, eight in each of four task groups, with 22 unique main templates. `reports/task-screening/main-review.json` must have 32 substantiated PASS reviews before any frozen set. A catalog ID without actual UI choices/constraints **does not qualify**.
 
-Suggested Bab IV displays: registered design, 48-run completeness audit, evaluator-status counts, success diversity across models/tasks, indicative floor effects, and GO/MODIFY/NO-GO justification.
+A frozen main requires official catalog verification, 3-stage screening, pilot GO, real model digests, persistent reset evidence, supervisor approval, and study/code fingerprint. `main:freeze` records the identity without running tasks; `artifacts:init --stage main` and main CSV export refuse an unfrozen study. **No main batch agent runner is claimed to exist yet.**
 
-## Main — 32 held-out Shopping tasks × 4 × 2 = 256 expected episodes
+With **256 complete valid official episodes**, Colab calculates per-model paired outcomes, exact McNemar tests with Holm adjustment, confidence/uncertainty (where implemented), and task success/efficiency figures. There are only **32 distinct task IDs**; do not treat 256 evaluations as 256 independent tasks.
 
-Select and freeze 32 eligible task IDs **before** examining main outcomes. The main runner/orchestrator, research freeze and 256 valid episodes are **not** claimed to exist yet.
+## Recording standards
 
-Suggested Bab IV analyses from **complete paired task/model outcomes**: per-model Baseline vs Proposed success rate, paired discordant outcomes, exact McNemar tests with Holm adjustment, median runtime, actions, number of selected probes, invalid-output rates, and limitations. Task count is **32, not 256 independent tasks**.
+1. The **same** initial/final screenshot and decision-checkpoint rule for Baseline and Proposed (up to three meaningful decision screenshots per run). Do not select examples based solely on favorable outcomes.
+2. Per-step trace stores publicly grounded observations, model-reported constraint states, eligible probe IDs, estimated progress scores, selected probe, action, and observed rationale. Treat simple quote-substring matching as **diagnostic, not correctness**.
+3. **Evidence correctness / required constraint coverage** requires independent human verification against saved observations, preferably blinded to method. Register the sampling/audit plan before viewing main outcomes. An unaudited constraint is `UNVERIFIED`, never marked correct by the model or script.
+4. Per-run identity: unique run ID, task, model digest, stage, method, benchmark/evaluator versions, settings and timestamps. Do not overwrite an existing episode. Log any invalid/error/timeout/retry.
+5. Fresh **persistent Magento reset** between independent episodes; Playwright context isolation is insufficient. Log reset proof and balanced execution order. See `docs/RESET_PROTOCOL.md`.
+6. `run-inventory.csv` includes missing, invalid and unrun cells; **never convert them to official failures**. Record the planned denominator separately.
+7. Local HAR, screenshots, accessibility trees and model traces may contain personal or session information; keep raw `output/` and `reports/` private/backed up. Redact approved screenshots for thesis. Upload only sanitized CSVs to Colab.
+8. Store source configs/code, freeze manifest, screening decisions, and selected review examples in the thesis appendix. Retain large raw experiment data in a private digital archive instead of printing 256 screenshots.
 
-## Evidence recording rules
+## Suggested Bab IV and lampiran outline
 
-1. Capture initial screenshot for **every run**. Capture at most three meaningful probe-decision screenshots (the same rule for both conditions). Capture final screenshot even for failures when browser remains available.
-2. Save an ARIA snapshot per decision step, trace probe eligibility and scores, the selected probe, publicly grounded constraint states, and the model's rationale. The model rationale and quote-grounding **are diagnostic**, not evaluator ground truth.
-3. Save official `network.har` **after closing Playwright context**. The separate `inspection.har` must never substitute for the agent HAR.
-4. Save version and run identity. Do not overwrite an existing run; archive it and declare a replacement before repeating a cell. Do not silently pick a better attempt.
-5. Reset persistent Magento site state between independent model/method episodes (isolated browser contexts are insufficient). Document how reset was verified. The runner currently requires explicit confirmation for pilot episodes; that flag is not proof a reset happened.
-6. Raw screenshots, HAR, ARIA trees and prompts may contain names, login headers or account/session details. Keep them **locally**, back up securely, and redact screenshots before publishing. Never commit `output/`, `reports/`, credentials, HAR or a full run transcript to GitHub.
-7. `run-inventory.csv` includes missing and invalid combinations. `analysis-results.csv` contains only runs with valid official results. **Missing runs are not task failures.** The exporter marks incomplete coverage clearly.
-8. `notebooks/thesis_analysis.ipynb` is stored in GitHub. Load sanitized CSV exports into Colab and export 300-DPI PNG/PDF figures and CSV tables. The notebook will not conduct main confirmatory tests until all 256 registered episodes are valid.
+**Bab IV:** environment and model configuration; three PoC GO/MODIFY findings; pilot competence and floor effect; outcome-blind main screening/freeze; official paired task success; secondary audited evidence quality; efficiency and treatment-divergence diagnostic; failure cases and threats to validity.
 
-## Suggested manuscript figures and appendices
+**Appendices:** public task IDs/intents, screening rubric and anonymized reviews, freeze hashes and model provenance, evaluator conventions, example screenshots for _pre-specified_ failure/success categories, reset logs, analysis scripts/Colab, and source links. Do not embed private HAR or exposed credentials in the manuscript.
 
-Bab IV: workflow diagram, environment screenshot, PoC screenshot with public constraint, one Baseline/Proposed decision-trace comparison on the same task/model, pilot feasibility table, main success figure, paired McNemar table, and efficiency figures.
+**Status:** Only synthetic browser CI exercises the current development runner. Real PoC/pilot/main scores, persistent reset, model competence and human audit have not yet been completed on the laptop.
 
-Appendix: platform versions, research freeze/manifest, selected task list, full prompt schema for both methods, recorded inclusion criteria, one or two **predefined** representative traces per type of outcome, the official evaluator format, sanitized metadata examples, and file/checksum inventory. Keep the complete 48/256 raw runs in offline/electronic archives rather than inserting hundreds of screenshots into printed pages.
-
-## Current limitations
-
-Only static CI and a **synthetic-browser mock** verify the new development-runner plumbing. The model-driven workflow, actual Magento reset and live WebArena task 284 remain unverified on the target RTX 5060 laptop. Completing this audit is a prerequisite to treating pilot data as experimental evidence.
+**Checkpoint provenance:** `run_metadata.json` includes a real local `model_digest`; the pilot evaluator/CSV exporter reject runs without exact digest provenance and comparisons that mix checkpoint digests. Run `npm run models:digests` locally only after installing all four official configured model tags. The manifest remains private and gitignored.

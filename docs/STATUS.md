@@ -1,41 +1,39 @@
-# Research implementation status
+# Implementation status — evidence, not claims
 
-## Scoped study
+## Current study design
 
-WebArena-Verified **v1.2.3 Shopping only**; no LEUCO in main evaluation. Six public-intent pilot candidates: 279, 284, 323, 436, 506, 528. Supervisor-mandated main design: 32 distinct Shopping tasks × 4 model candidates × 2 methods = 256 episodes.
+WebArena-Verified **v1.2.3**, **Shopping only**. Three PoC development tasks **279, 284, 528**; six separate pilot candidates **96, 323, 436, 506, 571, 689**; **32 explicit main candidates** in config/main-candidates.json. The main pool spans 22 public intent templates, none used in PoC or pilot. No IDs overlap among the three stages.
 
-## Implemented and unit/integration tested
+**PoC=3 development tasks; Pilot=6 × 4 × 2=48 runs; Main=32 × 4 × 2=256 planned runs.** Main task eligibility is currently **UNREVIEWED** and research identity is **NOT FROZEN**.
 
-- public Shopping-only manifest with six distinct intent templates and ≥3 instruction-derived requirements per task;
-- pre-registered protocol and operational pilot decision thresholds;
-- evidence ledger and shared candidate-probe ranking boundary;
-- Accessibility Tree capture/control extraction, session isolation and diagnostic hints;
-- official pinned `uvx` CLI handoff and public task input validation;
-- `inspection.har` separated from the real agent `network.har`;
-- public Shopping catalog export for later 32-task held-out screening;
-- stage-isolated PoC/pilot/main folder layouts and appendix indexes;
-- manual PoC and task suitability checklists that are not overwritten;
-- pilot result checker that reads official evaluation status (distinguishes task failure vs evaluator error);
-- main selection guard: exactly 32 distinct, pilot-disjoint public Shopping task IDs;
-- basic research identity SHA-256 freeze utilities;
-- initial-page PoC screenshot capture;
-- **development-only single-task** Ollama browser runner with matched Baseline/Proposed model prompts, bounded action budget and evidence-state tracking;
-- bounded decision checkpoint screenshots, run metadata and JSONL decision traces;
-- pilot/main CSV exporter with missing-run inventory and official-evaluation validation;
-- Google Colab notebook with graphics, descriptive tables and conditional paired McNemar tests;
-- evidence preservation and appendix protocol in docs/EVIDENCE_PROTOCOL.md;
-- offline unit and synthetic browser/HAR integration CI.
+## Implemented and CI-testable
 
-## Not yet completed / not to be claimed
+- Pinned public benchmark CLI, exact task/template/intent checks; fail closed on changed public metadata.
+- Independent PoC/pilot/main manifests with run-stage and template-isolation guards.
+- Registered task suitability rubric, JSON reviewer checklists, candidate CSVs and approvals that start **PENDING** (and cannot silently overwrite a review).
+- Human review validation requires public constraints, 2 meaningful observed choices, action/reset/evaluator checks, reviewer, notes and real nonempty local evidence.
+- Main freeze command with approved stage screenings, a provisional 48-run pilot gate, exact four-model digest manifest, persisted reset proof and supervisor approval reference; main scaffold and result export refuse missing/changed freeze.
+- Baseline/Proposed common prompt, visible Accessibility Tree and previous model-observed ledger state; policy switch confined to candidate probe ranking.
+- Development-only local Ollama + Playwright **single-episode runner**, private initial/final/decision screenshots, JSONL action traces, agent HAR, typed metadata with exact checkpoint digest from local Ollama, official evaluator invocation.
+- PoC screenshot and ARIA inspection separated from executed agent output.
+- Pilot operational gate reads real official evaluation metadata, rejects no-data and evaluator errors.
+- Stage artifact indexes, sanitized 48/256 expected-cell CSVs, paired first-decision divergence diagnostics.
+- Colab notebook exports 300-DPI figures, descriptive tables and complete-main-only exact paired McNemar tests.
+- Cross-platform CI, synthetic browser/agent and Colab fixture tests; zero invented benchmark task successes.
 
-- live Shopping Docker task 284 inspection on the target Windows device;
-- actual ≥2 meaningful evidence-choice verification in the live UI;
-- **live validation and debugging** of the newly added development-only model-driven runner on actual Shopping;
-- valid end-to-end PoC run and official evaluator result;
-- approved reset-safe batch orchestrator and actual 48-run pilot with suitability approvals;
-- four-model WebArena competence/repeatability checks (older LEUCO run times do not prove WebArena ability);
-- screened and frozen 32-task main subset;
-- complete protocol/prompt/hardware/evaluator and model digest freeze;
-- 256 real main-experiment results, statistical analysis and Bab IV exports.
+## Not yet validated/completed — STOP conditions
 
-No synthetic test or CI success is represented as a WebArena official task success. If PoC/pilot fails, reassess benchmark scope with supervisor rather than forcing the main experiment.
+- Actual full **live** Shopping inspection and official task evaluator for all three PoC types on the user's Windows RTX 5060.
+- Browser agent capabilities for difficult checkout, form drafting without submission, address update and account order workflows.
+- Verified **persistent** Magento site reset and matched initial states across paired runs.
+- Human-screened and approved PoC/pilot/main tasks; candidate metadata alone is not eligibility.
+- Real Ollama model competence, model digests/hardware logs and reproducible 48 valid pilot episodes.
+- Reviewed/approved all 32 candidates, final supervisor signoff and genuine frozen main identity.
+- Balanced/reset-safe 48/256-run orchestration; main agent runner is deliberately disabled.
+- Actual main results, independent evidence-correctness audit, confirmatory statistics or finished Bab IV.
+
+**No test fixture, successful GitHub Action or model-stated SUCCESS should be reported as official WebArena task success.** If any candidate is not suitable under the registered criteria, discuss a pre-main protocol revision with the supervisor rather than fabricating eligibility. Do not switch to MASM as a Proposed-only addition.
+
+See [EXPERIMENT.md](EXPERIMENT.md) and [SETUP.md](SETUP.md).
+
+Pilot artifacts now require a recorded exact model digest; the gate and exporter detect inconsistencies, and main freeze refuses a model digest that differs from the officially evaluated pilot runs. `config/*.local.json` is gitignored.

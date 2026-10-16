@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const StudySchema = z
   .object({
-    schema_version: z.literal(1),
+    schema_version: z.literal(2),
     benchmark: z
       .object({
         name: z.literal("WebArena-Verified"),
@@ -14,11 +14,32 @@ const StudySchema = z
       .strict(),
     scope: z
       .object({
-        poc_task_id: z.number().int().nonnegative(),
+        poc_task_count: z.literal(3),
+        poc_task_ids: z.tuple([
+          z.number().int().nonnegative(),
+          z.number().int().nonnegative(),
+          z.number().int().nonnegative(),
+        ]),
         pilot_task_count: z.literal(6),
         main_task_count: z.literal(32),
         model_count: z.literal(4),
         methods: z.tuple([z.literal("Baseline"), z.literal("Proposed")]),
+      })
+      .strict(),
+    execution: z
+      .object({
+        max_steps: z.number().int().min(1).max(60),
+        temperature: z.literal(0),
+        max_decision_screenshots: z.number().int().min(0).max(10),
+        require_site_reset_between_episodes: z.literal(true),
+      })
+      .strict(),
+    metrics: z
+      .object({
+        primary: z.literal("official_task_success"),
+        secondary: z.array(z.string().min(1)).min(4),
+        diagnostic: z.array(z.string().min(1)).min(1),
+        paired_unit: z.literal("task_id + model_label"),
       })
       .strict(),
     suitability: z
@@ -46,13 +67,20 @@ export function loadStudyProtocol(
 ): StudyProtocol {
   const protocol = StudySchema.parse(JSON.parse(readFileSync(path, "utf8")));
   if (
-    protocol.benchmark.dataset_tag !== `v${protocol.benchmark.pypi_version}`
+    protocol.benchmark.dataset_tag !==
+    "v" + protocol.benchmark.pypi_version
   ) {
     throw new Error("Dataset tag and pinned CLI version disagree");
+  }
+  if (
+    new Set(protocol.scope.poc_task_ids).size !== protocol.scope.poc_task_count
+  ) {
+    throw new Error("PoC must contain exactly three distinct development IDs");
   }
   return protocol;
 }
 
+/** Main tasks must be held out from every development stage. */
 export function assertMainTaskSelection(
   taskIds: number[],
   pilotIds: number[],
@@ -64,13 +92,16 @@ export function assertMainTaskSelection(
     new Set(taskIds).size !== taskIds.length
   ) {
     throw new Error(
-      `Main selection requires exactly ${protocol.scope.main_task_count} distinct task IDs`,
+      "Main selection requires exactly " +
+        protocol.scope.main_task_count +
+        " distinct task IDs",
     );
   }
-  const excluded = taskIds.filter((id) => pilotIds.includes(id));
-  if (excluded.length) {
+  const development = new Set([...protocol.scope.poc_task_ids, ...pilotIds]);
+  const overlap = taskIds.filter((id) => development.has(id));
+  if (overlap.length) {
     throw new Error(
-      `Main tasks overlap the development/pilot set: ${excluded.join(", ")}`,
+      "Main tasks overlap PoC/pilot development sets: " + overlap.join(", "),
     );
   }
 }

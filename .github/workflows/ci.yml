@@ -28,6 +28,23 @@ jobs:
           python -m pip install --quiet numpy pandas scipy matplotlib
           python tests/notebook-smoke.py
       - run: npm run webarena:validate
+      - run: npm run screening:init -- --stage poc
+      - run: npm run screening:init -- --stage pilot
+      - run: npm run screening:init -- --stage main
+      - name: Reject research freeze with PENDING reviews
+        shell: bash
+        run: |
+          if npm run main:freeze -- --experiment-id ci-block --model-digests no-model-digests.json --reset-evidence missing-reset-proof.md --approved-by CI --approval-ref TEST; then
+            echo "Premature main freeze must fail"
+            exit 1
+          fi
+      - name: Main scaffolding remains blocked without approved freeze
+        shell: bash
+        run: |
+          if npm run artifacts:init -- --stage main --experiment-id ci-unfrozen; then
+            echo "Main scaffold must be blocked before freeze"
+            exit 1
+          fi
       - run: npm run artifacts:init -- --stage poc
       - run: npm run artifacts:init -- --stage pilot
       - run: npm run artifacts:report -- --stage pilot
@@ -50,6 +67,11 @@ jobs:
           cp config/webarena.example.json config/webarena.local.json
           npm run webarena:prepare -- --task 284 --stage poc
           npm run webarena:catalog
+          npm run webarena:prepare -- --task 279 --stage poc
+          npm run webarena:prepare -- --task 528 --stage poc
+          npm run webarena:prepare -- --task 96 --stage pilot
+          npm run screening:check -- --stage main
+          node --input-type=module -e 'import fs from "node:fs"; const r=JSON.parse(fs.readFileSync("reports/task-screening/main-screening-check.json","utf8")); if(r.status!=="INCOMPLETE"||r.expected!==32||r.failures.length!==32)process.exit(1);'
           node --input-type=module -e 'import fs from "node:fs"; const t=JSON.parse(fs.readFileSync("output/catalog/shopping-tasks.json","utf8")); if(t.length<38 || t.some(x=>x.sites.length!==1 || x.sites[0]!=="shopping"))process.exit(1); console.log("Verified "+t.length+" public Shopping tasks")'
 
   windows-smoke:
@@ -66,6 +88,23 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm run webarena:validate
+      - run: npm run screening:init -- --stage poc
+      - run: npm run screening:init -- --stage pilot
+      - run: npm run screening:init -- --stage main
+      - name: Reject research freeze with PENDING reviews
+        shell: bash
+        run: |
+          if npm run main:freeze -- --experiment-id ci-block --model-digests no-model-digests.json --reset-evidence missing-reset-proof.md --approved-by CI --approval-ref TEST; then
+            echo "Premature main freeze must fail"
+            exit 1
+          fi
+      - name: Main scaffolding remains blocked without approved freeze
+        shell: bash
+        run: |
+          if npm run artifacts:init -- --stage main --experiment-id ci-unfrozen; then
+            echo "Main scaffold must be blocked before freeze"
+            exit 1
+          fi
       - run: npm run artifacts:init -- --stage poc
       - run: npm run artifacts:init -- --stage pilot
       - run: npm run artifacts:report -- --stage pilot

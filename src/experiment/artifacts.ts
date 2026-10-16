@@ -8,6 +8,7 @@ import {
 } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
 import { writeJson } from "../webarena/io.ts";
+import { loadPocManifest, loadPilotManifest } from "../webarena/specs.ts";
 
 export const experimentStages = ["poc", "pilot", "main"] as const;
 export type ExperimentStage = (typeof experimentStages)[number];
@@ -127,6 +128,27 @@ export function ensureArtifactLayout(options: ArtifactLayoutOptions) {
 
   const manifestPath = join(outputRoot, "stage-manifest.json");
   const previous = readManifest(manifestPath);
+  // Reject legacy or mixed protocol artifacts even when only ONE task is prepared.
+  if (options.stage === "poc" || options.stage === "pilot") {
+    const registered = new Set(
+      (options.stage === "poc"
+        ? loadPocManifest()
+        : loadPilotManifest()
+      ).tasks.map((task) => task.task_id),
+    );
+    const unregistered = [...taskIds, ...(previous?.task_ids ?? [])].filter(
+      (id) => !registered.has(id),
+    );
+    if (unregistered.length) {
+      throw new Error(
+        "Existing " +
+          options.stage +
+          " artifacts contain retired/unregistered task IDs: " +
+          [...new Set(unregistered)].join(", ") +
+          ". Archive old evidence before continuing.",
+      );
+    }
+  }
   if (
     options.stage === "main" &&
     previous &&

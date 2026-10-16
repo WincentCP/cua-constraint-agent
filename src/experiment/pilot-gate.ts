@@ -38,6 +38,7 @@ export type PilotEpisode = {
   valid: boolean;
   official_success: boolean;
   reason: string;
+  model_digest: string | null;
 };
 
 export type PilotGateReport = {
@@ -79,6 +80,7 @@ export function readEpisode(
     valid: false,
     official_success: false,
     reason: "MISSING_OFFICIAL_ARTIFACT",
+    model_digest: null,
   };
   const required = [
     "agent_response.json",
@@ -99,11 +101,13 @@ export function readEpisode(
       meta.method !== method ||
       meta.execution_state !== "COMPLETED" ||
       meta.ended_at === null ||
-      meta.benchmark_version !== loadStudyProtocol().benchmark.pypi_version
+      meta.benchmark_version !== loadStudyProtocol().benchmark.pypi_version ||
+      !meta.model_digest
     ) {
       result.reason = "RUN_METADATA_MISMATCH";
       return result;
     }
+    result.model_digest = meta.model_digest ?? null;
     WebArenaAgentResponseSchema.parse(
       JSON.parse(readFileSync(join(taskDir, "agent_response.json"), "utf8")),
     );
@@ -215,7 +219,16 @@ export function evaluatePilotGate(
   const minValid = Math.ceil(
     episodes.length * protocol.pilot_gate.min_valid_run_fraction,
   );
+  const digestConsistency = models.every(
+    (model) =>
+      new Set(
+        valid
+          .filter((episode) => episode.model === model.label)
+          .map((episode) => episode.model_digest),
+      ).size <= 1,
+  );
   const checks = {
+    model_checkpoint_consistency: digestConsistency,
     expected_design:
       episodes.length ===
       protocol.scope.pilot_task_count *

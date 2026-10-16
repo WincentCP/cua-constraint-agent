@@ -1,66 +1,32 @@
 {
-  "schema_version": 2,
-  "status": "PILOT_ONLY",
+  "schema_version": 3,
+  "status": "PILOT_CANDIDATES_UNREVIEWED",
   "source_dataset_tag": "v1.2.3",
-  "primary_poc_task": 284,
   "tasks": [
     {
-      "task_id": 279,
+      "task_id": 96,
       "sites": ["shopping"],
-      "intent_template_id": 204,
-      "public_intent": "Provide me with the full names of Bluetooth headphones from Sony, and also share the price range for the available models. Return an object with keys \"names\" (list of product names), \"min\" and \"max\" (as numbers, e.g., 10.99) only, without any additional details.",
-      "rationale": "Public shopping retrieval task requiring a Sony + Bluetooth-headphone filter and cross-product name and price-range evidence; suitability awaits live UI review.",
+      "intent_template_id": 193,
+      "public_intent": "Get the status of my latest order and when will it arrive. Return a list of objects with keys \"status\" and \"arrival_date\" (YYYY-MM-DD format or null if not available), without any additional details.",
+      "rationale": "Identify the latest order, verify its status, and locate a grounded arrival date; suitability awaits live UI inspection.",
       "constraints": [
         {
-          "id": "brand",
-          "description": "Products are from Sony.",
+          "id": "latest_order",
+          "description": "Use the most recent eligible order.",
           "required": true,
-          "hints": ["sony", "brand"]
+          "hints": ["recent", "latest", "order"]
         },
         {
-          "id": "type",
-          "description": "Products are Bluetooth headphones.",
+          "id": "status",
+          "description": "Retrieve the status of that order.",
           "required": true,
-          "hints": ["bluetooth", "headphone", "audio"]
+          "hints": ["status", "order"]
         },
         {
-          "id": "available_names",
-          "description": "Full names of all matching available models are collected.",
+          "id": "arrival_date",
+          "description": "Retrieve the corresponding arrival date or grounded absence.",
           "required": true,
-          "hints": ["name", "model", "result"]
-        },
-        {
-          "id": "price_range",
-          "description": "Minimum and maximum prices are computed from the matching models.",
-          "required": true,
-          "hints": ["price", "sort", "$"]
-        }
-      ]
-    },
-    {
-      "task_id": 284,
-      "sites": ["shopping"],
-      "intent_template_id": 207,
-      "public_intent": "View the product page for the least expensive shoe storage with a minimum storage capacity of 12 pairs.",
-      "rationale": "Primary PoC: compare candidate shoe-storage products against a minimum capacity and lowest-price requirement; suitability awaits live UI review.",
-      "constraints": [
-        {
-          "id": "category",
-          "description": "Selected item is shoe storage.",
-          "required": true,
-          "hints": ["shoe", "storage"]
-        },
-        {
-          "id": "capacity",
-          "description": "Storage supports at least 12 pairs.",
-          "required": true,
-          "hints": ["12", "pair", "capacity"]
-        },
-        {
-          "id": "price_optimality",
-          "description": "Selected feasible product is the least expensive.",
-          "required": true,
-          "hints": ["price", "sort", "$"]
+          "hints": ["arrival", "delivery", "date"]
         }
       ]
     },
@@ -176,47 +142,74 @@
       ]
     },
     {
-      "task_id": 528,
+      "task_id": 571,
       "sites": ["shopping"],
-      "intent_template_id": 154,
-      "public_intent": "Fill out the contact us form with this refund message for the phone screen protector bought March 2023: \"I need a refund. Order: <order_id>. Amount: <amount>. Reason: It broke after three days of use.\" Leave the filled form ready for review and do not submit it.",
-      "rationale": "Cross-page retrieval of prior order metadata followed by a draft contact form that must not be submitted; suitability awaits live UI review.",
+      "intent_template_id": 165,
+      "public_intent": "I recently moved, my address is 231 Willow Way, Suite 100, Chicago, IL, 60601, update my information on OneStopShopping accordingly",
+      "rationale": "Identify the account address form, enter exact new address fields, and verify persisted update; suitability awaits live UI inspection.",
       "constraints": [
         {
-          "id": "product",
-          "description": "The prior purchase is a phone screen protector.",
+          "id": "account",
+          "description": "Select the correct account address record.",
           "required": true,
-          "hints": ["screen protector", "phone", "order"]
+          "hints": ["account", "address", "edit"]
         },
         {
-          "id": "period",
-          "description": "Purchase occurred in March 2023.",
+          "id": "street",
+          "description": "Set street and suite to 231 Willow Way, Suite 100.",
           "required": true,
-          "hints": ["march", "2023", "date"]
+          "hints": ["willow", "suite", "street"]
         },
         {
-          "id": "order_id",
-          "description": "Form contains the matching historical order number.",
+          "id": "region",
+          "description": "Set Chicago, Illinois, United States.",
           "required": true,
-          "hints": ["order", "number", "id"]
+          "hints": ["chicago", "illinois", "state", "city"]
         },
         {
-          "id": "amount",
-          "description": "Form contains the matching historical purchase amount.",
+          "id": "postal_code",
+          "description": "Set ZIP to 60601.",
           "required": true,
-          "hints": ["amount", "total", "price"]
+          "hints": ["60601", "postcode", "zip"]
         },
         {
-          "id": "draft_message",
-          "description": "Contact form uses the requested refund-message text.",
+          "id": "save",
+          "description": "Save and verify the updated address.",
           "required": true,
-          "hints": ["contact", "refund", "message", "form"]
+          "hints": ["save", "update", "address"]
+        }
+      ]
+    },
+    {
+      "task_id": 689,
+      "sites": ["shopping"],
+      "intent_template_id": 163,
+      "public_intent": "Prepare a coupon request in the shop's contact form with the reason: \"I am a loyal customer, give me a coupon\". Keep it ready for review.",
+      "rationale": "Navigate to the contact form and draft the exact customer coupon request without submitting; suitability awaits live UI inspection.",
+      "constraints": [
+        {
+          "id": "contact_form",
+          "description": "Open the shop's contact form.",
+          "required": true,
+          "hints": ["contact", "form"]
+        },
+        {
+          "id": "coupon_request",
+          "description": "Include the exact requested loyalty/coupon reason.",
+          "required": true,
+          "hints": ["coupon", "loyal", "reason"]
+        },
+        {
+          "id": "draft_state",
+          "description": "Leave the request ready for human review.",
+          "required": true,
+          "hints": ["message", "review", "request"]
         },
         {
           "id": "not_submitted",
-          "description": "Form remains a draft and is not submitted.",
+          "description": "Do not submit the contact form.",
           "required": true,
-          "hints": ["submit", "review", "form"]
+          "hints": ["submit", "send", "review"]
         }
       ]
     }
