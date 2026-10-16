@@ -145,7 +145,7 @@ The runner checks that **both PoC and pilot screenings are approved** before pil
 
 After screening **all 32**, pilot GO, actual environment reset proof and supervisor signoff:
 
-1. Build a private JSON file `config/model-digests.local.json` with four `{ "label", "name", "digest" }` entries matching the four configured models; each `digest` must be a real 64-hex SHA-256 from the local model store (Ollama `/api/tags` includes full digest).
+1. With all four local Ollama models installed, run `npm.cmd run models:digests`. This queries Ollama's local `/api/tags` for each exact configured tag and creates a private `config/model-digests.local.json` with four `{ "label", "name", "digest" }` entries. It refuses to overwrite a prior digest manifest. The file is gitignored.
 2. Save verified reset evidence as a private nonempty file, e.g. `reports/pilot/reset-proof.md`. Do not invent the log.
 3. Call the frozen protocol gate:
 
@@ -173,3 +173,5 @@ uvx --from webarena-verified==1.2.3 webarena-verified env stop --site shopping
 ```
 
 **Never publish raw `network.har`, `inspection.har`, session cookies, personal order data, or live credentials.** Preserve local output/report folders with backups; they are gitignored.
+
+**Reproducibility check:** every model-driven run resolves its exact local Ollama checkpoint digest before the run directory is created. Pilot analysis refuses episodes missing the digest and refuses pooling results if checkpoint digests change within one model. If the registered checkpoint is not installed, fix the tag or download model *before* starting an episode; do not replace a failed run opportunistically.

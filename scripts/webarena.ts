@@ -41,6 +41,7 @@ import {
   loadPilotManifest,
   loadPocManifest,
   verifyPublicStageTask,
+  verifyRegisteredPublicCatalog,
 } from "../src/webarena/specs.ts";
 import { loadStudyProtocol } from "../src/experiment/study.ts";
 
@@ -253,6 +254,12 @@ function catalog() {
         "Official task catalog did not return Shopping-only public inputs",
       );
     }
+    const verified = verifyRegisteredPublicCatalog(tasks);
+    console.log(
+      "Pinned Shopping catalog verified: " +
+      verified.registered + " registered task IDs, " +
+      verified.catalog + " official available tasks",
+    );
     if (force()) rmSync(catalogPath, { force: true });
     renameSync(temporary, catalogPath);
     const reportPath = resolve("reports/catalog/shopping-task-index.csv");

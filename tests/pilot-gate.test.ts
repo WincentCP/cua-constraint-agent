@@ -59,6 +59,7 @@ function makeEpisode(
       task_id: taskId,
       model_label: model,
       model_name: model,
+      model_digest: "a".repeat(64),
       method,
       benchmark_version: "1.2.3",
       git_commit: "fixture",
@@ -225,6 +226,12 @@ test("pilot gate passes when preregistered operational checks pass", () => {
     assert.equal(result.completed_valid, 48);
     assert.equal(result.official_successes, 12);
     assert.equal(result.status, "PROVISIONAL_PASS");
+    const target = join(dir, "runs", "qwen3.5-9b", "baseline", "96", "run_metadata.json");
+    const original = JSON.parse(readFileSync(target, "utf8"));
+    writeFileSync(target, JSON.stringify({ ...original, model_digest: "b".repeat(64) }));
+    const mismatched = evaluatePilotGate(dir, models);
+    assert.equal(mismatched.status, "FAIL");
+    assert.equal(mismatched.checks.model_checkpoint_consistency, false);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

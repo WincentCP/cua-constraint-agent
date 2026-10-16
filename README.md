@@ -96,3 +96,5 @@ npm.cmd test
 npm.cmd run test:integration
 npm.cmd run webarena:validate
 ```
+
+**New checkpoint identity command:** after all four model tags are downloaded, run `npm.cmd run models:digests` to create a local, gitignored four-model SHA-256 manifest. Every runner episode records its exact local Ollama digest, pilot validation refuses missing or mixed digests, and the main freeze must match them.

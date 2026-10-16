@@ -255,3 +255,30 @@ export function constraintSpecsForTask(
     throw new Error("Task " + taskId + " not registered for stage " + stage);
   return spec.constraints;
 }
+
+/** Fail closed if any of the 41 preregistered PUBLIC Shopping inputs differ. */
+export function verifyRegisteredPublicCatalog(tasks: WebArenaTask[]) {
+  const registered = [
+    ...loadPocManifest().tasks,
+    ...loadPilotManifest().tasks,
+    ...loadMainCandidateManifest().tasks,
+  ];
+  const byId = new Map(tasks.map((task) => [task.task_id, task]));
+  if (byId.size !== tasks.length) {
+    throw new Error("Official Shopping catalog has duplicate task IDs");
+  }
+  for (const entry of registered) {
+    const task = byId.get(entry.task_id);
+    if (!task ||
+        task.intent_template_id !== entry.intent_template_id ||
+        task.sites.length !== 1 ||
+        task.sites[0] !== "shopping" ||
+        task.intent !== entry.public_intent) {
+      throw new Error(
+        "Registered task " + entry.task_id +
+        " does not match pinned official public Shopping input",
+      );
+    }
+  }
+  return { registered: registered.length, catalog: tasks.length };
+}

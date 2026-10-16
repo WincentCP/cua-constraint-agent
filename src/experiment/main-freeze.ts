@@ -161,6 +161,15 @@ export function createApprovedMainFreeze(args: {
   }
   assertNonempty(args.resetEvidencePath, "site reset evidence");
   const modelDigests = readModelDigests(args.digestsPath);
+  for (const episode of result.episodes.filter((item) => item.valid)) {
+    const expected = modelDigests.find((item) => item.label === episode.model);
+    if (!expected || episode.model_digest !== expected.digest.toLowerCase()) {
+      throw new Error(
+        "Pilot run used a model checkpoint different from proposed main freeze: " +
+        episode.model + " / " + episode.task_id,
+      );
+    }
+  }
   const taskIds = loadMainCandidateManifest()
     .tasks.map((task) => task.task_id)
     .sort((a, b) => a - b);

@@ -29,7 +29,8 @@
     "screening:init": "node --import tsx scripts/screening.ts init",
     "screening:check": "node --import tsx scripts/screening.ts check",
     "screening:require": "node --import tsx scripts/screening.ts require",
-    "main:freeze": "node --import tsx scripts/main-freeze.ts"
+    "main:freeze": "node --import tsx scripts/main-freeze.ts",
+    "models:digests": "node --import tsx scripts/model-digests.ts"
   },
   "dependencies": {
     "playwright": "^1.58.0",

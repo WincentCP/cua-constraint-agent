@@ -16,6 +16,7 @@ import {
   loadMainCandidateManifest,
   verifyPublicStageTask,
   verifyPublicMainCandidate,
+  verifyRegisteredPublicCatalog,
   constraintSpecsForTask,
 } from "../src/webarena/specs.ts";
 import {
@@ -220,4 +221,36 @@ test("official response strict and accessibility hints remain diagnostic", () =>
   assert(probes.some((probe) => probe.may_answer.includes("category")));
   assert(probes.some((probe) => probe.may_answer.includes("capacity")));
   assert(probes.some((probe) => probe.may_answer.includes("price_optimality")));
+});
+
+test("all registered task manifests must match one official PUBLIC catalog", () => {
+  const registered = [
+    ...loadPocManifest().tasks,
+    ...loadPilotManifest().tasks,
+    ...loadMainCandidateManifest().tasks,
+  ];
+  const tasks = registered.map((task) =>
+    WebArenaTaskSchema.parse({
+      task_id: task.task_id,
+      intent_template_id: task.intent_template_id,
+      intent: task.public_intent,
+      sites: ["shopping"],
+      start_urls: ["http://localhost:7770"],
+    }),
+  );
+  assert.equal(verifyRegisteredPublicCatalog(tasks).registered, 41);
+  const altered = tasks.map((task) => ({ ...task }));
+  altered[40].intent += " altered";
+  assert.throws(
+    () => verifyRegisteredPublicCatalog(altered),
+    /Registered task/,
+  );
+  assert.throws(
+    () => verifyRegisteredPublicCatalog(tasks.slice(1)),
+    /Registered task/,
+  );
+  assert.throws(
+    () => verifyRegisteredPublicCatalog([...tasks, tasks[0]]),
+    /duplicate/,
+  );
 });

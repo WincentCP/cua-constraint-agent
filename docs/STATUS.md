@@ -14,7 +14,7 @@ WebArena-Verified **v1.2.3**, **Shopping only**. Three PoC development tasks **2
 - Human review validation requires public constraints, 2 meaningful observed choices, action/reset/evaluator checks, reviewer, notes and real nonempty local evidence.
 - Main freeze command with approved stage screenings, a provisional 48-run pilot gate, exact four-model digest manifest, persisted reset proof and supervisor approval reference; main scaffold and result export refuse missing/changed freeze.
 - Baseline/Proposed common prompt, visible Accessibility Tree and previous model-observed ledger state; policy switch confined to candidate probe ranking.
-- Development-only local Ollama + Playwright **single-episode runner**, private initial/final/decision screenshots, JSONL action traces, agent HAR, typed metadata, official evaluator invocation.
+- Development-only local Ollama + Playwright **single-episode runner**, private initial/final/decision screenshots, JSONL action traces, agent HAR, typed metadata with exact checkpoint digest from local Ollama, official evaluator invocation.
 - PoC screenshot and ARIA inspection separated from executed agent output.
 - Pilot operational gate reads real official evaluation metadata, rejects no-data and evaluator errors.
 - Stage artifact indexes, sanitized 48/256 expected-cell CSVs, paired first-decision divergence diagnostics.
@@ -35,3 +35,5 @@ WebArena-Verified **v1.2.3**, **Shopping only**. Three PoC development tasks **2
 **No test fixture, successful GitHub Action or model-stated SUCCESS should be reported as official WebArena task success.** If any candidate is not suitable under the registered criteria, discuss a pre-main protocol revision with the supervisor rather than fabricating eligibility. Do not switch to MASM as a Proposed-only addition.
 
 See [EXPERIMENT.md](EXPERIMENT.md) and [SETUP.md](SETUP.md).
+
+Pilot artifacts now require a recorded exact model digest; the gate and exporter detect inconsistencies, and main freeze refuses a model digest that differs from the officially evaluated pilot runs. `config/*.local.json` is gitignored.

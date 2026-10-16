@@ -25,6 +25,7 @@ export type ResultsRow = {
   probes: number | null;
   model_calls: number | null;
   run_id: string | null;
+  model_digest: string | null;
   issue: string;
 };
 
@@ -75,6 +76,7 @@ function writeCsv(path: string, rows: ResultsRow[]) {
     "probes",
     "model_calls",
     "run_id",
+    "model_digest",
     "issue",
   ];
   writeFileSync(
@@ -159,6 +161,7 @@ export function buildResultsDataset(args: {
           probes: null,
           model_calls: null,
           run_id: null,
+          model_digest: null,
           issue: "MISSING",
         };
         try {
@@ -166,6 +169,7 @@ export function buildResultsDataset(args: {
             JSON.parse(readFileSync(join(dir, "run_metadata.json"), "utf8")),
           );
           row.run_id = meta.run_id;
+          row.model_digest = meta.model_digest ?? null;
           if (
             meta.stage !== args.stage ||
             meta.task_id !== task.task_id ||
@@ -179,6 +183,9 @@ export function buildResultsDataset(args: {
           row.actions = meta.actions;
           row.probes = meta.probes;
           row.model_calls = meta.model_calls;
+          if (!meta.model_digest) {
+            throw new Error("MISSING_MODEL_DIGEST");
+          }
           if (meta.execution_state !== "COMPLETED" || !meta.ended_at) {
             throw new Error("RUN_INCOMPLETE");
           }
@@ -247,6 +254,17 @@ export function buildResultsDataset(args: {
     }
   }
   mkdirSync(reports, { recursive: true });
+  // Never pool or pair observations from different checkpoint digests.
+  for (const model of args.models) {
+    const validRows = rows.filter((row) => row.model === model.label && row.technical_valid);
+    if (new Set(validRows.map((row) => row.model_digest)).size > 1) {
+      for (const row of validRows) {
+        row.technical_valid = false;
+        row.official_success = null;
+        row.issue = "MODEL_DIGEST_INCONSISTENT";
+      }
+    }
+  }
   writeCsv(join(reports, "run-inventory.csv"), rows);
   writeCsv(
     join(reports, "analysis-results.csv"),

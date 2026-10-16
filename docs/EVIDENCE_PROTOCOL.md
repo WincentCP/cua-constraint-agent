@@ -43,3 +43,5 @@ With **256 complete valid official episodes**, Colab calculates per-model paired
 **Appendices:** public task IDs/intents, screening rubric and anonymized reviews, freeze hashes and model provenance, evaluator conventions, example screenshots for _pre-specified_ failure/success categories, reset logs, analysis scripts/Colab, and source links. Do not embed private HAR or exposed credentials in the manuscript.
 
 **Status:** Only synthetic browser CI exercises the current development runner. Real PoC/pilot/main scores, persistent reset, model competence and human audit have not yet been completed on the laptop.
+
+**Checkpoint provenance:** `run_metadata.json` includes a real local `model_digest`; the pilot evaluator/CSV exporter reject runs without exact digest provenance and comparisons that mix checkpoint digests. Run `npm run models:digests` locally only after installing all four official configured model tags. The manifest remains private and gitignored.

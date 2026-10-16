@@ -48,6 +48,28 @@ export class OllamaModel implements ModelClient {
     }
   }
 
+  async resolveDigest(): Promise<string> {
+    const response = await fetch(new URL("/api/tags", this.endpoint), {
+      signal: AbortSignal.timeout(this.timeoutMs),
+    });
+    if (!response.ok) {
+      throw new Error("Ollama model list failed: HTTP " + response.status);
+    }
+    const catalog = (await response.json()) as {
+      models?: Array<{ name?: string; model?: string; digest?: string }>;
+    };
+    const entry = catalog.models?.find(
+      (candidate) => candidate.name === this.model || candidate.model === this.model,
+    );
+    if (!entry?.digest || !/^[a-f0-9]{64}$/i.test(entry.digest)) {
+      throw new Error(
+        "Local Ollama model missing or digest unavailable: " +
+        this.model + ". Check ollama list and registered tag.",
+      );
+    }
+    return entry.digest.toLowerCase();
+  }
+
   async complete(system: string, user: string) {
     const response = await fetch(new URL("/api/chat", this.endpoint), {
       method: "POST",

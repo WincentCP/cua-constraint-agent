@@ -111,6 +111,12 @@ async function main() {
     method as ExperimentMethod,
     taskId,
   );
+  const client = new OllamaModel(
+    model.name,
+    option("ollama", "http://127.0.0.1:11434"),
+  );
+  // Resolve exact downloaded checkpoint BEFORE opening a run cell.
+  const modelDigest = await client.resolveDigest();
   const runId = randomUUID();
   ensureArtifactLayout({
     stage,
@@ -126,6 +132,7 @@ async function main() {
     task_id: taskId,
     model_label: model.label,
     model_name: model.name,
+    model_digest: modelDigest,
     method: method as ExperimentMethod,
     benchmark_version: protocol.benchmark.pypi_version,
     git_commit: git.status === 0 ? git.stdout.trim() : "unknown",
@@ -163,10 +170,6 @@ async function main() {
       allowedOrigins: taskAllowedOrigins(task),
     });
     await session.goto(task.start_urls[0]);
-    const client = new OllamaModel(
-      model.name,
-      option("ollama", "http://127.0.0.1:11434"),
-    );
     const outcome = await runAgentLoop({
       page: session.page,
       task,
