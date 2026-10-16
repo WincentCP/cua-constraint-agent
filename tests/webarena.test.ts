@@ -1,15 +1,32 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { authHeadersForTask, taskAllowedOrigins } from "../src/webarena/auth.ts";
-import { WebArenaConfigSchema, WebArenaTaskSchema, WebArenaAgentResponseSchema } from "../src/webarena/schema.ts";
 import {
-  loadPocManifest, loadPilotManifest, loadMainCandidateManifest,
-  verifyPublicStageTask, verifyPublicMainCandidate, constraintSpecsForTask,
+  authHeadersForTask,
+  taskAllowedOrigins,
+} from "../src/webarena/auth.ts";
+import {
+  WebArenaConfigSchema,
+  WebArenaTaskSchema,
+  WebArenaAgentResponseSchema,
+} from "../src/webarena/schema.ts";
+import {
+  loadPocManifest,
+  loadPilotManifest,
+  loadMainCandidateManifest,
+  verifyPublicStageTask,
+  verifyPublicMainCandidate,
+  constraintSpecsForTask,
 } from "../src/webarena/specs.ts";
-import { loadStudyProtocol, assertMainTaskSelection } from "../src/experiment/study.ts";
+import {
+  loadStudyProtocol,
+  assertMainTaskSelection,
+} from "../src/experiment/study.ts";
 import { webArenaInvocation } from "../src/webarena/official-cli.ts";
-import { extractControls, probesFromControls } from "../src/browser/accessibility.ts";
+import {
+  extractControls,
+  probesFromControls,
+} from "../src/browser/accessibility.ts";
 import { buildAgentPrompt } from "../src/agent/runner.ts";
 
 const pocIds = [279, 284, 528];
@@ -22,10 +39,19 @@ test("registered 3/6/32 stages are disjoint by ID, and main templates are held o
   const main = loadMainCandidateManifest();
   assert.equal(protocol.benchmark.pypi_version, "1.2.3");
   assert.equal(protocol.scope.poc_task_count, 3);
-  assert.deepEqual(poc.tasks.map((task) => task.task_id), pocIds);
-  assert.deepEqual(pilot.tasks.map((task) => task.task_id), pilotIds);
+  assert.deepEqual(
+    poc.tasks.map((task) => task.task_id),
+    pocIds,
+  );
+  assert.deepEqual(
+    pilot.tasks.map((task) => task.task_id),
+    pilotIds,
+  );
   assert.equal(main.tasks.length, 32);
-  assert.equal(new Set(main.tasks.map((task) => task.intent_template_id)).size, 22);
+  assert.equal(
+    new Set(main.tasks.map((task) => task.intent_template_id)).size,
+    22,
+  );
   assert.equal(poc.status, "POC_DEVELOPMENT_ONLY");
   assert.equal(pilot.status, "PILOT_CANDIDATES_UNREVIEWED");
   assert.equal(main.status, "CANDIDATES_UNSCREENED");
@@ -34,11 +60,15 @@ test("registered 3/6/32 stages are disjoint by ID, and main templates are held o
   assert.equal(new Set(all.map((task) => task.task_id)).size, 41);
   assert.equal(new Set(dev.map((task) => task.intent_template_id)).size, 9);
   const devTemplates = new Set(dev.map((task) => task.intent_template_id));
-  assert(main.tasks.every((task) => !devTemplates.has(task.intent_template_id)));
+  assert(
+    main.tasks.every((task) => !devTemplates.has(task.intent_template_id)),
+  );
   for (const task of dev) {
     assert.deepEqual(task.sites, ["shopping"]);
     assert(task.public_intent.length > 25);
-    assert(task.constraints.length >= protocol.suitability.min_required_constraints);
+    assert(
+      task.constraints.length >= protocol.suitability.min_required_constraints,
+    );
     assert(task.constraints.every((constraint) => constraint.required));
   }
   assert.equal(protocol.execution.max_steps, 16);
@@ -65,10 +95,21 @@ test("stage task verification enforces official public instructions and stage bo
     authHeadersForTask(task, config)["X-M2-Customer-Auto-Login"],
     "emma.lopez@gmail.com:Password.123",
   );
-  assert.throws(() => taskAllowedOrigins({ ...task, sites: ["gitlab"] }), /Shopping-only/);
-  assert.throws(() => verifyPublicStageTask({ ...task, intent: "changed" }, "poc"), /re-audit/);
-  assert.throws(() => verifyPublicStageTask({ ...task, sites: ["reddit"] }, "poc"), /re-audit/);
-  assert.throws(() => WebArenaTaskSchema.parse({ ...task, hidden_answer: "leak" }));
+  assert.throws(
+    () => taskAllowedOrigins({ ...task, sites: ["gitlab"] }),
+    /Shopping-only/,
+  );
+  assert.throws(
+    () => verifyPublicStageTask({ ...task, intent: "changed" }, "poc"),
+    /re-audit/,
+  );
+  assert.throws(
+    () => verifyPublicStageTask({ ...task, sites: ["reddit"] }, "poc"),
+    /re-audit/,
+  );
+  assert.throws(() =>
+    WebArenaTaskSchema.parse({ ...task, hidden_answer: "leak" }),
+  );
   const candidate = loadMainCandidateManifest().tasks[0];
   const mainTask = WebArenaTaskSchema.parse({
     task_id: candidate.task_id,
@@ -78,38 +119,85 @@ test("stage task verification enforces official public instructions and stage bo
     intent: candidate.public_intent,
   });
   assert.equal(verifyPublicMainCandidate(mainTask).task_id, candidate.task_id);
-  assert.throws(() => verifyPublicMainCandidate({ ...mainTask, intent: "edited" }), /re-audit/);
+  assert.throws(
+    () => verifyPublicMainCandidate({ ...mainTask, intent: "edited" }),
+    /re-audit/,
+  );
 });
 
 test("four local quantized models and pinned official invocation are explicit", () => {
-  const models = JSON.parse(readFileSync("config/models.json", "utf8")) as Array<{label:string;name:string}>;
+  const models = JSON.parse(
+    readFileSync("config/models.json", "utf8"),
+  ) as Array<{ label: string; name: string }>;
   assert.equal(models.length, 4);
   assert.equal(new Set(models.map((model) => model.label)).size, 4);
   assert(models.every((model) => /q4[_-]k[_-]m/i.test(model.name)));
-  const invocation = webArenaInvocation(["agent-input-get", "--task-ids", "284"]);
-  assert.deepEqual(invocation.args.slice(0, 3), ["--from", "webarena-verified==1.2.3", "webarena-verified"]);
+  const invocation = webArenaInvocation([
+    "agent-input-get",
+    "--task-ids",
+    "284",
+  ]);
+  assert.deepEqual(invocation.args.slice(0, 3), [
+    "--from",
+    "webarena-verified==1.2.3",
+    "webarena-verified",
+  ]);
 });
 
 test("main selection rejects PoC and pilot overlap", () => {
   const mainIds = loadMainCandidateManifest().tasks.map((task) => task.task_id);
   assert.doesNotThrow(() => assertMainTaskSelection(mainIds, pilotIds));
-  assert.throws(() => assertMainTaskSelection(mainIds.slice(0, 31), pilotIds), /32/);
-  assert.throws(() => assertMainTaskSelection([...mainIds.slice(0,31), 284], pilotIds), /overlap/);
-  assert.throws(() => assertMainTaskSelection([...mainIds.slice(0,31), 323], pilotIds), /overlap/);
-  assert.throws(() => assertMainTaskSelection([...mainIds.slice(0,31), mainIds[0]], pilotIds), /distinct/);
+  assert.throws(
+    () => assertMainTaskSelection(mainIds.slice(0, 31), pilotIds),
+    /32/,
+  );
+  assert.throws(
+    () => assertMainTaskSelection([...mainIds.slice(0, 31), 284], pilotIds),
+    /overlap/,
+  );
+  assert.throws(
+    () => assertMainTaskSelection([...mainIds.slice(0, 31), 323], pilotIds),
+    /overlap/,
+  );
+  assert.throws(
+    () =>
+      assertMainTaskSelection([...mainIds.slice(0, 31), mainIds[0]], pilotIds),
+    /distinct/,
+  );
 });
 
 test("agent prompt is method-blind and can include the same evidence state for either policy", () => {
   const spec = loadPocManifest().tasks.find((x) => x.task_id === 284)!;
   const task = WebArenaTaskSchema.parse({
-    task_id: 284, intent_template_id: spec.intent_template_id,
-    sites: ["shopping"], start_urls: ["http://localhost:7770"], intent: spec.public_intent,
+    task_id: 284,
+    intent_template_id: spec.intent_template_id,
+    sites: ["shopping"],
+    start_urls: ["http://localhost:7770"],
+    intent: spec.public_intent,
   });
   const snap = '- link "Shoe storage 12 pairs"';
-  const probes = probesFromControls(extractControls(snap), constraintSpecsForTask(284, "poc"));
-  const states = { category: "UNKNOWN", capacity: "SATISFIED", price_optimality: "UNKNOWN" } as const;
-  const payload = buildAgentPrompt(task, snap, spec.constraints, probes, 1, 16, states);
-  assert.equal(payload.includes('"previous_model_observed_constraint_states"'), true);
+  const probes = probesFromControls(
+    extractControls(snap),
+    constraintSpecsForTask(284, "poc"),
+  );
+  const states = {
+    category: "UNKNOWN",
+    capacity: "SATISFIED",
+    price_optimality: "UNKNOWN",
+  } as const;
+  const payload = buildAgentPrompt(
+    task,
+    snap,
+    spec.constraints,
+    probes,
+    1,
+    16,
+    states,
+  );
+  assert.equal(
+    payload.includes('"previous_model_observed_constraint_states"'),
+    true,
+  );
   assert.equal(payload.includes('"method"'), false);
   assert.equal(payload.includes('"policy"'), false);
   assert.equal(payload.includes('"SATISFIED"'), true);
@@ -117,7 +205,10 @@ test("agent prompt is method-blind and can include the same evidence state for e
 
 test("official response strict and accessibility hints remain diagnostic", () => {
   const response = WebArenaAgentResponseSchema.parse({
-    task_type: "NAVIGATE", status: "SUCCESS", retrieved_data: null, error_details: null,
+    task_type: "NAVIGATE",
+    status: "SUCCESS",
+    retrieved_data: null,
+    error_details: null,
   });
   assert.equal(response.status, "SUCCESS");
   const snapshot =

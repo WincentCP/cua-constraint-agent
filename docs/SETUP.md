@@ -83,7 +83,7 @@ Tasks: **279** Sony Bluetooth headphones names and price range; **284** least ex
 
 Do not claim GO from inspection automatically.
 
-## 5. Produce *public catalog* and screening reviews
+## 5. Produce _public catalog_ and screening reviews
 
 ```powershell
 npm.cmd run webarena:catalog

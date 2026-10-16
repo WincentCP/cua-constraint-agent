@@ -4,15 +4,15 @@ Research prototype comparing **Baseline** versus **constraint-directed evidence 
 
 ## Research design (registered candidates; not completed runs)
 
-| Stage | Official task IDs | Use |
-|---|---|---|
-| **PoC (3)** | **279, 284, 528** | Development/debugging: retrieval, product comparison, draft form |
-| **Pilot (6)** | **96, 323, 436, 506, 571, 689** | Feasibility on 4 models × 2 methods = **48 runs** |
+| Stage         | Official task IDs                                              | Use                                                                                        |
+| ------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **PoC (3)**   | **279, 284, 528**                                              | Development/debugging: retrieval, product comparison, draft form                           |
+| **Pilot (6)** | **96, 323, 436, 506, 571, 689**                                | Feasibility on 4 models × 2 methods = **48 runs**                                          |
 | **Main (32)** | See [config/main-candidates.json](config/main-candidates.json) | Held-out candidates on 4 models × 2 methods = **256 runs**, **NOT yet approved or frozen** |
 
 All 41 task IDs are distinct. The **32 main candidates also use templates disjoint from PoC and pilot**, reducing development–test leakage. All 41 candidates are sourced from the **official WebArena-Verified v1.2.3 public Shopping task dataset**. No hidden evaluator reference answers are included in manifests or agent prompts.
 
-Main candidate groups (8 each): product navigation/filtering, product comparison, order retrieval, and reviews/form/account mutations. Individual candidate suitability is **UNREVIEWED** until live UI evidence confirms ≥3 meaningful public constraints and ≥2 distinct evidence-acquisition choices, browser action support, site reset and official evaluation. **All 32 must pass to freeze this exact set**; if not, consult the supervisor and revise the preregistered design *before* main outcomes.
+Main candidate groups (8 each): product navigation/filtering, product comparison, order retrieval, and reviews/form/account mutations. Individual candidate suitability is **UNREVIEWED** until live UI evidence confirms ≥3 meaningful public constraints and ≥2 distinct evidence-acquisition choices, browser action support, site reset and official evaluation. **All 32 must pass to freeze this exact set**; if not, consult the supervisor and revise the preregistered design _before_ main outcomes.
 
 ## What works in code, and what does not
 
@@ -20,7 +20,7 @@ Implemented: public task metadata checks, stage isolation, a shared Baseline/Pro
 
 **Not yet established:** live WebArena PoC success on the user's Windows RTX 5060 laptop, robust browser action handling for all task types, reproducible **persistent** Magento reset, competent four-model pilot, all 32 main UI screens, a 48/256-episode unattended runner, or final experiment outcomes. **CI PASS does not prove agent task success**. The main runner remains locked.
 
-Research methods differ **only** in probe ranking; they receive matched instructions, model, candidate controls, shared accessible observations/ledger context and configured action budget. Baseline ranks model-estimated progress; Proposed ranks unresolved constraint relevance, then forward cost/order. Model-reported grounded quotes are *diagnostic until separately audited*, never ground-truth evaluator outcomes.
+Research methods differ **only** in probe ranking; they receive matched instructions, model, candidate controls, shared accessible observations/ledger context and configured action budget. Baseline ranks model-estimated progress; Proposed ranks unresolved constraint relevance, then forward cost/order. Model-reported grounded quotes are _diagnostic until separately audited_, never ground-truth evaluator outcomes.
 
 ## New machine: PoC and screening
 

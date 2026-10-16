@@ -448,42 +448,68 @@ function evaluate() {
   const label = option("model-label");
   const method = option("method");
   if (!label || (method !== "Baseline" && method !== "Proposed")) {
-    throw new Error("Official evaluation requires --model-label and --method Baseline|Proposed");
+    throw new Error(
+      "Official evaluation requires --model-label and --method Baseline|Proposed",
+    );
   }
-  const models = JSON.parse(readFileSync("config/models.json", "utf8")) as Array<{label:string}>;
+  const models = JSON.parse(
+    readFileSync("config/models.json", "utf8"),
+  ) as Array<{ label: string }>;
   if (!models.some((model) => model.label === label)) {
     throw new Error("Unknown model label: " + label);
   }
   const output = outputRoot();
   const runDir = factorialTaskArtifactDir(output, label, method, id);
-  for (const required of ["run_metadata.json", "agent_response.json", "network.har"]) {
+  for (const required of [
+    "run_metadata.json",
+    "agent_response.json",
+    "network.har",
+  ]) {
     if (!existsSync(join(runDir, required))) {
       throw new Error("Missing agent-run artifact: " + join(runDir, required));
     }
   }
-  const metadata = JSON.parse(readFileSync(join(runDir, "run_metadata.json"), "utf8")) as {
-    stage: string; task_id: number; model_label: string; method: string; execution_state: string;
+  const metadata = JSON.parse(
+    readFileSync(join(runDir, "run_metadata.json"), "utf8"),
+  ) as {
+    stage: string;
+    task_id: number;
+    model_label: string;
+    method: string;
+    execution_state: string;
   };
-  if (metadata.stage !== stage || metadata.task_id !== id ||
-      metadata.model_label !== label || metadata.method !== method ||
-      metadata.execution_state !== "COMPLETED") {
-    throw new Error("Refusing evaluation: run metadata does not match requested cell");
+  if (
+    metadata.stage !== stage ||
+    metadata.task_id !== id ||
+    metadata.model_label !== label ||
+    metadata.method !== method ||
+    metadata.execution_state !== "COMPLETED"
+  ) {
+    throw new Error(
+      "Refusing evaluation: run metadata does not match requested cell",
+    );
   }
   if (existsSync(join(runDir, "eval_result.json")) && !force()) {
-    throw new Error("Official evaluation already exists; preserve evidence or explicitly use --force");
+    throw new Error(
+      "Official evaluation already exists; preserve evidence or explicitly use --force",
+    );
   }
-  const result = requireSuccess(webArenaVerified([
-    "eval-tasks",
-    "--config",
-    configPath(),
-    "--task-ids",
-    String(id),
-    "--output-dir",
-    join(output, "runs", label, method.toLowerCase()),
-  ]));
+  const result = requireSuccess(
+    webArenaVerified([
+      "eval-tasks",
+      "--config",
+      configPath(),
+      "--task-ids",
+      String(id),
+      "--output-dir",
+      join(output, "runs", label, method.toLowerCase()),
+    ]),
+  );
   refreshCurrentReport(stage);
   console.log(result.stdout.trim());
-  console.log("Official evaluation output: " + join(runDir, "eval_result.json"));
+  console.log(
+    "Official evaluation output: " + join(runDir, "eval_result.json"),
+  );
 }
 
 const command = process.argv[2] ?? "help";

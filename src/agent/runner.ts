@@ -170,7 +170,15 @@ export async function runAgentLoop(options: {
     stats.model_calls++;
     const raw = await model.complete(
       SYSTEM,
-      buildAgentPrompt(task, snapshot, constraints, probes, step, maxSteps, priorStates),
+      buildAgentPrompt(
+        task,
+        snapshot,
+        constraints,
+        probes,
+        step,
+        maxSteps,
+        priorStates,
+      ),
     );
     const plan = parseAgentPlan(raw);
     const accepted = validEvidence(plan.evidence, snapshot, constraints);

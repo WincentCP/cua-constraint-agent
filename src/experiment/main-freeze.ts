@@ -3,30 +3,45 @@ import { join, resolve } from "node:path";
 import { z } from "zod";
 import { makeFreeze, sha256, verifyFreeze } from "./freeze.ts";
 import { loadStudyProtocol } from "./study.ts";
-import { loadPocManifest, loadPilotManifest, loadMainCandidateManifest } from "../webarena/specs.ts";
+import {
+  loadPocManifest,
+  loadPilotManifest,
+  loadMainCandidateManifest,
+} from "../webarena/specs.ts";
 import { defaultScreeningPath, requireApprovedScreening } from "./screening.ts";
 import { evaluatePilotGate } from "./pilot-gate.ts";
 
-const DigestSchema = z.array(z.object({
-  label: z.string().min(1),
-  name: z.string().min(1),
-  digest: z.string().regex(/^[a-f0-9]{64}$/i),
-}).strict()).length(4);
+const DigestSchema = z
+  .array(
+    z
+      .object({
+        label: z.string().min(1),
+        name: z.string().min(1),
+        digest: z.string().regex(/^[a-f0-9]{64}$/i),
+      })
+      .strict(),
+  )
+  .length(4);
 
 function data(path: string) {
   return JSON.parse(readFileSync(resolve(path), "utf8")) as unknown;
 }
 
 function assertNonempty(path: string, label: string) {
-  if (!existsSync(path) || !statSync(path).isFile() || statSync(path).size === 0) {
+  if (
+    !existsSync(path) ||
+    !statSync(path).isFile() ||
+    statSync(path).size === 0
+  ) {
     throw new Error("Missing " + label + ": " + path);
   }
 }
 
 function modelConfigs() {
-  return z.array(z.object({ label: z.string(), name: z.string() }).strict()).length(4).parse(
-    data("config/models.json"),
-  );
+  return z
+    .array(z.object({ label: z.string(), name: z.string() }).strict())
+    .length(4)
+    .parse(data("config/models.json"));
 }
 
 function fingerprintFiles() {
@@ -39,7 +54,9 @@ function fingerprintFiles() {
     "src/browser/session.ts",
     "src/experiment/results.ts",
   ];
-  return Object.fromEntries(paths.map((path) => [path, sha256(readFileSync(path, "utf8"))]));
+  return Object.fromEntries(
+    paths.map((path) => [path, sha256(readFileSync(path, "utf8"))]),
+  );
 }
 
 export function currentStudyFingerprint() {
@@ -76,11 +93,17 @@ export function requireMainFreeze(path: string, selected: number[]) {
   if (!identity) throw new Error("Missing frozen study identity");
   // Integrity check and current-source agreement. No hidden evaluator answers.
   verifyFreeze(path, identity);
-  const target = loadMainCandidateManifest().tasks.map((task) => task.task_id).sort((a,b)=>a-b);
-  const requested = selected.slice().sort((a,b)=>a-b);
-  if (JSON.stringify(target) !== JSON.stringify(requested) ||
-      JSON.stringify(target) !== JSON.stringify(identity.task_ids)) {
-    throw new Error("Main task IDs differ from the reviewed and frozen 32-candidate selection");
+  const target = loadMainCandidateManifest()
+    .tasks.map((task) => task.task_id)
+    .sort((a, b) => a - b);
+  const requested = selected.slice().sort((a, b) => a - b);
+  if (
+    JSON.stringify(target) !== JSON.stringify(requested) ||
+    JSON.stringify(target) !== JSON.stringify(identity.task_ids)
+  ) {
+    throw new Error(
+      "Main task IDs differ from the reviewed and frozen 32-candidate selection",
+    );
   }
   if (sha256(currentStudyFingerprint()) !== sha256(identity.fingerprints)) {
     throw new Error("Code/protocol/task manifest changed after main freeze");
@@ -109,23 +132,38 @@ export function createApprovedMainFreeze(args: {
   if (!args.approvedBy.trim() || !args.approvalReference.trim()) {
     throw new Error("Supervisor sign-off name and reference are required");
   }
-  const dest = join("output", "main", args.experimentId, "research-freeze.json");
-  if (existsSync(dest)) throw new Error("Research freeze already exists and cannot be overwritten");
+  const dest = join(
+    "output",
+    "main",
+    args.experimentId,
+    "research-freeze.json",
+  );
+  if (existsSync(dest))
+    throw new Error("Research freeze already exists and cannot be overwritten");
   const catalog = args.catalogPath ?? "output/catalog/shopping-tasks.json";
   for (const stage of ["poc", "pilot", "main"] as const) {
     requireApprovedScreening(
-      stage === "main" ? args.mainReview ?? defaultScreeningPath(stage) : defaultScreeningPath(stage),
-      stage, catalog,
+      stage === "main"
+        ? (args.mainReview ?? defaultScreeningPath(stage))
+        : defaultScreeningPath(stage),
+      stage,
+      catalog,
     );
   }
   const models = modelConfigs();
   const result = evaluatePilotGate(args.pilotRoot ?? "output/pilot", models);
   if (result.status !== "PROVISIONAL_PASS") {
-    throw new Error("Pilot operational gate is not provisionally passed: " + result.completed_valid + "/48 valid");
+    throw new Error(
+      "Pilot operational gate is not provisionally passed: " +
+        result.completed_valid +
+        "/48 valid",
+    );
   }
   assertNonempty(args.resetEvidencePath, "site reset evidence");
   const modelDigests = readModelDigests(args.digestsPath);
-  const taskIds = loadMainCandidateManifest().tasks.map((task) => task.task_id).sort((a,b)=>a-b);
+  const taskIds = loadMainCandidateManifest()
+    .tasks.map((task) => task.task_id)
+    .sort((a, b) => a - b);
   const review = data(args.mainReview ?? defaultScreeningPath("main"));
   const identity = {
     task_ids: taskIds,

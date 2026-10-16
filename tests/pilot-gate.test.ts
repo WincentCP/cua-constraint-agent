@@ -250,8 +250,7 @@ test("pilot gate rejects wrong evaluator version, task template and empty HAR", 
     assert.equal(result.completed_valid, 0);
     assert.equal(
       result.episodes.find(
-        (x) =>
-          x.task_id === 96 && x.model === label && x.method === "Baseline",
+        (x) => x.task_id === 96 && x.model === label && x.method === "Baseline",
       )?.reason,
       "EVALUATOR_VERSION_MISMATCH",
     );
@@ -267,8 +266,7 @@ test("pilot gate rejects wrong evaluator version, task template and empty HAR", 
     assert.equal(result.completed_valid, 0);
     assert.equal(
       result.episodes.find(
-        (x) =>
-          x.task_id === 96 && x.model === label && x.method === "Baseline",
+        (x) => x.task_id === 96 && x.model === label && x.method === "Baseline",
       )?.reason,
       "EVALUATOR_TASK_MISMATCH",
     );

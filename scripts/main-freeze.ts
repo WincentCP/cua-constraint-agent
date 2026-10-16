@@ -10,11 +10,17 @@ try {
   const resetEvidence = option("reset-evidence");
   const approvedBy = option("approved-by");
   const approvalReference = option("approval-ref");
-  if (!experimentId || !digests || !resetEvidence || !approvedBy || !approvalReference) {
+  if (
+    !experimentId ||
+    !digests ||
+    !resetEvidence ||
+    !approvedBy ||
+    !approvalReference
+  ) {
     throw new Error(
       "Usage: npm run main:freeze -- --experiment-id thesis-v1 " +
-      "--model-digests <local-json> --reset-evidence <local-reset-log> " +
-      "--approved-by <supervisor> --approval-ref <approval-document>",
+        "--model-digests <local-json> --reset-evidence <local-reset-log> " +
+        "--approved-by <supervisor> --approval-ref <approval-document>",
     );
   }
   const result = createApprovedMainFreeze({
@@ -28,7 +34,9 @@ try {
   });
   console.log("Research identity frozen: " + result.path);
   console.log("SHA-256: " + result.freeze.sha256);
-  console.log("Note: this freezes the protocol; it does not run main episodes.");
+  console.log(
+    "Note: this freezes the protocol; it does not run main episodes.",
+  );
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;

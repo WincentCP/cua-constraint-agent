@@ -48,7 +48,7 @@ No MASM-specific treatment. If common lightweight execution memory becomes neces
 
 ## PoC — GO / MODIFY / REJECT
 
-All three tasks must be independently inspected with initial screenshot/Accessibility Tree, at least two *meaningful* choices, working Shopping session, persisted reset evidence and no oracle leakage. Inspecting a page is NOT executing an agent. Each PoC type must separately demonstrate agent model calls/actions + official agent response/HAR/evaluation as a feasibility check (failure can be diagnosed, but cannot be mistaken for benchmark success). If unsupported task types persist, STOP and revise runner/scope, rather than starting pilot blindly.
+All three tasks must be independently inspected with initial screenshot/Accessibility Tree, at least two _meaningful_ choices, working Shopping session, persisted reset evidence and no oracle leakage. Inspecting a page is NOT executing an agent. Each PoC type must separately demonstrate agent model calls/actions + official agent response/HAR/evaluation as a feasibility check (failure can be diagnosed, but cannot be mistaken for benchmark success). If unsupported task types persist, STOP and revise runner/scope, rather than starting pilot blindly.
 
 The development-only runner supports **one task/model/method at a time**. It is not yet an approved full-trial orchestrator. Use `artifacts:init --stage poc`, `webarena:prepare`, `webarena:inspect` for each of 279/284/528; do not count debugging trajectories as pilot/main statistics.
 
@@ -75,7 +75,7 @@ Only after three approved screening documents, a provisional pilot GO, independe
 
 **Secondary:** independently reviewed evidence correctness/required-constraint coverage; browser actions, candidate probes chosen, model calls, wall clock time, invalid output/error rate and budget exhaustion. Examine medians, distributions and missingness. Record **first-decision divergence** as a diagnostic that demonstrates whether the policies actually chose different probes, **not** evidence of correctness.
 
-No automated inference of evidence *correctness* from an ARIA substring or relevance hint. A fair blinded audit of representative trajectories must have its selection rule registered before outcomes are inspected; report limitations if evidence cannot be audited reliably.
+No automated inference of evidence _correctness_ from an ARIA substring or relevance hint. A fair blinded audit of representative trajectories must have its selection rule registered before outcomes are inspected; report limitations if evidence cannot be audited reliably.
 
 Run-order balancing/randomization and robust persistent reset must be specified and implemented **before** the main runner is enabled. Never delete failed episodes, re-run only Proposed, or treat unevaluated runs as failures.
 

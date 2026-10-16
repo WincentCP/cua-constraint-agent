@@ -1,7 +1,10 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { z } from "zod";
-import { loadPilotManifest, verifyPublicMainCandidate } from "../webarena/specs.ts";
+import {
+  loadPilotManifest,
+  verifyPublicMainCandidate,
+} from "../webarena/specs.ts";
 import { requireMainFreeze } from "./main-freeze.ts";
 import { readTasks } from "../webarena/io.ts";
 import { loadStudyProtocol, assertMainTaskSelection } from "./study.ts";
@@ -187,7 +190,8 @@ export function buildResultsDataset(args: {
             throw new Error("MISSING_AGENT_EVIDENCE");
           }
           const traceLines = readFileSync(join(dir, "trace.jsonl"), "utf8")
-            .split(/\r?\n/).filter(Boolean);
+            .split(/\r?\n/)
+            .filter(Boolean);
           if (!traceLines.length) throw new Error("MISSING_AGENT_EVIDENCE");
           for (const line of traceLines) {
             const event = JSON.parse(line) as { event?: string };
@@ -251,25 +255,59 @@ export function buildResultsDataset(args: {
   // First-decision divergence is diagnostic only, not evidence correctness.
   const firstProbe = (dir: string): string | null => {
     try {
-      const lines = readFileSync(join(dir, "trace.jsonl"), "utf8").split(/\r?\n/).filter(Boolean);
-      const events = lines.map((line) => JSON.parse(line) as { event?: string; selected_probe_id?: string });
-      return events.find((item) => item.event === "DECISION")?.selected_probe_id ?? null;
-    } catch { return null; }
+      const lines = readFileSync(join(dir, "trace.jsonl"), "utf8")
+        .split(/\r?\n/)
+        .filter(Boolean);
+      const events = lines.map(
+        (line) =>
+          JSON.parse(line) as { event?: string; selected_probe_id?: string },
+      );
+      return (
+        events.find((item) => item.event === "DECISION")?.selected_probe_id ??
+        null
+      );
+    } catch {
+      return null;
+    }
   };
-  const paired = ["stage,task_id,model,paired_official_valid,first_decision_diverged"];
+  const paired = [
+    "stage,task_id,model,paired_official_valid,first_decision_diverged",
+  ];
   for (const task of taskSpecs) {
     for (const model of args.models) {
-      const rs = rows.filter((row) => row.task_id === task.task_id && row.model === model.label);
-      const pairedValid = rs.length === 2 && rs.every((row) => row.technical_valid);
-      const baseline = firstProbe(join(root, "runs", model.label, "baseline", String(task.task_id)));
-      const proposed = firstProbe(join(root, "runs", model.label, "proposed", String(task.task_id)));
-      const different = pairedValid && baseline !== null && proposed !== null
-        ? String(baseline !== proposed) : "";
-      paired.push([args.stage, String(task.task_id), model.label, String(pairedValid), different]
-        .map(csvValue).join(","));
+      const rs = rows.filter(
+        (row) => row.task_id === task.task_id && row.model === model.label,
+      );
+      const pairedValid =
+        rs.length === 2 && rs.every((row) => row.technical_valid);
+      const baseline = firstProbe(
+        join(root, "runs", model.label, "baseline", String(task.task_id)),
+      );
+      const proposed = firstProbe(
+        join(root, "runs", model.label, "proposed", String(task.task_id)),
+      );
+      const different =
+        pairedValid && baseline !== null && proposed !== null
+          ? String(baseline !== proposed)
+          : "";
+      paired.push(
+        [
+          args.stage,
+          String(task.task_id),
+          model.label,
+          String(pairedValid),
+          different,
+        ]
+          .map(csvValue)
+          .join(","),
+      );
     }
   }
-  writeFileSync(join(reports, "paired-first-decisions.csv"), paired.join("\n") + "\n", "utf8");
+  writeFileSync(
+    join(reports, "paired-first-decisions.csv"),
+    paired.join("\n") + "\n",
+    "utf8",
+  );
   const valid = rows.filter((row) => row.technical_valid);
   const success = valid.filter((row) => row.official_success === true);
   const expected =

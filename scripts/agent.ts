@@ -21,7 +21,10 @@ import {
 import { readConfig, readTask, writeJson } from "../src/webarena/io.ts";
 import { runCommand, webArenaVerified } from "../src/webarena/official-cli.ts";
 import { verifyPublicStageTask } from "../src/webarena/specs.ts";
-import { defaultScreeningPath, requireApprovedScreening } from "../src/experiment/screening.ts";
+import {
+  defaultScreeningPath,
+  requireApprovedScreening,
+} from "../src/experiment/screening.ts";
 
 function option(name: string, fallback?: string) {
   const idx = process.argv.indexOf("--" + name);
@@ -73,7 +76,8 @@ async function main() {
   if (maxSteps > 60) throw new Error("Hard cap: 60 browser decisions");
   if (stage === "pilot" && maxSteps !== protocol.execution.max_steps) {
     throw new Error(
-      "Pilot requires the preregistered matched decision budget of " + protocol.execution.max_steps,
+      "Pilot requires the preregistered matched decision budget of " +
+        protocol.execution.max_steps,
     );
   }
   const configPath = resolve(option("config", "config/webarena.local.json")!);
@@ -94,7 +98,9 @@ async function main() {
   const task = readTask(input, taskId);
   const taskSpec = verifyPublicStageTask(task, stage);
   if (stage === "pilot") {
-    const catalog = resolve(option("catalog", "output/catalog/shopping-tasks.json")!);
+    const catalog = resolve(
+      option("catalog", "output/catalog/shopping-tasks.json")!,
+    );
     requireApprovedScreening(defaultScreeningPath("poc"), "poc", catalog);
     requireApprovedScreening(defaultScreeningPath("pilot"), "pilot", catalog);
   }

@@ -40,6 +40,6 @@ With **256 complete valid official episodes**, Colab calculates per-model paired
 
 **Bab IV:** environment and model configuration; three PoC GO/MODIFY findings; pilot competence and floor effect; outcome-blind main screening/freeze; official paired task success; secondary audited evidence quality; efficiency and treatment-divergence diagnostic; failure cases and threats to validity.
 
-**Appendices:** public task IDs/intents, screening rubric and anonymized reviews, freeze hashes and model provenance, evaluator conventions, example screenshots for *pre-specified* failure/success categories, reset logs, analysis scripts/Colab, and source links. Do not embed private HAR or exposed credentials in the manuscript.
+**Appendices:** public task IDs/intents, screening rubric and anonymized reviews, freeze hashes and model provenance, evaluator conventions, example screenshots for _pre-specified_ failure/success categories, reset logs, analysis scripts/Colab, and source links. Do not embed private HAR or exposed credentials in the manuscript.
 
 **Status:** Only synthetic browser CI exercises the current development runner. Real PoC/pilot/main scores, persistent reset, model competence and human audit have not yet been completed on the laptop.

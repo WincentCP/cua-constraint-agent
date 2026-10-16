@@ -38,8 +38,10 @@ function parseTaskIds(value?: string) {
 }
 
 function defaultTaskIds(stage: "poc" | "pilot" | "main") {
-  if (stage === "poc") return loadPocManifest().tasks.map((task) => task.task_id);
-  if (stage === "pilot") return loadPilotManifest().tasks.map((task) => task.task_id);
+  if (stage === "poc")
+    return loadPocManifest().tasks.map((task) => task.task_id);
+  if (stage === "pilot")
+    return loadPilotManifest().tasks.map((task) => task.task_id);
   return loadMainCandidateManifest().tasks.map((task) => task.task_id);
 }
 
@@ -66,7 +68,8 @@ try {
 
     if (
       stage === "poc" &&
-      (taskIds.length !== pocIds.length || taskIds.some((id) => !pocIds.includes(id)))
+      (taskIds.length !== pocIds.length ||
+        taskIds.some((id) => !pocIds.includes(id)))
     ) {
       throw new Error(
         "PoC artifacts require exactly three registered development tasks",
