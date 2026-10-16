@@ -174,4 +174,4 @@ uvx --from webarena-verified==1.2.3 webarena-verified env stop --site shopping
 
 **Never publish raw `network.har`, `inspection.har`, session cookies, personal order data, or live credentials.** Preserve local output/report folders with backups; they are gitignored.
 
-**Reproducibility check:** every model-driven run resolves its exact local Ollama checkpoint digest before the run directory is created. Pilot analysis refuses episodes missing the digest and refuses pooling results if checkpoint digests change within one model. If the registered checkpoint is not installed, fix the tag or download model *before* starting an episode; do not replace a failed run opportunistically.
+**Reproducibility check:** every model-driven run resolves its exact local Ollama checkpoint digest before the run directory is created. Pilot analysis refuses episodes missing the digest and refuses pooling results if checkpoint digests change within one model. If the registered checkpoint is not installed, fix the tag or download model _before_ starting an episode; do not replace a failed run opportunistically.

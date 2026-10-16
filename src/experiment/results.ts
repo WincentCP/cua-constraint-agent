@@ -256,7 +256,9 @@ export function buildResultsDataset(args: {
   mkdirSync(reports, { recursive: true });
   // Never pool or pair observations from different checkpoint digests.
   for (const model of args.models) {
-    const validRows = rows.filter((row) => row.model === model.label && row.technical_valid);
+    const validRows = rows.filter(
+      (row) => row.model === model.label && row.technical_valid,
+    );
     if (new Set(validRows.map((row) => row.model_digest)).size > 1) {
       for (const row of validRows) {
         row.technical_valid = false;

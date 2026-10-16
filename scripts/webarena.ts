@@ -257,8 +257,10 @@ function catalog() {
     const verified = verifyRegisteredPublicCatalog(tasks);
     console.log(
       "Pinned Shopping catalog verified: " +
-      verified.registered + " registered task IDs, " +
-      verified.catalog + " official available tasks",
+        verified.registered +
+        " registered task IDs, " +
+        verified.catalog +
+        " official available tasks",
     );
     if (force()) rmSync(catalogPath, { force: true });
     renameSync(temporary, catalogPath);

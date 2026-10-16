@@ -12,7 +12,11 @@ export const RunMetadataSchema = z
     task_id: z.number().int().nonnegative(),
     model_label: z.string().min(1),
     model_name: z.string().min(1),
-    model_digest: z.string().regex(/^[a-f0-9]{64}$/i).nullable().optional(),
+    model_digest: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/i)
+      .nullable()
+      .optional(),
     method: z.enum(["Baseline", "Proposed"]),
     benchmark_version: z.string().min(1),
     git_commit: z.string().min(1),

@@ -166,7 +166,9 @@ export function createApprovedMainFreeze(args: {
     if (!expected || episode.model_digest !== expected.digest.toLowerCase()) {
       throw new Error(
         "Pilot run used a model checkpoint different from proposed main freeze: " +
-        episode.model + " / " + episode.task_id,
+          episode.model +
+          " / " +
+          episode.task_id,
       );
     }
   }

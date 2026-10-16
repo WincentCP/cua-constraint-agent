@@ -9,7 +9,9 @@ async function main() {
       "Model digest manifest already exists; preserve its contents and archive before regenerating.",
     );
   }
-  const models = JSON.parse(readFileSync("config/models.json", "utf8")) as Array<{
+  const models = JSON.parse(
+    readFileSync("config/models.json", "utf8"),
+  ) as Array<{
     label: string;
     name: string;
   }>;
@@ -17,7 +19,9 @@ async function main() {
   for (const model of models) {
     const digest = await new OllamaModel(model.name).resolveDigest();
     manifest.push({ label: model.label, name: model.name, digest });
-    console.log("Resolved model " + model.label + ": " + digest.slice(0, 12) + "...");
+    console.log(
+      "Resolved model " + model.label + ": " + digest.slice(0, 12) + "...",
+    );
   }
   writeFileSync(path, JSON.stringify(manifest, null, 2) + "\n", "utf8");
   console.log("Created local digest manifest (gitignored): " + path);

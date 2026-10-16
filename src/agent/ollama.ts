@@ -59,12 +59,14 @@ export class OllamaModel implements ModelClient {
       models?: Array<{ name?: string; model?: string; digest?: string }>;
     };
     const entry = catalog.models?.find(
-      (candidate) => candidate.name === this.model || candidate.model === this.model,
+      (candidate) =>
+        candidate.name === this.model || candidate.model === this.model,
     );
     if (!entry?.digest || !/^[a-f0-9]{64}$/i.test(entry.digest)) {
       throw new Error(
         "Local Ollama model missing or digest unavailable: " +
-        this.model + ". Check ollama list and registered tag.",
+          this.model +
+          ". Check ollama list and registered tag.",
       );
     }
     return entry.digest.toLowerCase();

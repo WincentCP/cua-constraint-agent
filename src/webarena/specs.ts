@@ -269,14 +269,17 @@ export function verifyRegisteredPublicCatalog(tasks: WebArenaTask[]) {
   }
   for (const entry of registered) {
     const task = byId.get(entry.task_id);
-    if (!task ||
-        task.intent_template_id !== entry.intent_template_id ||
-        task.sites.length !== 1 ||
-        task.sites[0] !== "shopping" ||
-        task.intent !== entry.public_intent) {
+    if (
+      !task ||
+      task.intent_template_id !== entry.intent_template_id ||
+      task.sites.length !== 1 ||
+      task.sites[0] !== "shopping" ||
+      task.intent !== entry.public_intent
+    ) {
       throw new Error(
-        "Registered task " + entry.task_id +
-        " does not match pinned official public Shopping input",
+        "Registered task " +
+          entry.task_id +
+          " does not match pinned official public Shopping input",
       );
     }
   }

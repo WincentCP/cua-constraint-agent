@@ -219,9 +219,13 @@ export function evaluatePilotGate(
   const minValid = Math.ceil(
     episodes.length * protocol.pilot_gate.min_valid_run_fraction,
   );
-  const digestConsistency = models.every((model) =>
-    new Set(valid.filter((episode) => episode.model === model.label)
-      .map((episode) => episode.model_digest)).size <= 1,
+  const digestConsistency = models.every(
+    (model) =>
+      new Set(
+        valid
+          .filter((episode) => episode.model === model.label)
+          .map((episode) => episode.model_digest),
+      ).size <= 1,
   );
   const checks = {
     model_checkpoint_consistency: digestConsistency,

@@ -131,15 +131,21 @@ export function ensureArtifactLayout(options: ArtifactLayoutOptions) {
   // Reject legacy or mixed protocol artifacts even when only ONE task is prepared.
   if (options.stage === "poc" || options.stage === "pilot") {
     const registered = new Set(
-      (options.stage === "poc" ? loadPocManifest() : loadPilotManifest())
-        .tasks.map((task) => task.task_id),
+      (options.stage === "poc"
+        ? loadPocManifest()
+        : loadPilotManifest()
+      ).tasks.map((task) => task.task_id),
     );
-    const unregistered = [...taskIds, ...(previous?.task_ids ?? [])]
-      .filter((id) => !registered.has(id));
+    const unregistered = [...taskIds, ...(previous?.task_ids ?? [])].filter(
+      (id) => !registered.has(id),
+    );
     if (unregistered.length) {
       throw new Error(
-        "Existing " + options.stage + " artifacts contain retired/unregistered task IDs: " +
-        [...new Set(unregistered)].join(", ") + ". Archive old evidence before continuing.",
+        "Existing " +
+          options.stage +
+          " artifacts contain retired/unregistered task IDs: " +
+          [...new Set(unregistered)].join(", ") +
+          ". Archive old evidence before continuing.",
       );
     }
   }
