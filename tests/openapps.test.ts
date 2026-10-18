@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { pocTasks, requirePocTask, requireLoopbackUrl } from "../src/openapps/manifest.ts";
-import { makePrompt, SHARED_SYSTEM_PROMPT } from "../src/openapps/runner.ts";
+import { makePrompt, pendingPublicSubmissions, publicSubmissionKind, SHARED_SYSTEM_PROMPT } from "../src/openapps/runner.ts";
 import { assertOfficialScore, assertPublicGoal, classifyEpisodeScore } from "../src/openapps/bridge.ts";
 import { parseAgentPlan } from "../src/agent/ollama.ts";
 
@@ -83,4 +83,21 @@ test("invalid runner episodes never count as negative task outcomes", () => {
     officialSuccess: null,
     diagnosticReward: 1,
   });
+});
+
+
+test("a claim of completion cannot substitute for actual public UI submissions", () => {
+  const constraints = requirePocTask("add_todo_to_review_largest_card_charge").constraints;
+  assert.deepEqual(pendingPublicSubmissions(constraints, new Set()), ["todo"]);
+  assert.deepEqual(pendingPublicSubmissions(constraints, new Set(["todo"])), []);
+  assert.equal(publicSubmissionKind("http://localhost:5001/openbanking", "button", "click"), null);
+  assert.equal(publicSubmissionKind("http://localhost:5001/todo", "textbox", "fill-and-enter"), "todo");
+  assert.equal(publicSubmissionKind("http://localhost:5001/messages", "textbox", "fill-and-enter"), "message");
+  assert.equal(publicSubmissionKind("http://localhost:5001/todo", "button", "click"), null);
+  const prompt = JSON.parse(makePrompt("Add a todo", "- textbox \"New Todo\"",
+    constraints, [], 2, 16, {}, new Set()));
+  assert.deepEqual(prompt.unattempted_required_ui_submissions, ["todo"]);
+  assert(!JSON.stringify(prompt).includes("1078.81"));
+  const composite = requirePocTask("reconcile_the_largest_account").constraints;
+  assert.deepEqual(pendingPublicSubmissions(composite, new Set(["todo"])), ["message"]);
 });

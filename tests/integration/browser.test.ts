@@ -187,3 +187,33 @@ test("OpenBanking account rows with hx-get become publicly visible clickable pro
     rmSync(dir, {recursive:true,force:true});
   }
 });
+
+
+test("self-reported completion without a todo submission is blocked for both methods", async () => {
+  const { runDevelopmentLoop } = await import("../../src/openapps/runner.ts");
+  const { requirePocTask } = await import("../../src/openapps/manifest.ts");
+  for (const policy of ["Baseline", "Proposed"] as const) {
+    const dir = mkdtempSync(join(tmpdir(), "cua-finish-guard-"));
+    const session = await openInspectionSession({harPath:join(dir,"network.har")});
+    try {
+      await session.page.setContent('<main><p>Account: BUS COMPLETE CHK. Card charge 1078.81</p><button>Continue</button></main>');
+      const events: Record<string,unknown>[]=[];
+      const model={async complete(_system:string, _user:string) {
+        return JSON.stringify({progress_scores:{},input_text_by_probe:{},
+          evidence:[],finish:true,rationale:"I created the todo"});
+      }};
+      const stats=await runDevelopmentLoop({
+        page:session.page,model,policy,goal:"Create a todo from a bank charge",
+        constraints:requirePocTask("add_todo_to_review_largest_card_charge").constraints,
+        budget:2, record:e=>events.push(e),saveSnapshot() {},
+      });
+      assert.equal(stats.actions,0);
+      assert.equal(stats.modelFinished,false);
+      assert.equal(events.filter(e=>e.event==="MODEL_FINISH_BLOCKED").length,2);
+      assert(!events.some(e=>e.event==="MODEL_FINISH"));
+    } finally {
+      await session.close();
+      rmSync(dir,{recursive:true,force:true});
+    }
+  }
+});

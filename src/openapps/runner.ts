@@ -18,15 +18,40 @@ export const SHARED_SYSTEM_PROMPT = [
   "finish (boolean), rationale (short string).",
   "Score all listed candidate probes. Do not pick the action: the controller selects it.",
   "Evidence quotes must be EXACT text visible in the current Accessibility Tree.",
-  "Only finish when you believe the goal has been completed; official evaluation is external.",
+  "Never claim a task was created or a message was sent without performing its visible UI submission.",
+  "The finish flag is a stop request, NOT proof of task success; official evaluation is external.",
 ].join("\n");
 
+/**
+ * Public-task completion guard. This is a symmetric controller safety check,
+ * not the task evaluator: it only records that the agent ACTUALLY performed
+ * the visible entry/submit interaction in required apps. A successful UI
+ * submission is not assumed to mean the task is correct or officially scored.
+ */
+export function pendingPublicSubmissions(
+  constraints: ConstraintSpec[], submitted: ReadonlySet<string>,
+): string[] {
+  return ["todo", "message"].filter(kind =>
+    constraints.some(c => c.required && c.id === kind) && !submitted.has(kind));
+}
+
+export function publicSubmissionKind(pageUrl: string, role: string, action: string):
+  "todo" | "message" | null {
+  if (role !== "textbox" || action !== "fill-and-enter") return null;
+  const pathname = new URL(pageUrl).pathname;
+  if (/^\/todo(?:\/|$)/.test(pathname)) return "todo";
+  if (/^\/messages(?:\/|$)/.test(pathname)) return "message";
+  return null;
+}
+
 export function makePrompt(goal: string, snapshot: string, constraints: ConstraintSpec[],
-  probes: Probe[], step: number, budget: number, ledger: Record<string, string>) {
+  probes: Probe[], step: number, budget: number, ledger: Record<string, string>,
+  submitted: ReadonlySet<string> = new Set<string>()) {
   return JSON.stringify({
     public_goal: goal,
     previous_model_observed_states: ledger,
     step, max_steps: budget,
+    unattempted_required_ui_submissions: pendingPublicSubmissions(constraints, submitted),
     visible_accessibility_tree: snapshot.slice(0, 14000),
     public_constraints: constraints.map(c => ({ id: c.id, description: c.description })),
     candidate_probes: probes.map(p => ({ id: p.id, role: p.control.role,
@@ -101,6 +126,7 @@ export async function runDevelopmentLoop(opts: {
     throw new Error("Invalid browser decision budget");
   const store = new EvidenceStore();
   const visited = new Set<string>();
+  const submitted = new Set<string>();
   const stats: DevRunStats = { steps: 0, actions: 0, modelCalls: 0,
     modelFinished: false, lastPageUrl: opts.page.url() };
   for (let step = 1; step <= opts.budget; step++) {
@@ -119,7 +145,7 @@ export async function runDevelopmentLoop(opts: {
       [c.id, prior.task[c.id].state]));
     stats.modelCalls++;
     const raw = await opts.model.complete(SHARED_SYSTEM_PROMPT,
-      makePrompt(opts.goal, snapshot, opts.constraints, probes, step, opts.budget, states));
+      makePrompt(opts.goal, snapshot, opts.constraints, probes, step, opts.budget, states, submitted));
     const plan = parseAgentPlan(raw);
     const normalized = snapshot.toLowerCase().replace(/\s+/g, " ");
     const accepted = plan.evidence.filter(e =>
@@ -139,11 +165,28 @@ export async function runDevelopmentLoop(opts: {
       rationale: plan.rationale,
     };
     if (plan.finish) {
+      const pending = pendingPublicSubmissions(opts.constraints, submitted);
+      if (pending.length) {
+        opts.record({
+          ...entry, event: "MODEL_FINISH_BLOCKED",
+          reason: "No visible successful submission performed in required public app(s)",
+          unattempted_required_ui_submissions: pending, official_success: null,
+        });
+        // A model's self-reported task completion cannot replace actual
+        // recorded browser actions. Re-plan from the visible UI on next step.
+        continue;
+      }
       stats.modelFinished = true;
-      opts.record({ ...entry, event: "MODEL_FINISH", official_success: null });
+      opts.record({ ...entry, event: "MODEL_FINISH", official_success: null,
+        submitted_public_actions: [...submitted] });
       break;
     }
-    if (!probes.length) throw new Error("No unattempted accessible controls");
+    if (!probes.length) {
+      // Controller/model exhaustion is a valid unsuccessful attempt, not a
+      // crashed episode. The official evaluator still decides task success.
+      opts.record({ ...entry, event: "NO_REMAINING_CANDIDATES" });
+      break;
+    }
     const chosen = selectProbe(opts.policy, probes, store.ledger(["task"], opts.constraints),
       plan.progress_scores);
     // An OpenApps HTMX action can open a dialog *while the model is planning*.
@@ -185,8 +228,11 @@ export async function runDevelopmentLoop(opts: {
       throw error;
     }
     stats.actions++;
+    const submission = publicSubmissionKind(entry.url as string, chosen.control.role, action);
+    if (submission) submitted.add(submission);
     stats.lastPageUrl = opts.page.url();
-    opts.record({ ...entry, event: "DECISION", selected: chosen.id, action });
+    opts.record({ ...entry, event: "DECISION", selected: chosen.id, action,
+      submitted_public_action: submission });
   }
   stats.lastPageUrl = opts.page.url();
   return stats;
