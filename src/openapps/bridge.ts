@@ -62,3 +62,15 @@ export function assertOfficialScore(result: Record<string, unknown>): number {
   }
   return Number(result.reward);
 }
+
+// When execution crashes, its post-error app reward is useful diagnostic
+// context but MUST NOT enter the valid experimental success column.
+export function classifyEpisodeScore(
+  result: Record<string, unknown>,
+  runnerError: string | null,
+): { officialSuccess: boolean | null; diagnosticReward: number | null } {
+  const reward = assertOfficialScore(result);
+  return runnerError === null
+    ? { officialSuccess: reward === 1, diagnosticReward: null }
+    : { officialSuccess: null, diagnosticReward: reward };
+}

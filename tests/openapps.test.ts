@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { pocTasks, requirePocTask, requireLoopbackUrl } from "../src/openapps/manifest.ts";
 import { makePrompt, SHARED_SYSTEM_PROMPT } from "../src/openapps/runner.ts";
-import { assertOfficialScore, assertPublicGoal } from "../src/openapps/bridge.ts";
+import { assertOfficialScore, assertPublicGoal, classifyEpisodeScore } from "../src/openapps/bridge.ts";
+import { parseAgentPlan } from "../src/agent/ollama.ts";
 
 test("only three distinct, public-goal PoC tasks are registered", () => {
   assert.equal(pocTasks.length, 3);
@@ -38,4 +39,48 @@ test("official reward adapter rejects model-claimed success and malformed result
   assert.throws(() => assertOfficialScore({evaluator:"OpenApps Task.check_if_task_is_complete",
     reward:0,success:true}));
   assert.equal(assertPublicGoal({ goal:"Inspect bank ledger" }),"Inspect bank ledger");
+});
+
+
+test("model UNKNOWN and blank evidence are discarded without inventing facts", () => {
+  const plan = parseAgentPlan(JSON.stringify({
+    progress_scores: { "link:0:OpenBanking": 8 },
+    input_text_by_probe: {},
+    evidence: [
+      { constraint_id: "account", state: "SATISFIED", quote: "OpenBanking" },
+      { constraint_id: "amount", state: "UNKNOWN", quote: "" },
+      { constraint_id: "todo", state: "UNKNOWN", quote: "" },
+      { constraint_id: "missing", state: "REFUTED", quote: "" },
+    ],
+    finish: false,
+    rationale: "Inspect first; cannot infer bank values yet",
+  }));
+  assert.equal(plan.evidence.length, 1);
+  assert.deepEqual(plan.evidence[0], {
+    constraint_id: "account", state: "SATISFIED", quote: "OpenBanking",
+  });
+  assert.equal(plan.progress_scores["link:0:OpenBanking"], 8);
+  assert.equal(plan.finish, false);
+  assert.throws(() => parseAgentPlan(JSON.stringify({
+    progress_scores: {}, input_text_by_probe: {}, evidence: [
+      { constraint_id: "x", state: "HALLUCINATED", quote: "fake" },
+    ], finish: false, rationale: "",
+  })));
+});
+
+test("invalid runner episodes never count as negative task outcomes", () => {
+  const scored = { evaluator: "OpenApps Task.check_if_task_is_complete",
+    reward: 0, success: false };
+  assert.deepEqual(classifyEpisodeScore(scored, "invalid JSON evidence"), {
+    officialSuccess: null,
+    diagnosticReward: 0,
+  });
+  assert.deepEqual(classifyEpisodeScore(scored, null), {
+    officialSuccess: false,
+    diagnosticReward: null,
+  });
+  assert.deepEqual(classifyEpisodeScore({ ...scored, reward: 1, success: true }, "crash"), {
+    officialSuccess: null,
+    diagnosticReward: 1,
+  });
 });

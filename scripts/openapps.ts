@@ -3,7 +3,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } fr
 import { resolve, join } from "node:path";
 import { openInspectionSession } from "../src/browser/session.ts";
 import { OllamaModel } from "../src/agent/ollama.ts";
-import { assertOfficialScore, assertPublicGoal, bridge, checkUpstream, execChecked } from "../src/openapps/bridge.ts";
+import { assertPublicGoal, bridge, checkUpstream, classifyEpisodeScore } from "../src/openapps/bridge.ts";
 import { pocTasks, requireLoopbackUrl, requirePocTask } from "../src/openapps/manifest.ts";
 import { runDevelopmentLoop } from "../src/openapps/runner.ts";
 
@@ -35,7 +35,13 @@ async function main() {
     console.log("Live app and Ollama not asserted; run smoke and run separately.");
     return;
   }
-  const res = await fetch(url, { signal: AbortSignal.timeout(12000) });
+  let res: Response;
+  try {
+    res = await fetch(url, { signal: AbortSignal.timeout(12000) });
+  } catch (error) {
+    throw new Error("OpenApps server unreachable at " + url +
+      ". Keep 'uv run launch.py' active. " + String(error));
+  }
   if (!res.ok) throw new Error("OpenApps homepage HTTP " + res.status);
   const goal = bridge(settings, "goal", { task: pocTasks[0].key });
   assertPublicGoal(goal);
@@ -101,8 +107,15 @@ async function main() {
       const score = bridge(settings, "evaluate", {
         task: task.key, initialFile: initialPath, pageUrl: session.page.url(),
       });
-      metadata.official_success = assertOfficialScore(score) === 1;
-      json(join(root, "official_result.json"), score);
+      const classification = classifyEpisodeScore(score, failed);
+      metadata.official_success = classification.officialSuccess;
+      if (classification.diagnosticReward !== null)
+        metadata.diagnostic_reward_after_runner_error = classification.diagnosticReward;
+      json(join(root, "official_result.json"), {
+        ...score,
+        valid_completed_episode: failed === null,
+        diagnostic_only: failed !== null,
+      });
     } catch (e) {
       metadata.evaluation_error = e instanceof Error ? e.message : String(e);
       console.error("OFFICIAL EVALUATOR ERROR: " + metadata.evaluation_error);
@@ -114,6 +127,8 @@ async function main() {
   }
   console.log("Development artifacts: " + root);
   console.log("Official success: " + String(metadata.official_success));
+  if (failed !== null)
+    console.log("INVALID EPISODE: runner error; diagnostic reward is not an experimental outcome.");
   if (!metadata.run_complete) process.exitCode = 2;
 }
 main().catch(e => { console.error(e instanceof Error ? e.message : e); process.exitCode = 1; });

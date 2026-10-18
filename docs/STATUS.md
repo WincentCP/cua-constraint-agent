@@ -5,9 +5,9 @@
 | WebArena preserved in `webarena-verified-archive` | Created on GitHub |
 | OpenApps first-class module, task manifest, Windows CLI | Implemented in migration |
 | Upstream OpenApps commit identity | Pinned; live checkout still needs checking |
-| OpenApps desktop app manually launched | User reported READY, not an automated integration attestation |
-| OpenBanking pytest | NOT YET VERIFIED from user PC |
-| Agent end-to-end via local Ollama | NOT YET VERIFIED |
+| OpenApps desktop app manually launched | User-provided `openapps:smoke` reports PASS on 127.0.0.1:5001; does not verify agent |
+| OpenBanking pytest | User-provided log: **213 passed**, 4 nonfatal FastAPI deprecation warnings (Windows) |
+| Agent end-to-end via local Ollama | **BLOCKED**: user's first PoC errored on model evidence UNKNOWN/empty quote (2026-10-18); input normalization fix committed, retest pending |
 | Official score parity with BrowserGym | NOT YET VERIFIED |
 | Positive and negative evaluator controls | NOT YET VERIFIED |
 | Fresh DB reset and paired state hash | NOT YET VERIFIED |
@@ -18,3 +18,7 @@
 | Complete confirmatory study results | NONE |
 
 The original WebArena methodology and scripts remain on the archival branch. Avoid treating legacy WebArena test success or README docs as evidence of OpenApps success. The new `main` is experimental infrastructure in progress, not a validated completed thesis.
+
+## 2026-10-18 PoC invalid run note
+
+User-supplied error: Ollama returned evidence state `UNKNOWN` with empty quote; strict parser rejected it and the loop aborted. Evaluator reward 0 after this abort is **diagnostic only**, not a valid unsuccessful Baseline episode. Both method arms now use the same UNKNOWN/blank-evidence normalization; no fabricated SATISFIED claims. Restart from a **verified** clean persistent app state before any paired comparison; merely restarting the server may not reset SQLite data. CI and local PoC rerun pending for the fix.
