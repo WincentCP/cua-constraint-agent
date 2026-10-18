@@ -42,6 +42,27 @@ With Ollama running and the selected Qwen model pulled, open PowerShell in the t
 
 This read-only check uses the exact tag in config/models.json, records the locally installed Ollama model digest and sends a harmless structured JSON test prompt to /api/chat. For Qwen3.5 it explicitly sends top-level `think: false` with a 256-token response budget to avoid spending the whole budget on hidden reasoning; this setting is only for the API preflight, **not yet** an experimental model-policy decision. On an empty answer, the error includes `done_reason`, `eval_count`, and the length of any thinking field (never the thinking text). It writes output/ollama/preflight/*.json. It does **not** use a browser, solve a task, or validate Baseline/CDEA performance. A model listed in config/models.json is not automatically installed by this repository.
 
+## Real task development run: Qwen + BrowserGym
+
+BrowserGym's one-action no-op smoke and the separate Qwen Ollama API preflight both passed on the Windows research PC. This **new** runner uses the official BrowserGym HighLevelActionSet, AXTree and OpenApps evaluator with Qwen decisions, but has not yet passed a live task episode.
+
+1. Stop the previous OpenApps server with Ctrl+C. Start a **new** OpenApps server in its own PowerShell window, so the task uses a fresh session DB:
+
+       cd "$HOME\OpenApps"
+       $env:USER = $env:USERNAME
+       $env:PYTHONUTF8 = "1"
+       uv run launch.py
+
+2. Keep that window running and Ollama active. In a second PowerShell window run:
+
+       cd "$HOME\cua-constraint-agent"
+       git pull --ff-only
+       powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_qwen_dev.ps1
+
+This runs a **single unpaired development task**, add_call_mom_to_my_todo, at most ten BrowserGym actions. The model only receives the public goal and current accessibility tree; it chooses constrained actions from visible element IDs. The official evaluator returns success; no expected solution is inserted into the model prompt. Development artifacts are written to output/browsergym/dev. A true/false score is only a diagnostic development outcome, **not** a Baseline/CDEA experimental finding.
+
+The fresh-state flag is a manual attestation and does not automate reset or prove parity. Do not reuse the same OpenApps session for another model and do not run pilot/main experiments yet.
+
 ## Before experimental results
 
 See docs/RESEARCH_GATES.md. Required next: live smoke result, automated isolated resets, official evaluator positive/negative cases, shared Ollama adapter and action space, matched Baseline/CDEA episodes, independent pilot and frozen 32-task main set. Do not mix archived runner episodes into official-harness results.

@@ -10,7 +10,7 @@ import sys
 import time
 from urllib.request import urlopen
 from uuid import uuid4
-from ollama_preflight import MODELS_FILE, get_model, find_installed_model, request_json
+from ollama_preflight import MODELS_FILE, get_model, find_installed_model, request_json, validate_ollama_url
 from smoke import UPSTREAM_PIN, validate_url, extract_axtree_text, hash_state
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -92,8 +92,9 @@ def run(args, out):
     with urlopen(origin, timeout=7) as response:
         if response.status != 200:
             raise RuntimeError("OpenApps server unavailable")
+    ollama_origin = validate_ollama_url(args.ollama_url)
     model = get_model(json.loads(MODELS_FILE.read_text(encoding="utf-8")), "qwen3.5-9b")
-    installed = find_installed_model(request_json(args.ollama_url + "/api/tags", timeout=15), model)
+    installed = find_installed_model(request_json(ollama_origin + "/api/tags", timeout=15), model)
     if not installed.get("digest"):
         raise RuntimeError("Missing installed Ollama digest")
     out.update(model=model, digest=installed["digest"], upstream_sha=actual)
@@ -130,7 +131,7 @@ def run(args, out):
             if not bids:
                 raise RuntimeError("No observed BrowserGym bids")
             start = time.monotonic()
-            reply = request_json(args.ollama_url + "/api/chat", data={
+            reply = request_json(ollama_origin + "/api/chat", data={
                 "model":model, "stream":False, "think":False, "format":"json",
                 "messages":messages(goal, obs.get("url", ""), tree, bids, history),
                 "options":{"temperature":0,"num_predict":384}

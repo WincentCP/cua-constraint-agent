@@ -13,3 +13,7 @@ Archive: archive/custom-openapps-runner-20261018. Current main is a prototype, n
 ## Next engineering milestone
 
 Run the local Ollama model API preflight added in scripts/browsergym/ollama_preflight.py; this is a prerequisite, NOT a BrowserGym integration. Next integrate the Ollama adapter into official BrowserGym using a **shared** observation/action interface for Baseline and CDEA. Begin with one deterministic task and a single development model. Do not count the no-op smoke reward or archived runner PoCs as outcomes. Before paired comparisons, prove fresh initial-state hashes and independent evaluator positive/negative controls. Verify all four model identifiers and digests before pilot/main runs.
+
+## Qwen development runner
+
+The first unpaired real-task runner is available at scripts/browsergym/qwen_dev.py. It uses the official BrowserGym HighLevelActionSet and OpenApps evaluator, and restricts model choices to a small allowlist with live AXTree element IDs. This is a **development-only artifact**; successful static CI does not validate live Qwen task completion. Automated fresh-state parity, model-digest checks across all four models, evaluator controls and CDEA method parity remain pending.
