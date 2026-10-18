@@ -200,6 +200,15 @@ def main():
         print("Official success: " + str(out["official_success"]).lower())
         print("Steps: " + str(out["steps"]))
         print("Not a Baseline/CDEA experiment.")
+        print("Action trace:")
+        for item in out["trace"]:
+            action = item.get("action", "(no valid action)")
+            rating = item.get("official_reward", "-")
+            error = item.get("browser_error") or item.get("model_error")
+            print("  step {0}: {1} | reward={2}{3}".format(
+                item["step"], action, rating,
+                (" | ERROR=" + str(error)) if error else ""
+            ))
         code = 0
     finally:
         path.write_text(json.dumps(out,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")

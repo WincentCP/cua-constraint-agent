@@ -63,6 +63,19 @@ This runs a **single unpaired development task**, add_call_mom_to_my_todo, at mo
 
 The fresh-state flag is a manual attestation and does not automate reset or prove parity. Do not reuse the same OpenApps session for another model and do not run pilot/main experiments yet.
 
+## Inspect the existing failed development run (no rerun)
+
+A prior Qwen development episode reported `official_success: false` after nine actions, and official state comparisons showed an unexpected empty-title todo. The evaluator checks the **whole app state**, so extra items can prevent task success even when the requested item is present. The exact cause (e.g., early submit, repeated submit, or action sequence error) **cannot be determined from console diffs alone**.
+
+Read the saved local action trace without rerunning anything:
+
+    cd "$HOME\cua-constraint-agent"
+    $r = Get-Content ".\output\browsergym\dev\82c2d289cddd467e8b9d5a12d94cfccf.json" -Raw | ConvertFrom-Json
+    $r | Select-Object status, official_success, official_reward, steps
+    $r.trace | Format-List step, action, official_reward, browser_error, model_error
+
+Send the nine action entries before changing the policy or retrying. The next runs also print their action trace automatically.
+
 ## Before experimental results
 
 See docs/RESEARCH_GATES.md. Required next: live smoke result, automated isolated resets, official evaluator positive/negative cases, shared Ollama adapter and action space, matched Baseline/CDEA episodes, independent pilot and frozen 32-task main set. Do not mix archived runner episodes into official-harness results.
