@@ -24,3 +24,42 @@ test("Playwright inspection captures an accessibility snapshot and flushes HAR",
   assert(statSync(harPath).size > 0);
   rmSync(dir, { recursive: true, force: true });
 });
+
+
+test("OpenApps-style native dialog hides background controls from both policies", async () => {
+  const session = await openInspectionSession({
+    harPath: join(mkdtempSync(join(tmpdir(), "cua-modal-")), "network.har"),
+    headless: true,
+  });
+  try {
+    await session.page.setContent([
+      '<button id="back">Return to List of Apps</button>',
+      '<dialog aria-label="Open account">',
+      '  <p>Contact the bank</p>',
+      '  <button onclick="document.querySelector(\'dialog\').close()">Close</button>',
+      '</dialog>',
+      '<script>document.querySelector("dialog").showModal()</script>',
+    ].join(""));
+    const { observeInteractiveSurface, performProbe } = await import(
+      "../../src/openapps/runner.ts"
+    );
+    const { extractControls, probesFromControls } = await import(
+      "../../src/browser/accessibility.ts"
+    );
+    const surface = await observeInteractiveSurface(session.page);
+    assert.equal(surface.scope, "dialog");
+    const controls = extractControls(surface.snapshot);
+    assert(controls.some(c => c.role === "button" && c.name === "Close"));
+    assert(!controls.some(c => c.name === "Return to List of Apps"));
+    const probes = probesFromControls(controls, []);
+    const close = probes.find(p => p.label === "Close");
+    assert(close);
+    await performProbe(session.page, close, undefined, surface.locator);
+    assert.equal(await session.page.getByRole("dialog").count(), 0);
+    const next = await observeInteractiveSurface(session.page);
+    assert.equal(next.scope, "page");
+    assert(extractControls(next.snapshot).some(c => c.name === "Return to List of Apps"));
+  } finally {
+    await session.close();
+  }
+});

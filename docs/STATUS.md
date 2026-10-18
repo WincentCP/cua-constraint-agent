@@ -22,3 +22,7 @@ The original WebArena methodology and scripts remain on the archival branch. Avo
 ## 2026-10-18 PoC invalid run note
 
 User-supplied error: Ollama returned evidence state `UNKNOWN` with empty quote; strict parser rejected it and the loop aborted. Evaluator reward 0 after this abort is **diagnostic only**, not a valid unsuccessful Baseline episode. Both method arms now use the same UNKNOWN/blank-evidence normalization; no fabricated SATISFIED claims. Restart from a **verified** clean persistent app state before any paired comparison; merely restarting the server may not reset SQLite data. CI and local PoC rerun pending for the fix.
+
+## 2026-10-18 second PoC invalid run: modal interception
+
+User-provided Granite 4.1 Baseline trace: a visible native OpenBanking `dialog[open]` intercepted a click on the background `Return to List of Apps` button. Playwright timed out after 10 seconds. `official_success=null`, hence no valid Baseline task outcome. Both arms now share semantic active-dialog scoping: observe only the visible dialog's AXTree controls while it is open; no force-click and no use of hidden evaluator/DOM data. A browser-level regression test covers foreground-only candidates, modal close, and restoring page controls. **Retest on live OpenApps is pending**. Check `ACTION_ATTEMPT` / `ACTION_ERROR` trajectory events if another control stalls. CI status must be checked separately.

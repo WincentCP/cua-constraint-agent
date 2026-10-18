@@ -1,4 +1,4 @@
-import type { Page } from "playwright";
+import type { Locator, Page } from "playwright";
 import { EvidenceStore } from "../core/evidence.ts";
 import { selectProbe } from "../core/policy.ts";
 import type { ConstraintSpec, Policy, Probe } from "../core/types.ts";
@@ -34,11 +34,31 @@ export function makePrompt(goal: string, snapshot: string, constraints: Constrai
   });
 }
 
-export async function performProbe(page: Page, probe: Probe, input?: string) {
+/**
+ * The accessible, currently actionable UI surface. Native OpenApps dialogs
+ * intercept background clicks even though their underlying buttons remain in
+ * a body-level AXTree snapshot. While a dialog is open, both policies see
+ * ONLY that dialog's visible semantic controls. No force-click / hidden DOM.
+ */
+export async function observeInteractiveSurface(page: Page): Promise<{
+  snapshot: string;
+  scope: "dialog" | "page";
+  locator: Locator;
+}> {
+  const dialog = page.getByRole("dialog").last();
+  if ((await dialog.count()) > 0 && await dialog.isVisible()) {
+    return { snapshot: await dialog.ariaSnapshot(), scope: "dialog", locator: dialog };
+  }
+  const body = page.locator("body");
+  return { snapshot: await body.ariaSnapshot(), scope: "page", locator: body };
+}
+
+export async function performProbe(page: Page, probe: Probe, input?: string, scope?: Locator) {
   const c = probe.control;
+  const root = scope ?? page;
   const loc = c.name
-    ? page.getByRole(c.role, { name: c.name, exact: true }).first()
-    : page.getByRole(c.role).first();
+    ? root.getByRole(c.role, { name: c.name, exact: true }).first()
+    : root.getByRole(c.role).first();
   if (c.role === "textbox") {
     if (!input?.trim()) throw new Error("Model must supply textbox content");
     await loc.fill(input);
@@ -68,10 +88,11 @@ export async function runDevelopmentLoop(opts: {
     modelFinished: false, lastPageUrl: opts.page.url() };
   for (let step = 1; step <= opts.budget; step++) {
     stats.steps = step;
-    const snapshot = await opts.page.locator("body").ariaSnapshot();
+    const surface = await observeInteractiveSurface(opts.page);
+    const snapshot = surface.snapshot;
     opts.saveSnapshot(step, snapshot);
     const probes = probesFromControls(extractControls(snapshot), opts.constraints)
-      .slice(0, 40).filter(p => !visited.has(opts.page.url() + "::" + p.id));
+      .slice(0, 40).filter(p => !visited.has(opts.page.url() + "::" + surface.scope + "::" + p.id));
     const prior = store.ledger(["task"], opts.constraints);
     const states = Object.fromEntries(opts.constraints.map(c =>
       [c.id, prior.task[c.id].state]));
@@ -91,7 +112,7 @@ export async function runDevelopmentLoop(opts: {
     })));
     const entry: TraceEvent = {
       at: new Date().toISOString(), step, method: opts.policy,
-      url: opts.page.url(), control_count: probes.length,
+      url: opts.page.url(), surface: surface.scope, control_count: probes.length,
       candidates: probes.map(p => ({ id: p.id, label: p.label, may_answer: p.may_answer })),
       model_progress: plan.progress_scores, diagnostic_evidence_only: accepted,
       rationale: plan.rationale,
@@ -104,8 +125,22 @@ export async function runDevelopmentLoop(opts: {
     if (!probes.length) throw new Error("No unattempted accessible controls");
     const chosen = selectProbe(opts.policy, probes, store.ledger(["task"], opts.constraints),
       plan.progress_scores);
-    visited.add(opts.page.url() + "::" + chosen.id);
-    const action = await performProbe(opts.page, chosen, plan.input_text_by_probe[chosen.id]);
+    visited.add(opts.page.url() + "::" + surface.scope + "::" + chosen.id);
+    opts.record({ ...entry, event: "ACTION_ATTEMPT", selected: chosen.id });
+    let action: string;
+    try {
+      action = await performProbe(
+        opts.page, chosen, plan.input_text_by_probe[chosen.id], surface.locator,
+      );
+    } catch (error) {
+      opts.record({
+        ...entry,
+        event: "ACTION_ERROR",
+        selected: chosen.id,
+        error: String(error).slice(0, 1500),
+      });
+      throw error;
+    }
     stats.actions++;
     stats.lastPageUrl = opts.page.url();
     opts.record({ ...entry, event: "DECISION", selected: chosen.id, action });
