@@ -78,11 +78,14 @@ export async function performProbe(page: Page, probe: Probe, input?: string, sco
     await loc.selectOption({ label: input }, { timeout: 4500 });
     return "select-option";
   }
+  const withinDialog = scope ? await scope.evaluate(
+    element => element.tagName.toLowerCase() === "dialog",
+  ).catch(() => false) : false;
   await loc.click({ timeout: 3000 });
   // HTMX replaces OpenApps dialog asynchronously. After a successful click
   // from a dialog, give its visible close transition time to finish before
   // taking the next snapshot (does not open hidden data or force a click).
-  if (scope && await scope.evaluate(el => el.tagName.toLowerCase() === "dialog")) {
+  if (withinDialog && scope) {
     await scope.waitFor({ state: "hidden", timeout: 2000 }).catch(() => {});
   }
   return "click";
