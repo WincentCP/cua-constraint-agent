@@ -1,94 +1,46 @@
-# Registered design — WebArena-Verified Shopping (v1.2.3)
+# Preregisterable CDEA vs Baseline study design — OpenApps
 
-**Research question:** Under matched browser observations, candidate actions, model and budgets, does constraint-directed evidence acquisition improve the **official WebArena-Verified task success** of small local computer-use agents versus a Baseline ranking policy? Efficiency and evidence quality are secondary, not interchangeable with the official success score.
+## Research problem
+Can constraint-directed selection of information-acquisition actions improve independent official task success over generic progress ranking for small local browser agents, under controlled initial states and common observations?
 
-## Stages and strict holdout
+**Experimental unit:** one OpenApps task x one fixed model x one policy. The **pair** is Baseline/Proposed on matched task/model with independent reset. Families, models, and environment variations create dependence; report accordingly.
 
-- **PoC: 3 development tasks (279, 284, 528).** Respectively: product-name + min/max retrieval; minimum shoe-storage capacity and lowest feasible price; refund form drafting without submission. They are for debugging the full browser→LLM→action→HAR→official evaluator pipeline, not independent evaluation data.
-- **Pilot: 6 held-out tasks (96, 323, 436, 506, 571, 689).** Order status/arrival retrieval; cancelled-order refund; historical reordering; category/budget/rating/cart/purchase; account-address update; coupon-contact-form drafting. Six distinct public intent templates; **48 preplanned task × model × method episodes**.
-- **Main: exactly 32 candidate tasks** from `config/main-candidates.json`, 8 per stratum (product navigation, product comparison, order retrieval, reviews/forms/mutations), totaling **256 planned episodes** (32 × 4 × 2). The 32 are **public-instruction candidates, not 32 approved tasks**. They share neither task ID nor public intent template with PoC/pilot. Main eligibility requires live, outcome-blind screening; if any candidate fails, get a pre-data supervisor decision rather than quietly dropping it or claiming 32 valid tasks.
+## Treatment isolation
+- Shared: same public goal; visible Playwright Accessibility Tree; eligible UI controls and public-only relevance hints; agent JSON format; current model-observed constraint state ledger; model checkpoint/quantization/digest; Ollama temperature=0; browser, app seed, action budget (development default 16).
+- Baseline: rank candidate controls by model's forward-progress score; deterministic tie order.
+- Proposed: rank controls by number of unresolved public constraints plausibly answerable, then estimated forward cost and stable tie order.
+- No privileged DOM, evaluator config/target state, hidden account amounts, file system, or server-state APIs in model input. The evaluator bridge operates separately from the agent.
+- The heuristic relevance hints are shared between arms and **not verified evidence**. Quotes in current visible accessibility snapshot are provenance annotations, not validated factual correctness.
+- Intervention on the *ranking policy only*. If baseline/proposed choose identical actions for most steps, disclose null treatment separation before making causal claims.
 
-All stages use **Shopping only**; no Shopping Admin, GitLab, Reddit, Map, LEUCO, or benchmark hidden evaluator expectations.
+## Outcomes
+1. **Primary:** independent OpenApps state evaluator reward (0/1) on final app state.
+2. **Secondary:** human-audited correctness of acquired evidence; constraint satisfaction coverage; action count; LLM calls; elapsed time; invalid actions and errors; first-decision divergence.
+3. **Exploratory:** differences by pre-screened evidence-acquisition complexity and UI variation. Do not claim mechanism merely because success improved.
 
-## Preregistered suitability criteria (apply before results)
+## Task selection and leakage
+Only use **public instructions** for task eligibility and public constraints. Never derive prompt constraints from reward target-state answer fields. All selected tasks must require at least three **substantive** constraints and at least two **genuine** information-acquisition alternatives. A compound task that simply recites title/date/message is not eligible even if it has four subgoals.
 
-`npm run screening:init -- --stage poc|pilot|main` produces a **PENDING review JSON** and public candidate CSV. The reviewer records, separately for each task:
+Task pool: official OpenApps `config/tasks/openbanking.yaml` (nine named tasks, one nav-only), `config/tasks/longer_horizon.yaml` (100 composites, mostly goal-specified answer strings), others after independent review. There is **currently no evidence** that 32 independent qualifying tasks exist. Task families/variations of same seed are not independent sample units. Do not quietly invent 32 bespoke task formulations while claiming official benchmark comparability.
 
-1. **Official task/evaluator identity:** `task_id`, template ID and exact public intent match the pinned CLI catalog, and evaluator is available.
-2. **At least three substantive public task requirements:** write the requirements in `public_constraints`; formatting/output JSON keys **alone** do not constitute evidence-acquisition constraints.
-3. **At least two meaningful, distinct possible information-acquisition choices** in reachable visible UI: write them in `evidence_choices`. Merely counting links or matching keyword hints does not qualify.
-4. **Visible evidence and supported controls** through the Accessibility Tree/Playwright; correctly handles authentication, form/checkout mutation and safe non-submit cases.
-5. **Reproducible persistent Shopping reset** to equivalent start states across Baseline/Proposed; isolated browser contexts and `env stop/start` alone do **not** prove reset.
-6. **Same observation/action/prompt/budget** boundary for both methods, and **no hidden reference answer leakage**.
-7. Reviewer identity, reasoning, and **existing non-empty local evidence files**; checks are human attestations, not mechanically proven correctness.
+## Stages
+**PoC**: three development OpenBanking task families (`src/openapps/manifest.ts`). Confirm site, browser accessibility, model actions, independent evaluator, and model-invisible answer boundary; no significance testing.
 
-Set `decision: PASS` only for a truly eligible task, set every checklist item only after observing it, and preserve genuine screenshots/log evidence. `npm run screening:require -- --stage main` refuses any incomplete review. All three reviews plus provisional pilot gate and signoff are mandatory before main freeze. Never select/exclude tasks because Proposed wins or Baseline loses.
+**Pilot**: plan six task families x 4 models x 2 methods = 48 episodes. Tasks must not overlap PoC by seed and target pattern. Check technical validity, model competence/floor effects, task suitability and reset reliability. The numerical success gate must be decided with supervisor **before outcomes**, not retrofitted. Retry policy fixed before observing results.
 
-If one of 32 main candidates is trivial or unsupported, **the 32-candidate pool is not yet sufficient**, and protocol revision requires supervisor agreement **before observing main outcomes**. Do not invent eligibility or loosen rubric after method scores.
+**Main**: goal 32 eligible task families x four fixed models x two policies = 256 episodes. Hold out from screening tune/pilot. Cannot start unless 32 genuine qualifying tasks and official checker are independently verified; document protocol revision instead of stretching criteria.
 
-## Experimental treatment and fairness
+## Paired run scheduling
+Block by task and model. Randomize/counterbalance Baseline/Proposed order; every episode begins with fresh SQLite app seed and identical state fingerprint (or documented equivalence). Different run UUIDs, isolate Chrome contexts. Only compare official results of valid completed episodes. Preserve failures and classify separately: runner error, evaluator failure, app reset failure, completed unsuccessful task, success. No reruns just for Proposed.
 
-Shared, fixed across conditions:
+## Analysis
+- Main primary: paired success risk difference, paired discordant outcome counts and confidence intervals; exact McNemar as per-model secondary with multiplicity correction.
+- For pooled summaries, cluster bootstrap by independent task family (or model task-family explicitly) because four models reuse the same tasks. Treat confidence intervals as exploratory if 32 independent families cannot be established.
+- Analyze invalid/missing cells and floor effects; do not discard them invisibly. Task difficulty/moderator hypotheses are secondary and small-N.
+- Blinded audit of evidence correctness sampled using a **predeclared** selection method; dual rater agreement where feasible. An AXTree substring is not evidence truth.
+- Never report 48 or 256 'independent tasks'; they are episode counts, not independent families.
 
-- official public task/initial state; identical task-model pair with **fresh persistent reset between runs**;
-- one of four local Q4_K_M model candidates; same quantization/digest within paired runs;
-- system prompt, previous model-observed constraint states, accessibility snapshot, eligible probe list, action executor, browser version and constrained site origins;
-- decision budget **16 actions**, temperature **0**, up to three checkpoint screenshots (screenshots are measurements, not a treatment variable);
-- same publicly derived `may_answer` relevance hints and evidence-store implementation, available on both sides;
-- official CLI v1.2.3 and evaluator, independent of agent.
+## Threats
+- Public task family selection bias; model instruction-following rather than acquisition; reward brittleness when extra app state changes; partial-observation control selection; app-version drift; evaluator leakage; SQLite residue; weak small-model planning; language/quantization differences; time budget and shared prompt fairness.
 
-**Only probe ranking differs.**
-
-- **Baseline:** model-estimated generic forward progress and stable order.
-- **Proposed:** number of unresolved public constraints a candidate might help answer, then lower estimated forward cost and stable order.
-
-`may_answer` is a **relevance hint**, not a verified fact. Model quotes are accepted as **observational trace annotations** only if they appear in the visible Accessibility Tree; this is not independent factual verification and not evaluator ground truth. Blind or independently documented human audit is required to report **evidence correctness/constraint coverage** as a scientific outcome.
-
-No MASM-specific treatment. If common lightweight execution memory becomes necessary for browser operation, add it **identically for both methods**, document changes and rerun development checks before freezing.
-
-## PoC — GO / MODIFY / REJECT
-
-All three tasks must be independently inspected with initial screenshot/Accessibility Tree, at least two _meaningful_ choices, working Shopping session, persisted reset evidence and no oracle leakage. Inspecting a page is NOT executing an agent. Each PoC type must separately demonstrate agent model calls/actions + official agent response/HAR/evaluation as a feasibility check (failure can be diagnosed, but cannot be mistaken for benchmark success). If unsupported task types persist, STOP and revise runner/scope, rather than starting pilot blindly.
-
-The development-only runner supports **one task/model/method at a time**. It is not yet an approved full-trial orchestrator. Use `artifacts:init --stage poc`, `webarena:prepare`, `webarena:inspect` for each of 279/284/528; do not count debugging trajectories as pilot/main statistics.
-
-## Pilot — competence and technical floor-effect gate
-
-**Six distinct task IDs × four local model candidates × two methods = 48 episodes**. Run eligibility checks and confirm fresh persistent reset before collecting scores. All run cells are counted even when they fail; repeat policy must be set before reviewing outcomes, and no cherry-picking the best attempt.
-
-The currently preregistered **provisional operational thresholds** are: at least **46/48** technically valid official evaluations, at least **10/48** official successes across ≥2 distinct tasks and ≥2 models. These are **not published benchmark standards**, might be difficult for local 8–9B models, and **require supervisor approval BEFORE PILOT OUTCOMES**. Inspect method-blind technical failure, model/task floor effects, and task suitability. If pilot fails, report it honestly; do not launch main, or lower the success threshold after seeing data.
-
-`pilot:gate` outputs `FAIL` with no data and `PROVISIONAL_PASS` only if technical checks meet thresholds. A provisional pass is **NOT** authorization to run main.
-
-## Main — research freeze and proper inference
-
-Only after three approved screening documents, a provisional pilot GO, independently collected hardware/model digest and reset evidence, and supervisor signoff:
-
-1. Create `config/model-digests.local.json` privately using the **exact real Ollama digests** for the four models; never fabricate model hashes.
-2. Complete `reports/task-screening/main-review.json` for **all 32 candidates** with evidence. Preserve the review and screenshots.
-3. Execute `npm run main:freeze -- --experiment-id thesis-v1 --model-digests config/model-digests.local.json --reset-evidence reports/pilot/reset-proof.md --approved-by "<name>" --approval-ref "<document-ref>"`. The command **refuses** incomplete screening, missing digests/reset evidence, or failed pilot gate. Frozen manifest/protocol/code fingerprints are guarded against changes.
-4. `artifacts:init --stage main --experiment-id thesis-v1` scaffolds frozen paths only. **Main runner is still intentionally unavailable** until a separate, validated reset-safe batch implementation is completed.
-
-### Predeclared analysis
-
-**Primary:** binary official success (`eval_result.json` status success, not the model's SUCCESS claim). Analyze matched outcomes **within each task/model pair**; exact McNemar by model with Holm adjustment for four planned comparisons. This is not a 256-independent-task sample.
-
-**Secondary:** independently reviewed evidence correctness/required-constraint coverage; browser actions, candidate probes chosen, model calls, wall clock time, invalid output/error rate and budget exhaustion. Examine medians, distributions and missingness. Record **first-decision divergence** as a diagnostic that demonstrates whether the policies actually chose different probes, **not** evidence of correctness.
-
-No automated inference of evidence _correctness_ from an ARIA substring or relevance hint. A fair blinded audit of representative trajectories must have its selection rule registered before outcomes are inspected; report limitations if evidence cannot be audited reliably.
-
-Run-order balancing/randomization and robust persistent reset must be specified and implemented **before** the main runner is enabled. Never delete failed episodes, re-run only Proposed, or treat unevaluated runs as failures.
-
-## Reporting and provenance
-
-- `output/` and `reports/` remain private (gitignored). Back them up.
-- Each one-task run records UUID, task/model/method, start/finish, budget, ARIA trees, selected probes, bounded screenshots, `trace.jsonl`, agent `network.har`, and (only after real official evaluation) `eval_result.json`.
-- `results:export -- --stage pilot` outputs 48-cell inventory and only valid evaluated cells for Colab, plus pairwise first-decision diagnostics. Analogous main export is **blocked until freeze**.
-- `notebooks/thesis_analysis.ipynb` creates descriptive figures but blocks confirmatory main tests when the 256-cell matrix is incomplete. Never share HAR/session cookies in Google Colab.
-- Exact code/CI validity and local WebArena success are **separate claims**; no benchmark scores are available yet.
-
-See [docs/RESET_PROTOCOL.md](RESET_PROTOCOL.md), [docs/EVIDENCE_PROTOCOL.md](EVIDENCE_PROTOCOL.md), and [docs/STATUS.md](STATUS.md).
-
-### Model-checkpoint provenance
-
-Every development run first queries its configured model through local Ollama `/api/tags`, records the exact SHA-256 checkpoint digest in `run_metadata.json`, and refuses to start when the requested tag/digest is missing. The pilot gate rejects undigested episodes and cross-run digest inconsistency. `results:export` invalidates inconsistent model digests before Colab analysis. The four main digests are generated by `npm run models:digests` on the device (private gitignored file) and must match all valid pilot-run digests to freeze main. Code/protocol/model-config fingerprints must stay unchanged after freeze.
+**STOP condition:** if pilot and main lack sufficient official evidence-seeking task families, propose narrower claims or a different benchmark to supervisor rather than silently redefining outcomes.

@@ -2,11 +2,10 @@ node_modules/
 output/
 reports/
 results/
+log_outputs/
 playwright-report/
 test-results/
-config/webarena.local.json
+config/*.local.json
 *.log
 .DS_Store
-
-# Local fingerprints, environments and draft research credentials
-config/*.local.json
+.venv/

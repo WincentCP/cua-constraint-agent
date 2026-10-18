@@ -1,11 +1,11 @@
-name: Shopping feasibility invariants
+name: OpenApps CDEA migration invariants
 on:
   push:
   pull_request:
 permissions:
   contents: read
 jobs:
-  linux-validation:
+  linux:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -16,65 +16,19 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run format:check
       - run: npm run build
       - run: npm test
       - run: npm run test:integration
-      - name: Validate Colab notebook syntax
+      - name: Compile evaluator bridge
+        run: python -m py_compile scripts/openapps_bridge.py
+      - name: Ensure pilot/main cannot start prematurely
         run: |
-          python -c "import json,ast; n=json.load(open('notebooks/thesis_analysis.ipynb')); [ast.parse(''.join(c['source'])) for c in n['cells'] if c['cell_type']=='code']; print('Notebook syntax OK')"
-      - name: Execute Colab pipeline on synthetic fixtures
+          if npm run pilot:run; then exit 1; fi
+          if npm run main:freeze; then exit 1; fi
+      - name: Sanity-check source branch intent
         run: |
-          python -m pip install --quiet numpy pandas scipy matplotlib
-          python tests/notebook-smoke.py
-      - run: npm run webarena:validate
-      - run: npm run screening:init -- --stage poc
-      - run: npm run screening:init -- --stage pilot
-      - run: npm run screening:init -- --stage main
-      - name: Reject research freeze with PENDING reviews
-        shell: bash
-        run: |
-          if npm run main:freeze -- --experiment-id ci-block --model-digests no-model-digests.json --reset-evidence missing-reset-proof.md --approved-by CI --approval-ref TEST; then
-            echo "Premature main freeze must fail"
-            exit 1
-          fi
-      - name: Main scaffolding remains blocked without approved freeze
-        shell: bash
-        run: |
-          if npm run artifacts:init -- --stage main --experiment-id ci-unfrozen; then
-            echo "Main scaffold must be blocked before freeze"
-            exit 1
-          fi
-      - run: npm run artifacts:init -- --stage poc
-      - run: npm run artifacts:init -- --stage pilot
-      - run: npm run artifacts:report -- --stage pilot
-      - run: npm run results:export -- --stage pilot
-      - name: Validate incomplete analysis export
-        shell: bash
-        run: |
-          node --input-type=module -e 'import fs from "node:fs"; const x=fs.readFileSync("reports/pilot/analysis-summary.md","utf8"); const csv=fs.readFileSync("reports/pilot/run-inventory.csv","utf8"); if(!x.includes("INCOMPLETE")||csv.trim().split("\n").length!==49)process.exit(1);'
-      - name: Fail closed when pilot has zero evaluated runs
-        shell: bash
-        run: |
-          if npm run pilot:gate; then
-            echo "pilot:gate unexpectedly passed with no runs"
-            exit 1
-          fi
-          node --input-type=module -e 'import fs from "node:fs"; const j=JSON.parse(fs.readFileSync("reports/pilot/pilot-gate.json","utf8")); if(j.status!=="FAIL" || j.completed_valid!==0) process.exit(1);'
-      - uses: astral-sh/setup-uv@v6
-      - name: Official public Shopping input smoke (no live Docker)
-        run: |
-          cp config/webarena.example.json config/webarena.local.json
-          npm run webarena:prepare -- --task 284 --stage poc
-          npm run webarena:catalog
-          npm run webarena:prepare -- --task 279 --stage poc
-          npm run webarena:prepare -- --task 528 --stage poc
-          npm run webarena:prepare -- --task 96 --stage pilot
-          npm run screening:check -- --stage main
-          node --input-type=module -e 'import fs from "node:fs"; const r=JSON.parse(fs.readFileSync("reports/task-screening/main-screening-check.json","utf8")); if(r.status!=="INCOMPLETE"||r.expected!==32||r.failures.length!==32)process.exit(1);'
-          node --input-type=module -e 'import fs from "node:fs"; const t=JSON.parse(fs.readFileSync("output/catalog/shopping-tasks.json","utf8")); if(t.length<38 || t.some(x=>x.sites.length!==1 || x.sites[0]!=="shopping"))process.exit(1); console.log("Verified "+t.length+" public Shopping tasks")'
-
-  windows-smoke:
+          node -e 'const c=require("./config/openapps.json");if(c.benchmark!=="OpenApps" || c.main_approved || c.pilot_approved || c.main_tasks.length)process.exit(1)'
+  windows:
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
@@ -84,43 +38,6 @@ jobs:
           node-version: "24"
           cache: npm
       - run: npm ci
-      - run: npm run format:check
       - run: npm run build
       - run: npm test
-      - run: npm run webarena:validate
-      - run: npm run screening:init -- --stage poc
-      - run: npm run screening:init -- --stage pilot
-      - run: npm run screening:init -- --stage main
-      - name: Reject research freeze with PENDING reviews
-        shell: bash
-        run: |
-          if npm run main:freeze -- --experiment-id ci-block --model-digests no-model-digests.json --reset-evidence missing-reset-proof.md --approved-by CI --approval-ref TEST; then
-            echo "Premature main freeze must fail"
-            exit 1
-          fi
-      - name: Main scaffolding remains blocked without approved freeze
-        shell: bash
-        run: |
-          if npm run artifacts:init -- --stage main --experiment-id ci-unfrozen; then
-            echo "Main scaffold must be blocked before freeze"
-            exit 1
-          fi
-      - run: npm run artifacts:init -- --stage poc
-      - run: npm run artifacts:init -- --stage pilot
-      - run: npm run artifacts:report -- --stage pilot
-      - run: npm run results:export -- --stage pilot
-      - name: Validate incomplete analysis export
-        shell: bash
-        run: |
-          node --input-type=module -e 'import fs from "node:fs"; const x=fs.readFileSync("reports/pilot/analysis-summary.md","utf8"); const csv=fs.readFileSync("reports/pilot/run-inventory.csv","utf8"); if(!x.includes("INCOMPLETE")||csv.trim().split("\n").length!==49)process.exit(1);'
-      - uses: astral-sh/setup-uv@v6
-      - name: Windows pinned CLI input with spaces in path
-        shell: pwsh
-        run: |
-          $configDir = Join-Path $env:RUNNER_TEMP "webarena config with spaces"
-          New-Item -ItemType Directory -Path $configDir -Force | Out-Null
-          $configPath = Join-Path $configDir "webarena.local.json"
-          $taskPath = Join-Path $configDir "284.json"
-          Copy-Item config/webarena.example.json $configPath
-          npm run webarena:prepare -- --task 284 --stage poc --config $configPath --tasks $taskPath
-          if (-not (Test-Path $taskPath)) { throw "Public task export missing" }
+      - run: python -m py_compile scripts/openapps_bridge.py
