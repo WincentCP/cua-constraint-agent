@@ -51,7 +51,18 @@ def validate_structured_reply(payload: dict) -> bool:
         raise ValueError("Ollama chat response missing message")
     content = response.get("content")
     if not isinstance(content, str) or not content.strip():
-        raise ValueError("Ollama chat response has empty content")
+        # Ollama thinking models may exhaust num_predict before emitting
+        # visible message.content. Only log metadata, never reasoning text.
+        thought = response.get("thinking")
+        diagnostic = {
+            "done_reason": payload.get("done_reason"),
+            "eval_count": payload.get("eval_count"),
+            "thinking_characters": len(thought) if isinstance(thought, str) else 0,
+        }
+        raise ValueError(
+            "Ollama chat response has empty content; diagnostic="
+            + json.dumps(diagnostic, sort_keys=True)
+        )
     obj = json.loads(content)
     if not isinstance(obj, dict) or obj.get("ready") is not True:
         raise ValueError('Expected a JSON object containing {"ready":true}')
@@ -77,12 +88,15 @@ def probe(model: str, base_url: str, do_chat: bool = True, client=request_json) 
         payload = {
             "model": model,
             "stream": False,
+            # Qwen3.5 thinks by default. In Ollama this MUST be top-level:
+            # placing 'think' inside 'options' is ignored.
+            "think": False,
             "format": "json",
             "messages": [
                 {"role": "system", "content": "Return only a JSON object, no markdown."},
                 {"role": "user", "content": 'Reply with exactly {"ready":true}.'},
             ],
-            "options": {"temperature": 0, "num_predict": 80},
+            "options": {"temperature": 0, "num_predict": 256},
         }
         validate_structured_reply(client(url + "/api/chat", data=payload, timeout=180))
         outcome["chat_verified"] = True

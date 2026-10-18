@@ -40,7 +40,7 @@ With Ollama running and the selected Qwen model pulled, open PowerShell in the t
     cd "$HOME\cua-constraint-agent"
     powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\check_ollama.ps1
 
-This read-only check uses the exact tag in config/models.json, records the locally installed Ollama model digest and sends a harmless structured JSON test prompt to /api/chat. It writes output/ollama/preflight/*.json. It does **not** use a browser, solve a task, or validate Baseline/CDEA performance. A model listed in config/models.json is not automatically installed by this repository.
+This read-only check uses the exact tag in config/models.json, records the locally installed Ollama model digest and sends a harmless structured JSON test prompt to /api/chat. For Qwen3.5 it explicitly sends top-level `think: false` with a 256-token response budget to avoid spending the whole budget on hidden reasoning; this setting is only for the API preflight, **not yet** an experimental model-policy decision. On an empty answer, the error includes `done_reason`, `eval_count`, and the length of any thinking field (never the thinking text). It writes output/ollama/preflight/*.json. It does **not** use a browser, solve a task, or validate Baseline/CDEA performance. A model listed in config/models.json is not automatically installed by this repository.
 
 ## Before experimental results
 

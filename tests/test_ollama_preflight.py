@@ -41,6 +41,17 @@ class OllamaPreflightContract(unittest.TestCase):
             with self.assertRaises(ValueError):
                 mod.validate_structured_reply(payload)
 
+    def test_thinking_only_response_has_bounded_diagnostic(self):
+        with self.assertRaisesRegex(ValueError, "thinking_characters") as ctx:
+            mod.validate_structured_reply({
+                "message": {"content": "", "thinking": "private reasoning text"},
+                "done_reason": "length", "eval_count": 80
+            })
+        msg = str(ctx.exception)
+        self.assertIn('"done_reason": "length"', msg)
+        self.assertIn('"eval_count": 80', msg)
+        self.assertNotIn("private reasoning", msg)
+
     def test_probe_no_browser_and_stores_digest(self):
         expected_model = "qwen3.5:9b-q4_K_M"
         calls = []
@@ -51,6 +62,9 @@ class OllamaPreflightContract(unittest.TestCase):
             if url.endswith("/api/chat"):
                 self.assertEqual(data["model"], expected_model)
                 self.assertEqual(data["options"]["temperature"], 0)
+                self.assertIs(data["think"], False)
+                self.assertEqual(data["options"]["num_predict"], 256)
+                self.assertNotIn("think", data["options"])
                 self.assertFalse(data["stream"])
                 return {"message": {"content": '{"ready":true}'}}
             raise AssertionError("Unexpected request")
