@@ -217,3 +217,41 @@ test("self-reported completion without a todo submission is blocked for both met
     }
   }
 });
+
+
+test("HTMX churn during nonsemantic click discovery never waits on stale nth locators", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "cua-htmx-churn-"));
+  const session = await openInspectionSession({harPath:join(dir,"network.har")});
+  try {
+    await session.page.setContent([
+      '<div id="mount">',
+      '<div hx-get="/openbanking/accounts/1">BUS COMPLETE CHK (...5555)</div>',
+      '</div>',
+      '<script>',
+      'let flip = false;',
+      'setInterval(() => {',
+      '  flip = !flip;',
+      '  document.getElementById("mount").innerHTML = flip',
+      '   ? \'<div hx-get="/openbanking/accounts/2">BUS SELECT SAVINGS (...8891)</div>\'',
+      '   : \'<div hx-get="/openbanking/accounts/1">BUS COMPLETE CHK (...5555)</div>\';',
+      '}, 4);',
+      '</script>',
+    ].join(""));
+    const { extractVisibleClickables } = await import("../../src/browser/accessibility.ts");
+    const start = Date.now();
+    for (let i = 0; i < 15; i++) {
+      const controls = await extractVisibleClickables(session.page.locator("body"));
+      assert(controls.length <= 1);
+      for (const control of controls) {
+        assert(control.name.includes("BUS COMPLETE CHK") ||
+          control.name.includes("BUS SELECT SAVINGS"));
+        assert.equal(control.domIndex, 0);
+      }
+    }
+    assert(Date.now() - start < 2000,
+      "Atomic visible-control sampling must not stall on replaced HTMX rows");
+  } finally {
+    await session.close();
+    rmSync(dir,{recursive:true,force:true});
+  }
+});

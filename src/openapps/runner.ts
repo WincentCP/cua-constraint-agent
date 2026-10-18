@@ -134,9 +134,29 @@ export async function runDevelopmentLoop(opts: {
     const surface = await observeInteractiveSurface(opts.page);
     const snapshot = surface.snapshot;
     opts.saveSnapshot(step, snapshot);
+    let clickables;
+    try {
+      clickables = await extractVisibleClickables(surface.locator);
+    } catch (error) {
+      // If HTMX replaces the observed dialog/surface during extraction,
+      // this is an ordinary UI transition, not a failed research episode.
+      // A stable-surface evaluation error is still a genuine runner error.
+      const current = await observeInteractiveSurface(opts.page);
+      if (current.scope !== surface.scope || current.snapshot !== snapshot) {
+        opts.record({
+          at: new Date().toISOString(), step, method: opts.policy,
+          url: opts.page.url(), event: "SURFACE_CHANGED_DURING_DISCOVERY",
+          from_surface: surface.scope, to_surface: current.scope,
+          reason: "The observed public UI changed during clickable discovery",
+          error: String(error).slice(0, 350),
+        });
+        continue;
+      }
+      throw error;
+    }
     const discovered = [
       ...extractControls(snapshot),
-      ...await extractVisibleClickables(surface.locator),
+      ...clickables,
     ];
     const probes = probesFromControls(discovered, opts.constraints)
       .slice(0, 80).filter(p => !visited.has(opts.page.url() + "::" + surface.scope + "::" + p.id));
