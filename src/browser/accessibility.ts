@@ -115,24 +115,30 @@ export function probesFromControls(
 export const NONSEMANTIC_CLICK_SELECTOR = "div[hx-get], div[hx-post]";
 
 export async function extractVisibleClickables(root: Locator): Promise<AccessibleControl[]> {
-  const matches = root.locator(NONSEMANTIC_CLICK_SELECTOR);
-  const count = Math.min(await matches.count(), 150);
-  const controls: AccessibleControl[] = [];
-  for (let i = 0; i < count; i++) {
-    const element = matches.nth(i);
-    if (!(await element.isVisible())) continue;
-    // Do not provide a duplicate action when the element already has a
-    // semantic role which the accessibility reader can address.
-    const role = (await element.getAttribute("role"))?.toLowerCase();
-    if (role === "button" || role === "link") continue;
-    const label = (await element.innerText()).replace(/\s+/g, " ").trim().slice(0, 240);
-    if (!label) continue;
-    controls.push({
-      id: "visible-clickable-" + i,
-      role: "clickable",
-      name: label,
-      domIndex: i,
-    });
-  }
-  return controls;
+  // Critical: one browser-side read. HTMX can replace account rows between
+  // count(), isVisible(), getAttribute(), and innerText() calls; a stale nth(i)
+  // locator otherwise waits the default 30 seconds and invalidates an episode.
+  // Keep indices from the entire matched set so the subsequent click locates
+  // the same public UI row, even when hidden rows precede it.
+  const items = await root.locator(NONSEMANTIC_CLICK_SELECTOR).evaluateAll(
+    (elements) => elements.slice(0, 150).flatMap((element, i) => {
+      if (!(element instanceof HTMLElement)) return [];
+      if (element.getClientRects().length === 0) return [];
+      if (getComputedStyle(element).visibility !== "visible") return [];
+      if (element.closest('[aria-hidden="true"]')) return [];
+      const role = (element.getAttribute("role") ?? "").toLowerCase();
+      if (role === "button" || role === "link") return [];
+      const label = element.innerText.replace(/\s+/g, " ").trim().slice(0, 240);
+      if (!label) return [];
+      return [{ domIndex: i, label }];
+    }),
+    undefined,
+    { timeout: 3500 },
+  );
+  return items.map(({ domIndex, label }) => ({
+    id: "visible-clickable-" + domIndex,
+    role: "clickable" as const,
+    name: label,
+    domIndex,
+  }));
 }
