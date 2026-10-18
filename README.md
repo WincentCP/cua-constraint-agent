@@ -76,6 +76,18 @@ Read the saved local action trace without rerunning anything:
 
 Send the nine action entries before changing the policy or retrying. The next runs also print their action trace automatically.
 
+## Dev runner diagnostic safeguards
+
+The prior nine-action Qwen run clicked the same bid four times and later returned
+false on the official evaluator. The old action-only trace cannot identify
+what bids 226 and 22 represented. The dev runner now records public AXTree
+role/name/value of selected elements and a developer-only todo-state delta
+after each action, stops a third repeated click, blocks an empty Add submission,
+and stops on an unexpected new empty-title todo or premature finish.
+Private state is never sent to the model. These are development diagnostics,
+not a Baseline/CDEA policy or valid main-experiment results. Start a fresh
+OpenApps server before any new development run.
+
 ## Before experimental results
 
 See docs/RESEARCH_GATES.md. Required next: live smoke result, automated isolated resets, official evaluator positive/negative cases, shared Ollama adapter and action space, matched Baseline/CDEA episodes, independent pilot and frozen 32-task main set. Do not mix archived runner episodes into official-harness results.

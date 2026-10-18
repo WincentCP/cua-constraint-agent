@@ -57,6 +57,67 @@ def parse_action(payload: dict, bids: set[str]) -> str:
     return "press(" + json.dumps(bid) + ", " + json.dumps(key) + ")"
 
 
+def describe_bid(observation: dict, bid: str) -> dict:
+    """Describe a selected element from the public AXTree only."""
+    nodes = observation.get("axtree_object", {}).get("nodes", [])
+    for node in nodes:
+        if not isinstance(node, dict) or str(node.get("browsergym_id", "")) != bid:
+            continue
+        def ax_field(key):
+            entry = node.get(key, {})
+            return str(entry.get("value", ""))[:160] if isinstance(entry, dict) else ""
+        return {"bid": bid, "role": ax_field("role"),
+                "name": ax_field("name"), "value": ax_field("value")}
+    return {"bid": bid, "role": "", "name": "", "value": ""}
+
+
+def guarded_action(action: str, observation: dict, actions: list[str],
+                   current_url: str) -> str | None:
+    """Prevent repeated clicks and empty todo forms in this dev-only runner."""
+    if action.startswith("click("):
+        if len(actions) >= 2 and actions[-1] == action and actions[-2] == action:
+            return "repeated_click_limit: third consecutive identical click"
+        bid = json.loads(action[len("click("):-1])
+        target = describe_bid(observation, bid)
+        if (current_url.rstrip("/").endswith("/todo")
+                and target["role"].lower() == "button"
+                and target["name"].strip().lower() == "add"):
+            nodes = observation.get("axtree_object", {}).get("nodes", [])
+            typed = any(
+                isinstance(node, dict) and not node.get("ignored", False)
+                and str(node.get("role", {}).get("value", "")).lower() == "textbox"
+                and str(node.get("value", {}).get("value", "")).strip()
+                for node in nodes
+            )
+            if not typed:
+                return "empty_todo_submission: Add clicked without typed textbox value"
+    return None
+
+
+def summarize_todo_delta(previous: dict, current: dict) -> dict:
+    """Developer-only server-state differences: never fed to the model."""
+    old = previous.get("todo")
+    new = current.get("todo")
+    if not isinstance(old, list) or not isinstance(new, list):
+        return {"unavailable": True}
+    def records(items):
+        return {str(item["id"]): {"title": str(item.get("title", ""))[:160],
+                                  "done": bool(item.get("done"))}
+                for item in items if isinstance(item, dict) and "id" in item}
+    before, after = records(old), records(new)
+    return {
+        "added": [{"id": key, **after[key]} for key in sorted(after.keys() - before.keys())],
+        "removed": [{"id": key, **before[key]} for key in sorted(before.keys() - after.keys())],
+        "changed": [{"id": key, "before": before[key], "after": after[key]}
+                    for key in sorted(before.keys() & after.keys()) if before[key] != after[key]],
+    }
+
+
+def should_stop_for_unexpected_todo(delta: dict) -> bool:
+    return any(not item.get("title", "").strip() for item in delta.get("added", []))
+
+
+
 def messages(goal: str, url: str, tree: str, bids: set[str], history: list[str]) -> list[dict]:
     system = (
         "You are a computer-use agent. Complete the user's task using only visible "
@@ -125,6 +186,7 @@ def run(args, out):
         if not isinstance(goal, str) or not goal:
             raise RuntimeError("No public BrowserGym goal")
         history = []
+        previous_state = get_current_state(origin)  # developer diagnostics only
         for step in range(args.max_steps):
             tree = extract_axtree_text(obs)
             bids = permitted_bids(obs, tree)
@@ -143,21 +205,38 @@ def run(args, out):
                 out["status"] = "model_output_invalid"
                 out["trace"].append({"step":step+1,"model_error":str(exc)})
                 break
-            history.append(action)
             entry = {"step":step+1,"action":action,"model_seconds":elapsed}
+            if action.startswith(("click(", "fill(", "press(")):
+                chosen_bid = json.loads(action[action.index("(")+1:].split(",", 1)[0].rstrip(")"))
+                entry["target"] = describe_bid(obs, chosen_bid)
             out["trace"].append(entry)
             if action == "finish":
                 out["finish_claimed"] = True
                 if reward is None:
                     reward = float(env.unwrapped.task.reward())
+                if reward < 1:
+                    out["status"] = "premature_finish"
                 break
+            blocked = guarded_action(action, obs, history, str(obs.get("url", "")))
+            if blocked:
+                entry["guard_blocked"] = blocked
+                out["status"] = "safety_guard_blocked"
+                break
+            history.append(action)
             obs, reward, terminated, truncated, _ = env.step(action)
             reward = float(reward)
             out["steps"] += 1
             entry["official_reward"] = reward
+            current_state = get_current_state(origin)
+            delta = summarize_todo_delta(previous_state, current_state)
+            entry["todo_delta"] = delta
+            previous_state = current_state
             if obs.get("last_action_error"):
                 entry["browser_error"] = str(obs["last_action_error"])[:400]
                 out["status"] = "browser_action_error"
+                break
+            if should_stop_for_unexpected_todo(delta):
+                out["status"] = "unexpected_empty_todo"
                 break
             if reward >= 1 or terminated or truncated:
                 break
@@ -205,6 +284,15 @@ def main():
             action = item.get("action", "(no valid action)")
             rating = item.get("official_reward", "-")
             error = item.get("browser_error") or item.get("model_error")
+            guard = item.get("guard_blocked")
+            changes = item.get("todo_delta")
+            target = item.get("target", {})
+            if target:
+                print("    element: " + str(target))
+            if changes and (changes.get("added") or changes.get("removed") or changes.get("changed")):
+                print("    todo delta: " + json.dumps(changes, ensure_ascii=False))
+            if guard:
+                print("    BLOCKED: " + guard)
             print("  step {0}: {1} | reward={2}{3}".format(
                 item["step"], action, rating,
                 (" | ERROR=" + str(error)) if error else ""
