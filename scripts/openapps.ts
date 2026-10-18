@@ -1,7 +1,10 @@
 import { randomUUID, createHash } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
+import { tmpdir } from "node:os";
+import { mkdtempSync, rmSync } from "node:fs";
 import { openInspectionSession } from "../src/browser/session.ts";
+import { extractVisibleClickables, NONSEMANTIC_CLICK_SELECTOR } from "../src/browser/accessibility.ts";
 import { OllamaModel } from "../src/agent/ollama.ts";
 import { assertPublicGoal, bridge, checkUpstream, classifyEpisodeScore } from "../src/openapps/bridge.ts";
 import { pocTasks, requireLoopbackUrl, requirePocTask } from "../src/openapps/manifest.ts";
@@ -21,8 +24,8 @@ async function main() {
   if (cmd === "main-freeze" || cmd === "pilot") {
     throw new Error("BLOCKED: No 32 OpenApps task approvals, independent pilot, verified reset or supervisor signoff. Do not fabricate experiments.");
   }
-  if (!["doctor", "smoke", "run"].includes(cmd))
-    throw new Error("Expected doctor, smoke, or run");
+  if (!["doctor", "smoke", "navcheck", "run"].includes(cmd))
+    throw new Error("Expected doctor, smoke, navcheck, or run");
   const openappsDir = resolve(opt("openapps-dir", join(process.env.USERPROFILE || process.env.HOME || ".", "OpenApps"))!);
   const url = requireLoopbackUrl(opt("url", "http://localhost:5001")!);
   const upstreamSha = checkUpstream(openappsDir);
@@ -45,6 +48,39 @@ async function main() {
   if (!res.ok) throw new Error("OpenApps homepage HTTP " + res.status);
   const goal = bridge(settings, "goal", { task: pocTasks[0].key });
   assertPublicGoal(goal);
+  if (cmd === "navcheck") {
+    // Read-only live UI check: use the same account-row detector as both agent
+    // methods. No Ollama calls, no evaluator reads, no task state mutation.
+    const diagDir = mkdtempSync(join(tmpdir(), "cua-openapps-navcheck-"));
+    const session = await openInspectionSession({
+      allowedOrigins: [url],
+      harPath: join(diagDir, "navigation.har"),
+    });
+    try {
+      await session.goto(new URL("/openbanking", url).toString());
+      const rows = await extractVisibleClickables(session.page.locator("body"));
+      const selected = rows.find(
+        row => row.role === "clickable" && row.name.includes("BUS COMPLETE CHK (...5555)"),
+      );
+      if (selected?.domIndex === undefined)
+        throw new Error("Live OpenBanking account row not found among visible UI click targets");
+      await session.page.locator(NONSEMANTIC_CLICK_SELECTOR).nth(selected.domIndex).click({
+        timeout: 4000,
+      });
+      await session.page.waitForURL(
+        target => target.pathname.includes("/openbanking/accounts/"), { timeout: 15000 },
+      );
+      const visible = await session.page.locator("body").innerText();
+      if (!visible.includes("Transactions") || !visible.includes("Card"))
+        throw new Error("Navigated to bank account but visible transaction ledger incomplete");
+      console.log("PASS: Live OpenBanking account row is actionable; transaction ledger is visible.");
+      console.log("No Ollama call and no banking mutations performed.");
+    } finally {
+      await session.close();
+      rmSync(diagDir, { recursive: true, force: true });
+    }
+    return;
+  }
   if (cmd === "smoke") {
     console.log("PASS: Live homepage and public task configuration.");
     console.log("Optional official component check: cd OpenApps; uv run python -m pytest tests/test_openbanking.py -q -x");

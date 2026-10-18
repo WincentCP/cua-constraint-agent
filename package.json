@@ -16,7 +16,8 @@
     "openapps:smoke": "node --import tsx scripts/openapps.ts smoke",
     "poc:run": "node --import tsx scripts/openapps.ts run",
     "pilot:run": "node --import tsx scripts/openapps.ts pilot",
-    "main:freeze": "node --import tsx scripts/openapps.ts main-freeze"
+    "main:freeze": "node --import tsx scripts/openapps.ts main-freeze",
+    "openapps:navcheck": "node --import tsx scripts/openapps.ts navcheck"
   },
   "dependencies": {
     "playwright": "^1.58.0",
