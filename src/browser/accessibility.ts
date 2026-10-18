@@ -1,4 +1,5 @@
 import { parse } from "yaml";
+import type { Locator } from "playwright";
 import type {
   AccessibleControl,
   ConstraintSpec,
@@ -103,4 +104,35 @@ export function probesFromControls(
     forward_cost: 1,
     order,
   }));
+}
+
+
+// OpenApps' bank account rows are visible clickable <div hx-get=...> elements,
+// not ARIA buttons or links. The AX tree includes their text but not a control
+// role. This supplement discovers their public UI affordance without giving the
+// model URL endpoints, HTML attributes, hidden values or evaluator state.
+// Both policy arms receive the identical candidates and interaction adapter.
+export const NONSEMANTIC_CLICK_SELECTOR = "div[hx-get], div[hx-post]";
+
+export async function extractVisibleClickables(root: Locator): Promise<AccessibleControl[]> {
+  const matches = root.locator(NONSEMANTIC_CLICK_SELECTOR);
+  const count = Math.min(await matches.count(), 150);
+  const controls: AccessibleControl[] = [];
+  for (let i = 0; i < count; i++) {
+    const element = matches.nth(i);
+    if (!(await element.isVisible())) continue;
+    // Do not provide a duplicate action when the element already has a
+    // semantic role which the accessibility reader can address.
+    const role = (await element.getAttribute("role"))?.toLowerCase();
+    if (role === "button" || role === "link") continue;
+    const label = (await element.innerText()).replace(/\s+/g, " ").trim().slice(0, 240);
+    if (!label) continue;
+    controls.push({
+      id: "visible-clickable-" + i,
+      role: "clickable",
+      name: label,
+      domIndex: i,
+    });
+  }
+  return controls;
 }

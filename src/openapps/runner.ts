@@ -2,7 +2,7 @@ import type { Locator, Page } from "playwright";
 import { EvidenceStore } from "../core/evidence.ts";
 import { selectProbe } from "../core/policy.ts";
 import type { ConstraintSpec, Policy, Probe } from "../core/types.ts";
-import { extractControls, probesFromControls } from "../browser/accessibility.ts";
+import { extractControls, extractVisibleClickables, NONSEMANTIC_CLICK_SELECTOR, probesFromControls } from "../browser/accessibility.ts";
 import { parseAgentPlan, type ModelClient } from "../agent/ollama.ts";
 
 export type DevRunStats = { steps: number; actions: number; modelCalls: number;
@@ -58,6 +58,12 @@ export async function observeInteractiveSurface(page: Page): Promise<{
 export async function performProbe(page: Page, probe: Probe, input?: string, scope?: Locator) {
   const c = probe.control;
   const root = scope ?? page;
+  if (c.role === "clickable") {
+    if (c.domIndex === undefined)
+      throw new Error("Nonsemantic visible click target has no DOM index");
+    await root.locator(NONSEMANTIC_CLICK_SELECTOR).nth(c.domIndex).click({ timeout: 3000 });
+    return "click";
+  }
   const loc = c.name
     ? root.getByRole(c.role, { name: c.name, exact: true }).first()
     : root.getByRole(c.role).first();
@@ -73,6 +79,12 @@ export async function performProbe(page: Page, probe: Probe, input?: string, sco
     return "select-option";
   }
   await loc.click({ timeout: 3000 });
+  // HTMX replaces OpenApps dialog asynchronously. After a successful click
+  // from a dialog, give its visible close transition time to finish before
+  // taking the next snapshot (does not open hidden data or force a click).
+  if (scope && await scope.evaluate(el => el.tagName.toLowerCase() === "dialog")) {
+    await scope.waitFor({ state: "hidden", timeout: 2000 }).catch(() => {});
+  }
   return "click";
 }
 
@@ -93,8 +105,12 @@ export async function runDevelopmentLoop(opts: {
     const surface = await observeInteractiveSurface(opts.page);
     const snapshot = surface.snapshot;
     opts.saveSnapshot(step, snapshot);
-    const probes = probesFromControls(extractControls(snapshot), opts.constraints)
-      .slice(0, 40).filter(p => !visited.has(opts.page.url() + "::" + surface.scope + "::" + p.id));
+    const discovered = [
+      ...extractControls(snapshot),
+      ...await extractVisibleClickables(surface.locator),
+    ];
+    const probes = probesFromControls(discovered, opts.constraints)
+      .slice(0, 80).filter(p => !visited.has(opts.page.url() + "::" + surface.scope + "::" + p.id));
     const prior = store.ledger(["task"], opts.constraints);
     const states = Object.fromEntries(opts.constraints.map(c =>
       [c.id, prior.task[c.id].state]));
@@ -130,11 +146,11 @@ export async function runDevelopmentLoop(opts: {
     // An OpenApps HTMX action can open a dialog *while the model is planning*.
     // Reobserve rather than clicking a stale background target.
     const currentSurface = await observeInteractiveSurface(opts.page);
-    if (currentSurface.scope !== surface.scope) {
+    if (currentSurface.scope !== surface.scope || currentSurface.snapshot !== snapshot) {
       opts.record({
         ...entry, event: "SURFACE_CHANGED",
         selected: chosen.id, next_surface: currentSurface.scope,
-        reason: "Interactive surface changed before action; reobserve",
+        reason: "Visible UI changed before action; reobserve",
       });
       continue;
     }

@@ -1,6 +1,6 @@
 export type Policy = "Baseline" | "Proposed";
 export type EvidenceState = "SATISFIED" | "REFUTED" | "UNKNOWN";
-export type ControlKind = "link" | "button" | "textbox" | "combobox";
+export type ControlKind = "link" | "button" | "textbox" | "combobox" | "clickable";
 
 export type ConstraintSpec = {
   id: string;
@@ -32,6 +32,8 @@ export type AccessibleControl = {
   role: ControlKind;
   name: string;
   url?: string;
+  /** Position among visible/nonvisible public UI HTMX click targets; used only for clicking. */
+  domIndex?: number;
 };
 
 export type Probe = {

@@ -139,3 +139,51 @@ test("agent reobserves if modal appears during model planning rather than clicki
     rmSync(dir, {recursive:true,force:true});
   }
 });
+
+
+test("OpenBanking account rows with hx-get become publicly visible clickable probes", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "cua-bank-rows-"));
+  const session = await openInspectionSession({ harPath: join(dir, "network.har") });
+  try {
+    await session.page.setContent([
+      '<div id="bank">',
+      '  <button>Open an account</button>',
+      '  <div id="account-1" hx-get="/openbanking/accounts/1" ',
+      '       onclick="document.getElementById(\'detail\').textContent=\'Transactions for BUS COMPLETE CHK\'">',
+      '    <div>BUS COMPLETE CHK (...5555)</div>',
+      '    <div>Acme Industries, Inc</div>',
+      '    <div>$6,102.80 Available balance</div>',
+      '  </div>',
+      '  <div id="account-2" hx-get="/openbanking/accounts/2">BUS SELECT SAVINGS (...8891)</div>',
+      '  <div hx-get="/invisible" style="display:none">Hidden account</div>',
+      '  <div id="detail"></div>',
+      '</div>',
+    ].join(""));
+    const { extractVisibleClickables, extractControls, probesFromControls } = await import(
+      "../../src/browser/accessibility.ts"
+    );
+    const { observeInteractiveSurface, performProbe } = await import(
+      "../../src/openapps/runner.ts"
+    );
+    const surface = await observeInteractiveSurface(session.page);
+    const semantic = extractControls(surface.snapshot);
+    const appended = await extractVisibleClickables(surface.locator);
+    assert.equal(appended.length, 2);
+    assert(!appended.some(c => c.name.includes("Hidden account")));
+    assert(appended.some(c => c.role === "clickable" &&
+      c.name.includes("BUS COMPLETE CHK")));
+    const probes = probesFromControls([...semantic, ...appended], [{
+      id:"account",description:"Inspect business checking account",
+      hints:["chk"],required:true,
+    }]);
+    const bank = probes.find(p=>p.control.role === "clickable" &&
+      p.label.includes("BUS COMPLETE CHK"));
+    assert(bank);
+    assert(bank.may_answer.includes("account"));
+    await performProbe(session.page, bank, undefined, surface.locator);
+    assert.match(await session.page.locator("#detail").innerText(), /Transactions for BUS COMPLETE CHK/);
+  } finally {
+    await session.close();
+    rmSync(dir, {recursive:true,force:true});
+  }
+});
