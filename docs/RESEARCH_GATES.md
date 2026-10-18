@@ -12,4 +12,4 @@ Archive: archive/custom-openapps-runner-20261018. Current main is a prototype, n
 
 ## Next engineering milestone
 
-Integrate the local Ollama adapter into official BrowserGym using a **shared** observation/action interface for Baseline and CDEA. Begin with one deterministic task and a single development model. Do not count the no-op smoke reward or archived runner PoCs as outcomes. Before paired comparisons, prove fresh initial-state hashes and independent evaluator positive/negative controls. Verify all four model identifiers and digests before pilot/main runs.
+Run the local Ollama model API preflight added in scripts/browsergym/ollama_preflight.py; this is a prerequisite, NOT a BrowserGym integration. Next integrate the Ollama adapter into official BrowserGym using a **shared** observation/action interface for Baseline and CDEA. Begin with one deterministic task and a single development model. Do not count the no-op smoke reward or archived runner PoCs as outcomes. Before paired comparisons, prove fresh initial-state hashes and independent evaluator positive/negative controls. Verify all four model identifiers and digests before pilot/main runs.

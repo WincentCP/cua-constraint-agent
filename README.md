@@ -33,6 +33,15 @@ The Python runner imports upstream OpenApps task registration, creates its Brows
 
 CI runs static, dependency-free contract checks on Windows and Linux; **it does not validate a live OpenApps task or an Ollama agent**.
 
+## Next step: Ollama preflight (no task actions)
+
+With Ollama running and the selected Qwen model pulled, open PowerShell in the thesis repo:
+
+    cd "$HOME\cua-constraint-agent"
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\check_ollama.ps1
+
+This read-only check uses the exact tag in config/models.json, records the locally installed Ollama model digest and sends a harmless structured JSON test prompt to /api/chat. It writes output/ollama/preflight/*.json. It does **not** use a browser, solve a task, or validate Baseline/CDEA performance. A model listed in config/models.json is not automatically installed by this repository.
+
 ## Before experimental results
 
 See docs/RESEARCH_GATES.md. Required next: live smoke result, automated isolated resets, official evaluator positive/negative cases, shared Ollama adapter and action space, matched Baseline/CDEA episodes, independent pilot and frozen 32-task main set. Do not mix archived runner episodes into official-harness results.
