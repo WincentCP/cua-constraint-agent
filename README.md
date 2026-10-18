@@ -27,7 +27,7 @@ Prerequisite: pinned OpenApps checkout at HOME/OpenApps, commit **6e6782794433c6
     cd "$HOME\cua-constraint-agent"
     powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_official_smoke.ps1
 
-The Python runner imports upstream OpenApps task registration, creates its BrowserGym environment, reads the AXTree, sends exactly one public noop action and records the official reward to output/browsergym/smoke/. A reward of zero is normal for a noop. An invalid episode is not counted as a model failure.
+The Python runner imports upstream OpenApps task registration, creates its BrowserGym environment, reads the AXTree, executes one literal Python `pass` (no-op) action with the required `action_mapping=None` and per-episode `exp_dir` arguments, checks `last_action_error` and records the official reward to output/browsergym/smoke/. A reward of zero is normal for a no-op. An invalid episode is not counted as a model failure.
 
 **Windows compatibility:** upstream launch_agent.py uses /bin/bash to spawn its own server and cannot directly run on native Windows. This repo's smoke instead uses an already-running OpenApps server and the official registration / environment / task evaluator from the OpenApps package.
 

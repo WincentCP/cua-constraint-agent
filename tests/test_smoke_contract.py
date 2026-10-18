@@ -1,6 +1,7 @@
 import importlib.util
 from pathlib import Path
 import unittest
+from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[1]
 p = ROOT / "scripts/browsergym/smoke.py"
@@ -26,8 +27,28 @@ class TestContract(unittest.TestCase):
     def test_public_official_integration_only(self):
         text = p.read_text(encoding="utf-8")
         self.assertIn("register_tasks_with_browsergym([task])", text)
-        self.assertIn('env.step("noop()")', text)
+        self.assertIn('env.step("pass")', text)
         self.assertNotIn("1078.81", text)
+
+    def test_make_env_explicit_browsergym_arguments(self):
+        class FakeEnvArgs:
+            def make_env(self, action_mapping, exp_dir):
+                assert action_mapping is None
+                assert exp_dir.is_dir()
+                return {"mapping": action_mapping, "path": exp_dir}
+
+        with TemporaryDirectory() as tmp:
+            p = Path(tmp) / "episode"
+            env = mod.make_smoke_env(FakeEnvArgs(), p)
+            self.assertEqual(env["path"], p)
+            self.assertTrue(p.is_dir())
+
+    def test_browsergym_action_error_rejected_even_with_reward(self):
+        mod.validate_noop_step({"last_action_error": ""}, 0.0)
+        with self.assertRaisesRegex(RuntimeError, "BrowserGym action failed"):
+            mod.validate_noop_step({"last_action_error": "NameError: noop"}, 0.0)
+        with self.assertRaisesRegex(RuntimeError, "Invalid official evaluator"):
+            mod.validate_noop_step({"last_action_error": ""}, -1)
 
 
 if __name__ == "__main__":

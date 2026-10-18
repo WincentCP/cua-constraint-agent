@@ -30,6 +30,25 @@ def hash_state(state: object) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+def make_smoke_env(env_args: object, exp_dir: Path):
+    """Use BrowserGym experiments EnvArgs' required mapping and directory."""
+    exp_dir.mkdir(parents=True, exist_ok=True)
+    # No high-level command translation is needed for the literal Python pass
+    # action. Passing None deliberately executes the original Python source.
+    return env_args.make_env(action_mapping=None, exp_dir=exp_dir)
+
+
+def validate_noop_step(observation: dict, reward: float) -> None:
+    """Do not silently count BrowserGym-captured action errors as successes."""
+    if not isinstance(observation, dict):
+        raise RuntimeError("BrowserGym step returned no observation")
+    action_error = observation.get("last_action_error", "")
+    if action_error:
+        raise RuntimeError("BrowserGym action failed: " + str(action_error))
+    if not isinstance(reward, (int, float)) or not 0 <= reward <= 1:
+        raise RuntimeError("Invalid official evaluator reward")
+
+
 def run(args: argparse.Namespace, report: dict) -> None:
     url = validate_url(args.url)
     root = Path(args.openapps_dir).expanduser().resolve()
@@ -66,15 +85,15 @@ def run(args: argparse.Namespace, report: dict) -> None:
     report["initial_state_sha256"] = hash_state(get_current_state(url))
     env = None
     try:
-        env = env_args.make_env()
+        env = make_smoke_env(env_args, Path(report["experiment_dir"]))
         obs, _ = env.reset(seed=233)
         if not isinstance(obs, dict) or not str(obs.get("axtree_txt", "")).strip():
             raise RuntimeError("Missing official BrowserGym AXTree observation")
         report["axtree_characters"] = len(obs["axtree_txt"])
-        # This is a public, non-mutating BrowserGym action.
-        _, reward, terminated, truncated, _ = env.step("noop()")
-        if not isinstance(reward, (float, int)) or not 0 <= reward <= 1:
-            raise RuntimeError("Invalid official evaluator reward")
+        # A literal Python pass is supported without an action mapper and
+        # does not interact with any page or alter task data.
+        next_obs, reward, terminated, truncated, _ = env.step("pass")
+        validate_noop_step(next_obs, reward)
         report.update(official_reward=float(reward), terminated=bool(terminated),
                       truncated=bool(truncated), steps=1,
                       final_state_sha256=hash_state(get_current_state(url)),
@@ -94,7 +113,8 @@ def main(argv: list[str] | None = None) -> int:
     out.mkdir(parents=True, exist_ok=True)
     artifact = out / (uuid4().hex + ".json")
     report = {"status": "invalid_episode", "method": "none: no-op infrastructure smoke",
-              "task": args.task, "official_reward": None}
+              "task": args.task, "official_reward": None,
+              "experiment_dir": str(out / ("episode-" + artifact.stem))}
     try:
         run(args, report)
     except Exception as error:
