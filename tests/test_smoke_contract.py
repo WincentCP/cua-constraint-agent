@@ -30,6 +30,25 @@ class TestContract(unittest.TestCase):
         self.assertIn('env.step("pass")', text)
         self.assertNotIn("1078.81", text)
 
+    def test_raw_browsergym_observation_uses_official_tree_formatter(self):
+        obs = {"axtree_object": {"nodes": [{"role": {"value": "RootWebArea"}}]},
+               "last_action_error": "", "url": "http://127.0.0.1:5001"}
+        seen = []
+        def fake_browsergym_formatter(tree):
+            seen.append(tree)
+            return '- RootWebArea "OpenApps"'
+        result = mod.extract_axtree_text(obs, flatten=fake_browsergym_formatter)
+        self.assertIn("OpenApps", result)
+        self.assertIs(seen[0], obs["axtree_object"])
+
+    def test_raw_observation_missing_tree_reports_keys(self):
+        with self.assertRaisesRegex(RuntimeError, "observed keys: url"):
+            mod.extract_axtree_text({"url": "http://127.0.0.1:5001"},
+                                    flatten=lambda _: "must not run")
+        with self.assertRaisesRegex(RuntimeError, "empty text"):
+            mod.extract_axtree_text({"axtree_object": {"nodes": [{}]}},
+                                    flatten=lambda _: "")
+
     def test_make_env_explicit_browsergym_arguments(self):
         class FakeEnvArgs:
             def make_env(self, action_mapping, exp_dir):

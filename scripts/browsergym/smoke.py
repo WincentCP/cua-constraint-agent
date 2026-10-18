@@ -49,6 +49,29 @@ def validate_noop_step(observation: dict, reward: float) -> None:
         raise RuntimeError("Invalid official evaluator reward")
 
 
+def extract_axtree_text(observation: dict, flatten=None) -> str:
+    """Use BrowserGym's official AXTree formatting on its *raw* observation.
+
+    BrowserEnv.reset() and BrowserEnv.step() expose axtree_object; the
+    axtree_txt key is added later by the AgentLab/BrowserGym preprocessor.
+    """
+    if not isinstance(observation, dict):
+        raise RuntimeError("BrowserGym returned a non-dict observation")
+    tree = observation.get("axtree_object")
+    if not isinstance(tree, dict) or not isinstance(tree.get("nodes"), list) or not tree["nodes"]:
+        raise RuntimeError(
+            "Missing raw BrowserGym AXTree object; observed keys: "
+            + ", ".join(sorted(map(str, observation.keys())))
+        )
+    if flatten is None:
+        from browsergym.utils.obs import flatten_axtree_to_str
+        flatten = flatten_axtree_to_str
+    text = flatten(tree)
+    if not isinstance(text, str) or not text.strip():
+        raise RuntimeError("Official BrowserGym AXTree formatter produced empty text")
+    return text
+
+
 def run(args: argparse.Namespace, report: dict) -> None:
     url = validate_url(args.url)
     root = Path(args.openapps_dir).expanduser().resolve()
@@ -87,9 +110,9 @@ def run(args: argparse.Namespace, report: dict) -> None:
     try:
         env = make_smoke_env(env_args, Path(report["experiment_dir"]))
         obs, _ = env.reset(seed=233)
-        if not isinstance(obs, dict) or not str(obs.get("axtree_txt", "")).strip():
-            raise RuntimeError("Missing official BrowserGym AXTree observation")
-        report["axtree_characters"] = len(obs["axtree_txt"])
+        axtree_text = extract_axtree_text(obs)
+        report["axtree_characters"] = len(axtree_text)
+        report["observation_source"] = "BrowserGym axtree_object via official formatter"
         # A literal Python pass is supported without an action mapper and
         # does not interact with any page or alter task data.
         next_obs, reward, terminated, truncated, _ = env.step("pass")
