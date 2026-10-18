@@ -1,55 +1,38 @@
-# CDEA Computer-Use Agent — OpenApps
+# CUA Thesis: official BrowserGym + OpenApps
 
-**Primary benchmark: Meta Research OpenApps.** Compare Baseline generic-progress probe ranking with Proposed Constraint-Directed Evidence Acquisition (CDEA), using identical visible observations, public goals, model calls, candidate controls, action budgets, and the same model per matched pair.
+**Status: research infrastructure prototype. Not a completed CDEA experiment.**
 
-**Status: development PoC only. NO validated end-to-end model/official reward runs, no approved pilot/main task list, no 32-task main claim.** WebArena-Verified legacy source and protocols are preserved in the [webarena-verified-archive branch](https://github.com/WincentCP/cua-constraint-agent/tree/webarena-verified-archive).
+The former custom TypeScript runner (Baseline/CDEA), tests, documentation and Git history are preserved at branch **archive/custom-openapps-runner-20261018** (commit c2fae213b203dc4899d3ee05958c9a66bb3ba6a2).
 
-See [Setup](docs/SETUP.md), [experiment protocol](docs/EXPERIMENT.md), [task review](docs/TASK_SCREENING.md), [evaluation protocol](docs/EVALUATION.md), [status](docs/STATUS.md), and [limitations](docs/LIMITATIONS.md).
+## Architecture
 
-## Run on the Windows warnet PC
+- **Models:** four planned local Ollama models in config/models.json.
+- **Treatment:** Baseline vs Constraint-Directed Evidence Acquisition (CDEA) is not yet connected to the new harness.
+- **Harness:** official OpenApps task registration with BrowserGym environment and official evaluator. The smoke implementation exercises this foundation on a single non-mutating browser action.
+- **Benchmark:** OpenApps apps/tasks including OpenBanking and Todo. Task suitability and a final set of 32 tasks still require screening.
 
-Prerequisites: Node.js 24, Git, Ollama, `uv`, Playwright Chromium; checkout the exact OpenApps commit pinned in `config/openapps.json`. Do not mix different OpenApps versions between paired runs.
+## Windows smoke test
 
-```powershell
-cd "$HOME\OpenApps"
-git fetch origin
-git checkout 6e6782794433c60468d65ac75bc3f03c56007f8c
-$env:PYTHONUTF8 = "1"
-$env:PYTHONIOENCODING = "utf-8"
-$env:USER = $env:USERNAME
-uv sync
-uv run playwright install chromium
-uv run launch.py
-```
+Prerequisite: pinned OpenApps checkout at HOME/OpenApps, commit **6e6782794433c60468d65ac75bc3f03c56007f8c**, uv, and Playwright Chromium. OpenApps and Ollama are separate; the no-op smoke **does not need Ollama**.
 
-In a *second* PowerShell:
+**PowerShell 1:** start OpenApps and leave running:
 
-```powershell
-cd "$HOME\cua-constraint-agent"
-npm ci
-npx playwright install chromium
-npm run build
-npm test
-npm run openapps:doctor
-npm run openapps:smoke
-```
+    cd "$HOME\OpenApps"
+    $env:USER = $env:USERNAME
+    $env:PYTHONUTF8 = "1"
+    uv run launch.py
 
-After fresh environment confirmation and availability of a locally running Ollama checkpoint:
+**PowerShell 2:** run the official adapter smoke:
 
-```powershell
-npm run poc:run -- --task add_todo_to_review_largest_card_charge --method Baseline --model-label granite4.1-8b --fresh-state-confirmed
-```
+    cd "$HOME\cua-constraint-agent"
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_official_smoke.ps1
 
-To compare Proposed, **stop OpenApps and start a genuinely fresh database seed first**, prove equal initial state fingerprints, then run the same task/model with `--method Proposed`. A browser tab reset alone does NOT reset persistent app SQLite state.
+The Python runner imports upstream OpenApps task registration, creates its BrowserGym environment, reads the AXTree, sends exactly one public noop action and records the official reward to output/browsergym/smoke/. A reward of zero is normal for a noop. An invalid episode is not counted as a model failure.
 
-Do not treat browser launch, pytest PASS, CLI smoke, model-finished claims, or unverified saved traces as official end-to-end task success. The PoC runner saves an external evaluator result separately.
+**Windows compatibility:** upstream launch_agent.py uses /bin/bash to spawn its own server and cannot directly run on native Windows. This repo's smoke instead uses an already-running OpenApps server and the official registration / environment / task evaluator from the OpenApps package.
 
-## Research boundaries
+CI runs static, dependency-free contract checks on Windows and Linux; **it does not validate a live OpenApps task or an Ollama agent**.
 
-- PoC: three registered OpenBanking tasks. Debugging data; excluded from confirmatory inference.
-- Pilot: six **not yet selected** held-out task families; planned 6 x 4 models x 2 policies = 48 first-attempt evaluations; **blocked** until task suitability + reset + model competency checks.
-- Main: **target** 32 suitable tasks x 4 models x 2 policies = 256 first-attempt evaluations; **blocked** pending 32 independently screened tasks, supervisor approval and preregistered analysis. Variations of the same task count as correlated members of the same family, not independent tasks.
-- Evaluator: OpenApps `Task.check_if_task_is_complete(initial_state,current_state)`, invoked outside the agent; no expected target-state values in prompts.
-- Local-only website/model. Persist outputs outside ephemeral warnet storage before logout. Treat traces, HAR and app SQLite snapshots as private research data.
+## Before experimental results
 
-`main` is OpenApps-first; WebArena isn't part of current procedures. 
+See docs/RESEARCH_GATES.md. Required next: live smoke result, automated isolated resets, official evaluator positive/negative cases, shared Ollama adapter and action space, matched Baseline/CDEA episodes, independent pilot and frozen 32-task main set. Do not mix archived runner episodes into official-harness results.

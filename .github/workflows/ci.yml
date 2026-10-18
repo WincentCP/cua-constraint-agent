@@ -1,43 +1,18 @@
-name: OpenApps CDEA migration invariants
-on:
-  push:
-  pull_request:
-permissions:
-  contents: read
+name: BrowserGym prototype static tests
+on: [push, pull_request]
 jobs:
-  linux:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+  contract:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-python@v5
         with:
-          node-version: "24"
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run build
-      - run: npm test
-      - run: npm run test:integration
-      - name: Compile evaluator bridge
-        run: python -m py_compile scripts/openapps_bridge.py
-      - name: Ensure pilot/main cannot start prematurely
-        run: |
-          if npm run pilot:run; then exit 1; fi
-          if npm run main:freeze; then exit 1; fi
-      - name: Sanity-check source branch intent
-        run: |
-          node -e 'const c=require("./config/openapps.json");if(c.benchmark!=="OpenApps" || c.main_approved || c.pilot_approved || c.main_tasks.length)process.exit(1)'
-  windows:
-    runs-on: windows-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - run: npm test
-      - run: python -m py_compile scripts/openapps_bridge.py
+          python-version: '3.11'
+      - name: Compile smoke
+        run: python -m py_compile scripts/browsergym/smoke.py
+      - name: Verify contract
+        run: python -m unittest discover -s tests -v
