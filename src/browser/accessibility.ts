@@ -132,8 +132,6 @@ export async function extractVisibleClickables(root: Locator): Promise<Accessibl
       if (!label) return [];
       return [{ domIndex: i, label }];
     }),
-    undefined,
-    { timeout: 3500 },
   );
   return items.map(({ domIndex, label }) => ({
     id: "visible-clickable-" + domIndex,
