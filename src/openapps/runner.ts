@@ -45,8 +45,10 @@ export async function observeInteractiveSurface(page: Page): Promise<{
   scope: "dialog" | "page";
   locator: Locator;
 }> {
-  const dialog = page.getByRole("dialog").last();
-  if ((await dialog.count()) > 0 && await dialog.isVisible()) {
+  // OpenApps uses <dialog open> (often non-modal) which can block pointer
+  // events even when getByRole("dialog") omits it from the ARIA tree.
+  const dialog = page.locator("dialog[open]:visible").last();
+  if ((await dialog.count()) > 0) {
     return { snapshot: await dialog.ariaSnapshot(), scope: "dialog", locator: dialog };
   }
   const body = page.locator("body");
@@ -70,7 +72,7 @@ export async function performProbe(page: Page, probe: Probe, input?: string, sco
     await loc.selectOption({ label: input }, { timeout: 4500 });
     return "select-option";
   }
-  await loc.click({ timeout: 10000 });
+  await loc.click({ timeout: 3000 });
   return "click";
 }
 
@@ -125,6 +127,17 @@ export async function runDevelopmentLoop(opts: {
     if (!probes.length) throw new Error("No unattempted accessible controls");
     const chosen = selectProbe(opts.policy, probes, store.ledger(["task"], opts.constraints),
       plan.progress_scores);
+    // An OpenApps HTMX action can open a dialog *while the model is planning*.
+    // Reobserve rather than clicking a stale background target.
+    const currentSurface = await observeInteractiveSurface(opts.page);
+    if (currentSurface.scope !== surface.scope) {
+      opts.record({
+        ...entry, event: "SURFACE_CHANGED",
+        selected: chosen.id, next_surface: currentSurface.scope,
+        reason: "Interactive surface changed before action; reobserve",
+      });
+      continue;
+    }
     visited.add(opts.page.url() + "::" + surface.scope + "::" + chosen.id);
     opts.record({ ...entry, event: "ACTION_ATTEMPT", selected: chosen.id });
     let action: string;
@@ -133,6 +146,17 @@ export async function runDevelopmentLoop(opts: {
         opts.page, chosen, plan.input_text_by_probe[chosen.id], surface.locator,
       );
     } catch (error) {
+      // Rare race: the active dialog may arrive after the pre-action check,
+      // but before Playwright dispatches the pointer event.
+      if (surface.scope === "page" &&
+          (await opts.page.locator("dialog[open]:visible").count()) > 0) {
+        opts.record({
+          ...entry, event: "ACTION_BLOCKED_BY_DIALOG",
+          selected: chosen.id, next_surface: "dialog",
+          error: String(error).slice(0, 1000),
+        });
+        continue;
+      }
       opts.record({
         ...entry,
         event: "ACTION_ERROR",
