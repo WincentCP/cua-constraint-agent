@@ -34,6 +34,7 @@ TEMPERATURE = 0
 NUM_PREDICT = 640
 ACTION_SUBSETS = ("bid", "nav")
 TASK_KEY = re.compile(r"^[a-z][a-z0-9_]*$")
+TASK_GROUPS = ("all_tasks", "openbanking", "longer_horizon")
 
 
 def pair_order(task: str, model_label: str, seed: int) -> list[str]:
@@ -53,16 +54,23 @@ def model_identity(label: str, ollama_url: str, client=request_json) -> dict:
     return {"label": label, "name": name, "digest": digest, "ollama_url": origin}
 
 
-def build_env_args(root: Path, url: str, task_key: str, max_steps: int):
+def build_env_args(root: Path, url: str, task_key: str, max_steps: int,
+                   task_group: str = "all_tasks"):
     from hydra import compose, initialize_config_dir
     from hydra.utils import instantiate
     from open_apps.tasks.add_tasks_to_browsergym import register_tasks_with_browsergym
 
+    if task_group not in TASK_GROUPS:
+        raise ValueError(f"Unsupported official OpenApps task group: {task_group}")
     os.chdir(root)
     with initialize_config_dir(config_dir=str(root / "config"), version_base=None):
-        cfg = compose(config_name="config", overrides=["headless=True"])
+        cfg = compose(config_name="config", overrides=["headless=True",
+                                                       f"tasks={task_group}"])
         if task_key not in cfg.tasks:
-            raise ValueError(f"Unknown official OpenApps task: {task_key}")
+            raise ValueError(
+                f"Official OpenApps task {task_key!r} is not in tasks={task_group}. "
+                "Use --task-group openbanking for the standalone OpenBanking tasks."
+            )
         task = instantiate(cfg.tasks[task_key])
         register_tasks_with_browsergym([task])
         cfg.browsergym_env_args.task_name = task.task_id
@@ -86,7 +94,8 @@ def run_episode(root: Path, server, method: str, identity: dict,
     destination.mkdir(parents=True, exist_ok=False)
     path = destination / "episode.json"
     record = {
-        "mode": "paired_development_only", "task": args.task, "method": method,
+        "mode": "paired_development_only", "task": args.task,
+        "task_group": args.task_group, "method": method,
         "model": identity["name"], "model_digest": identity["digest"],
         "server": asdict(server), "upstream_commit": UPSTREAM_PIN,
         "seed": args.seed, "max_steps": args.max_steps, "num_predict": NUM_PREDICT,
@@ -107,7 +116,8 @@ def run_episode(root: Path, server, method: str, identity: dict,
         record["initial_sha256"] = start_hash
         if expected_initial is not None and start_hash != expected_initial:
             raise RuntimeError("PAIR RESET PARITY FAILURE: initial application states differ")
-        env_args, _task = build_env_args(root, server.url, args.task, args.max_steps)
+        env_args, _task = build_env_args(root, server.url, args.task,
+                                         args.max_steps, args.task_group)
         actions = HighLevelActionSet(
             subsets=list(ACTION_SUBSETS), strict=True, multiaction=False,
         )
@@ -326,7 +336,7 @@ def run_pair(args, report: dict) -> None:
     report["order"] = pair_order(args.task, args.model_label, args.seed)
     report["planned_methods"] = list(METHODS)
     report["parameters"] = {
-        "seed": args.seed, "max_steps": args.max_steps,
+        "task_group": args.task_group, "seed": args.seed, "max_steps": args.max_steps,
         "model_timeout": args.model_timeout, "temperature": TEMPERATURE,
         "num_predict": NUM_PREDICT, "think": False,
         "action_subsets": list(ACTION_SUBSETS),
@@ -378,6 +388,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--openapps-dir", required=True)
     parser.add_argument("--model-label", default="qwen3.5-9b")
     parser.add_argument("--task", default="add_call_mom_to_my_todo")
+    parser.add_argument("--task-group", choices=TASK_GROUPS,
+                        default="all_tasks")
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434")
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--max-steps", type=int, default=16)
@@ -390,7 +402,8 @@ def main(argv: list[str] | None = None) -> int:
     base = ROOT / "output/browsergym/matched_dev" / uuid4().hex
     base.mkdir(parents=True, exist_ok=False)
     report = {"mode": "matched_development_only", "status": "invalid_pair",
-              "task": args.task, "model_label": args.model_label,
+              "task": args.task, "task_group": args.task_group,
+              "model_label": args.model_label,
               "artifact_dir": str(base), "episodes": {},
               "initial_hash_parity": False}
     artifact = base / "pair.json"
@@ -406,7 +419,7 @@ def main(argv: list[str] | None = None) -> int:
         print("Official success:", {k: report["episodes"][k]["official_success"]
                                     for k in METHODS})
         print("Policy diagnostics:", report["policy_diagnostics"])
-        print("NOT pilot/main results. Simple Todo may have no genuine probes.")
+        print("NOT pilot/main results. Inspect probe opportunities and action divergence.")
         result = 0
     finally:
         artifact.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n",

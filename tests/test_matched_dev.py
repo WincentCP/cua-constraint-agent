@@ -1,7 +1,7 @@
 """Offline matched-run simulations: paired isolation and official-action parity."""
 from argparse import Namespace
 import copy
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 import importlib.util
 import json
@@ -23,6 +23,7 @@ spec.loader.exec_module(matched)
 def args():
     return Namespace(openapps_dir="/fake/OpenApps", ollama_url="http://127.0.0.1:11434",
                      model_label="qwen3.5-9b", task="add_call_mom_to_my_todo",
+                     task_group="all_tasks",
                      seed=233, max_steps=10, model_timeout=180)
 
 
@@ -101,6 +102,70 @@ class PairTests(unittest.TestCase):
                         self.assertEqual(report["policy_diagnostics"]["comparable_probe_decisions"], 0)
         perform()
         perform(True)
+
+    def test_hydra_selects_correct_standalone_official_task_group(self):
+        """OpenBanking YAML is NOT included in the upstream all_tasks group."""
+        from types import SimpleNamespace
+        task_key = "add_todo_to_review_largest_card_charge"
+        task_config = object()
+        task = SimpleNamespace(task_id="dev-test-openbanking-task")
+        composed = []
+        registered = []
+
+        hydra = types.ModuleType("hydra")
+        hydra.__path__ = []
+        utils = types.ModuleType("hydra.utils")
+        hydra.initialize_config_dir = lambda **kw: nullcontext()
+        def fake_compose(config_name, overrides):
+            composed.append((config_name, overrides))
+            group = next((x.split("=", 1)[1] for x in overrides
+                          if x.startswith("tasks=")), "all_tasks")
+            task_configs = {task_key: task_config} if group == "openbanking" else {}
+            return SimpleNamespace(
+                tasks=task_configs,
+                browsergym_env_args=SimpleNamespace(
+                    task_name="", task_kwargs=SimpleNamespace(base_url=None),
+                    max_steps=0,
+                ),
+            )
+        hydra.compose = fake_compose
+        def fake_instantiate(config):
+            return task if config is task_config else config
+        utils.instantiate = fake_instantiate
+        registry = types.ModuleType("open_apps.tasks.add_tasks_to_browsergym")
+        registry.register_tasks_with_browsergym = (
+            lambda tasks: registered.append(tasks)
+        )
+        packages = {}
+        for name in ("open_apps", "open_apps.tasks"):
+            module = types.ModuleType(name)
+            module.__path__ = []
+            packages[name] = module
+
+        fake_modules = {**packages, "hydra": hydra, "hydra.utils": utils,
+                        "open_apps.tasks.add_tasks_to_browsergym": registry}
+        with (patch.dict(sys.modules, fake_modules),
+              patch.object(matched.os, "chdir")):
+            args_, selected = matched.build_env_args(
+                Path("/fake/OpenApps"), "http://127.0.0.1:5011",
+                task_key, 20, "openbanking",
+            )
+            self.assertIs(selected, task)
+            self.assertEqual(args_.task_name, task.task_id)
+            self.assertEqual(args_.task_kwargs.base_url, "http://127.0.0.1:5011")
+            self.assertEqual(args_.max_steps, 20)
+            self.assertEqual(registered, [[task]])
+            self.assertIn("tasks=openbanking", composed[0][1])
+            with self.assertRaisesRegex(ValueError, "tasks=all_tasks"):
+                matched.build_env_args(
+                    Path("/fake/OpenApps"), "http://127.0.0.1:5011",
+                    task_key, 20, "all_tasks",
+                )
+            with self.assertRaisesRegex(ValueError, "Unsupported"):
+                matched.build_env_args(
+                    Path("/fake/OpenApps"), "http://127.0.0.1:5011",
+                    task_key, 20, "nonexistent_group",
+                )
 
     def test_comparable_decisions_only_count_identical_observations(self):
         def item(obs, choice):

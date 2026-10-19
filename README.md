@@ -1,20 +1,21 @@
 # CUA Thesis: official BrowserGym + OpenApps
 
-**Status: end-to-end Qwen development PoC succeeded; shared matched Baseline/CDEA runner now implemented. Not pilot/main results.**
+**Status: Qwen official matched Baseline/CDEA Todo development pair succeeded with equal fresh-state hashes (2026-10-19). CDEA evidence-acquisition mechanism still untested; not pilot/main results.**
 
-## Next: isolated matched development pair
+## Next: official OpenBanking information-acquisition development pair
 
-With Ollama active, from the thesis repository in PowerShell:
+With the existing Qwen3.5 model and Ollama active, from PowerShell in this repo:
 
     git pull --ff-only
-    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_matched_dev.ps1
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_matched_dev.ps1 -TaskGroup openbanking -Task add_todo_to_review_largest_card_charge -MaxSteps 20
 
-This launches Baseline and Proposed on separate fresh OpenApps databases
-and checks initial-state SHA parity. It uses an identical AXTree, JSON action
-interface, model tag/digest, model settings and step budget. CDEA reranks only
-real public information-acquisition alternatives. The simple Todo task may have
-no treatment opportunity. Read docs/MATCHED_DEVELOPMENT.md before interpreting
-results. Do NOT label development outcomes as pilot or confirmatory results.
+OpenBanking tasks are in the upstream **standalone** `config/tasks/openbanking.yaml`
+group, not the default canonical `all_tasks`. Both methods get their own
+isolated OpenApps database, common public BrowserGym AXTree/action budgets, and
+initial SHA parity. The previous simple Todo pair showed **zero** information
+probe opportunities; this new task checks real bank information retrieval.
+It remains PoC/development only. Read docs/MATCHED_DEVELOPMENT.md for validity
+criteria. Do NOT label these episodes pilot or confirmatory results.
 
 The former custom TypeScript runner (Baseline/CDEA), tests, documentation and Git history are preserved at branch **archive/custom-openapps-runner-20261018** (commit c2fae213b203dc4899d3ee05958c9a66bb3ba6a2).
 

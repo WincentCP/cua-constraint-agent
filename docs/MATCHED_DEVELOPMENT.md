@@ -1,5 +1,31 @@
 # Matched Baseline/CDEA development — not pilot/main data
 
+## Live Qwen matched Todo checkpoint (2026-10-19)
+
+User-reported Windows pair `9e6c49d077dc4475a5ddbb5f95b2fc9d` completed
+both methods with official success True and matching initial hashes. Baseline
+used 3 actions and 3 model calls. Comparable probe decisions = 0, policy
+action divergences = 0. Thus the pair validates matched execution, **not**
+CDEA's information-acquisition mechanism.
+
+## Next: first OpenBanking information-acquisition task
+
+The pinned upstream OpenApps repository keeps `config/tasks/openbanking.yaml`
+as a standalone Hydra task group; it is **not** part of `tasks=all_tasks`
+(the canonical default tasks). Select it explicitly:
+
+    git pull --ff-only
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_matched_dev.ps1 -TaskGroup openbanking -Task add_todo_to_review_largest_card_charge -MaxSteps 20
+
+This official OpenBanking extension task requires inspecting a bank account's
+card transactions, selecting the largest charge, then writing a Todo. It is
+**PoC/development only** and is NOT a frozen pilot or confirmatory main task.
+Both arms use the same 20-step budget and separate clean OpenApps instances.
+Successful task completion is not guaranteed, and true CDEA suitability still
+requires at least two substantive information-acquisition alternatives.
+For a later harder alternative, `-Task reconcile_the_largest_account` requires
+cross-account comparison plus two follow-on app edits.
+
 ## One-command Windows validation
 
 From the thesis repository, with Ollama running:
@@ -75,7 +101,7 @@ model tag and digest before starting BrowserGym.
 
 ## Remaining gates before pilot/main
 
-1. Qwen live paired Baseline vs CDEA outcome and reset parity on Windows.
+1. **DONE (Qwen Todo development pair):** paired Baseline vs CDEA reward=1 for both with matching initial hashes. No probe opportunity on this task.
 2. Verify all four exact model/digest/JSON action formats through matched
    development runs. Freeze shared prompt, action budget and policy settings.
 3. Run at least one eligible information-acquisition task with TWO meaningful
