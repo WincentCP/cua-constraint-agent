@@ -165,7 +165,7 @@ class FakeBrowserGym:
 
 
 class EpisodeTests(unittest.TestCase):
-    def run_fake_episode(self, method):
+    def run_fake_episode(self, method, *, first_invalid=False, invalid_forever=False):
         fake = FakeBrowserGym()
         server = Server(url=fake.url, database_dir="/fake/db")
 
@@ -178,7 +178,18 @@ class EpisodeTests(unittest.TestCase):
         responses = [json.dumps({"action": "click", "bid": "40"}),
                      json.dumps({"action": "fill", "bid": "21", "text": "Call Mom"}),
                      json.dumps({"action": "click", "bid": "22"})]
+        if first_invalid:
+            responses.insert(0, json.dumps({"action": "click", "bid": "999"}))
+        if invalid_forever:
+            responses = [
+                json.dumps({"action": "click", "bid": "999"}),
+                json.dumps({"action": "click", "bid": "998"}),
+            ]
         replies = iter([{"message": {"content": raw}} for raw in responses])
+        model_requests = []
+        def fake_model_request(url, data, timeout):
+            model_requests.append(copy.deepcopy(data))
+            return next(replies)
         def tree(obs):
             return "\n".join(
                 f"[{n['browsergym_id']}] {n['role']['value']} {n['name']['value']}"
@@ -208,12 +219,47 @@ class EpisodeTests(unittest.TestCase):
                   patch.object(matched, "build_env_args", return_value=(EnvArgs(), None)),
                   patch.object(matched, "require_state"),
                   patch.object(matched, "extract_axtree_text", side_effect=tree),
-                  patch.object(matched, "request_json", side_effect=lambda *a, **k: next(replies))):
+                  patch.object(matched, "request_json", side_effect=fake_model_request)):
                 result = matched.run_episode(
                     Path(folder), server, method, identity(), args(), destination, None,
                 )
             saved = json.loads((destination / "episode.json").read_text())
         self.assertEqual(saved["model_prompt_policy"], "shared_identical_for_both_methods")
+        if invalid_forever:
+            self.assertFalse(saved["valid"])
+            self.assertIsNone(saved["official_success"])
+            self.assertEqual(saved["status"], "invalid_agent_episode")
+            self.assertEqual(saved["end_reason"], "agent_output_invalid")
+            self.assertEqual(saved["official_reward"], 0.0)
+            self.assertEqual(saved["steps"], 0)
+            self.assertEqual(saved["model_calls"], 2)
+            self.assertEqual(saved["invalid_model_actions"], 2)
+            self.assertEqual(saved["repair_requests"], 1)
+            self.assertEqual(saved["repaired_steps"], 0)
+            self.assertEqual(fake.commands, [])
+            self.assertEqual(saved["initial_sha256"], saved["final_sha256"])
+            self.assertEqual(
+                [a["attempted_bid"] for a in saved["trace"][0]["invalid_attempts"]],
+                ["999", "998"],
+            )
+            self.assertTrue(fake.closed)
+            return result
+        self.assertEqual(saved["invalid_model_actions"], int(first_invalid))
+        self.assertEqual(saved["repair_requests"], int(first_invalid))
+        self.assertEqual(saved["repaired_steps"], int(first_invalid))
+        self.assertEqual(saved["model_calls"], 4 if first_invalid else 3)
+        if first_invalid:
+            # Repair is a second model call on the SAME observation, not an
+            # extra browser action or hidden evaluator feedback.
+            correction = model_requests[1]["messages"][-1]
+            self.assertEqual(correction["role"], "user")
+            self.assertIn("currently allowed IDs", correction["content"])
+            self.assertIn("40", correction["content"])
+            self.assertEqual(model_requests[0]["messages"][0],
+                             model_requests[1]["messages"][0])
+            self.assertEqual(saved["trace"][0]["invalid_attempts"][0]["attempted_bid"], "999")
+            self.assertTrue(saved["trace"][0]["repair_used"])
+            self.assertNotIn("raw_content", saved["trace"][0]["invalid_attempts"][0])
         self.assertTrue(saved["valid"], saved.get("error"))
         self.assertTrue(saved["official_success"])
         self.assertEqual(saved["official_reward"], 1.0)
@@ -228,6 +274,16 @@ class EpisodeTests(unittest.TestCase):
 
     def test_proposed_end_to_end_fake_browsergym(self):
         self.run_fake_episode("Proposed")
+
+    def test_unobserved_bid_repairs_for_both_methods(self):
+        for method in matched.METHODS:
+            with self.subTest(method=method):
+                self.run_fake_episode(method, first_invalid=True)
+
+    def test_second_invalid_bid_fails_closed_without_browser_actions(self):
+        for method in matched.METHODS:
+            with self.subTest(method=method):
+                self.run_fake_episode(method, invalid_forever=True)
 
 
 if __name__ == "__main__":

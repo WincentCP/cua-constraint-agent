@@ -48,6 +48,21 @@ model tag and digest before starting BrowserGym.
   BrowserGym context; initial SHA-256 cross-app state must be identical,
   including the evaluator's initial observation. Mismatch aborts the pair.
 - Same safety guards and per-step action/error logging in both arms.
+- For a malformed or unobserved model action, BOTH methods get at most ONE
+  identical public-only repair request at the SAME browser observation; no
+  invalid bid is ever executed or substituted. It uses the current observed
+  bid allowlist, not a private target. A second invalid response ends as an
+  invalid agent episode with official_success=null and ZERO action steps if
+  invalid from the first step.
+- Both arms share the same model-call ceiling: at most two calls per browser
+  decision (initial + at most one repair). Model call count, rejected bids,
+  allowed bid sample, model output SHA, invalid-action count, repair requests,
+  repaired steps, and latency are logged for auditing.
+- The shared prompt now contains no concrete sample element IDs or task
+  answers (such as bid 40 or Call Mom), reducing model copying errors.
+- These development repairs are part of the shared controller policy, NOT
+  task retries: no server reset or selective per-method replay occurs. Freeze
+  the repair rule and disclose extra model cost before the actual pilot.
 - Report a completed unsuccessful agent task separately from an invalid
   parser, browser or evaluator run. Neither side is rerun selectively.
 - Results: output/browsergym/matched_dev/<UUID>/pair.json, plus separate

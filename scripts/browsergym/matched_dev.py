@@ -25,7 +25,7 @@ from ollama_preflight import (MODELS_FILE, find_installed_model, get_model,
 from qwen_dev import (describe_bid, guarded_action, should_stop_for_unexpected_todo,
                       summarize_todo_delta)
 from shared_policy import (METHODS, choose_action, initial_ledger, public_constraints,
-                           public_messages)
+                           public_messages, rejected_action_diagnostic, repair_message)
 from smoke import extract_axtree_text, hash_state, UPSTREAM_PIN
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -94,6 +94,8 @@ def run_episode(root: Path, server, method: str, identity: dict,
         "status": "invalid_episode", "valid": False, "run_complete": False,
         "official_reward": None, "official_success": None,
         "steps": 0, "model_calls": 0, "model_seconds": 0,
+        "invalid_model_actions": 0, "repair_requests": 0, "repaired_steps": 0,
+        "max_action_validation_retries_per_step": 1,
         "trace": [], "probe_opportunities": 0, "policy_overrides": 0,
     }
     started = time.monotonic()
@@ -140,23 +142,67 @@ def run_episode(root: Path, server, method: str, identity: dict,
                                        bids, history, constraints, ledger)
             request = {
                 "model": identity["name"], "stream": False,
-                "think": False, "format": "json", "messages": messages,
+                "think": False, "format": "json",
                 "options": {"temperature": TEMPERATURE, "num_predict": NUM_PREDICT},
             }
-            start_model = time.monotonic()
-            reply = request_json(identity["ollama_url"] + "/api/chat",
-                                 data=request, timeout=args.model_timeout)
-            elapsed = round(time.monotonic() - start_model, 3)
-            record["model_calls"] += 1
-            record["model_seconds"] = round(record["model_seconds"] + elapsed, 3)
-            try:
-                action, decision = choose_action(
-                    reply, method, obs, tree, constraints, ledger, step + 1,
+            invalid_attempts = []
+            attempted_error = None
+            action = None
+            decision = None
+            model_seconds_for_step = 0.0
+            # At most ONE shared repair request for a rejected model JSON
+            # action. The environment and observation never change on a
+            # parser rejection. Neither method receives a hidden target,
+            # additional evaluator information or a fabricated fallback bid.
+            for attempt in range(2):
+                request["messages"] = (
+                    messages if attempt == 0
+                    else messages + [repair_message(attempted_error, bids)]
                 )
-            except (ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
+                started_model = time.monotonic()
+                reply = request_json(
+                    identity["ollama_url"] + "/api/chat",
+                    data=request, timeout=args.model_timeout,
+                )
+                elapsed = round(time.monotonic() - started_model, 3)
+                model_seconds_for_step = round(model_seconds_for_step + elapsed, 3)
+                record["model_calls"] += 1
+                record["model_seconds"] = round(
+                    record["model_seconds"] + elapsed, 3
+                )
+                # Failed model output cannot partially change the tentative
+                # evidence ledger before we ask the model to correct it.
+                trial_ledger = {key: dict(value) for key, value in ledger.items()}
+                try:
+                    action, decision = choose_action(
+                        reply, method, obs, tree, constraints,
+                        trial_ledger, step + 1,
+                    )
+                except (ValueError, TypeError, KeyError) as exc:
+                    attempted_error = exc
+                    diagnostic = rejected_action_diagnostic(reply, bids)
+                    invalid_attempts.append({
+                        "attempt": attempt + 1,
+                        "error": type(exc).__name__ + ": " + str(exc)[:400],
+                        **diagnostic,
+                    })
+                    record["invalid_model_actions"] += 1
+                    if attempt == 0:
+                        record["repair_requests"] += 1
+                    continue
+                ledger.update(trial_ledger)
+                if attempt > 0:
+                    record["repaired_steps"] += 1
+                break
+
+            if action is None:
+                last = invalid_attempts[-1]
                 record["trace"].append({
-                    "step": step + 1, "model_seconds": elapsed,
-                    "agent_error": type(exc).__name__ + ": " + str(exc)[:400],
+                    "step": step + 1,
+                    "model_seconds": model_seconds_for_step,
+                    "agent_error": last["error"],
+                    "invalid_attempts": invalid_attempts,
+                    "observation_sha256": sha256(tree.encode()).hexdigest(),
                 })
                 end_reason = "agent_output_invalid"
                 break
@@ -164,7 +210,9 @@ def run_episode(root: Path, server, method: str, identity: dict,
             record["policy_overrides"] += int(decision["policy_overrode_primary"])
             entry = {
                 "step": step + 1, "observation_sha256": sha256(tree.encode()).hexdigest(),
-                "action": action, "model_seconds": elapsed, **decision,
+                "action": action, "model_seconds": model_seconds_for_step,
+                "invalid_attempts": invalid_attempts,
+                "repair_used": bool(invalid_attempts), **decision,
             }
             if action.startswith(("click(", "fill(", "press(")):
                 bid = json.loads(
@@ -235,7 +283,18 @@ def run_episode(root: Path, server, method: str, identity: dict,
         path.write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n",
                         encoding="utf-8")
         print(f"{method}: {record['status']} reward={record['official_reward']} "
-              f"steps={record['steps']} artifact={path}", flush=True)
+              f"steps={record['steps']} model_calls={record['model_calls']} "
+              f"invalid_actions={record['invalid_model_actions']} "
+              f"repaired_steps={record['repaired_steps']} artifact={path}",
+              flush=True)
+        if record["status"] == "invalid_agent_episode":
+            last = record["trace"][-1] if record["trace"] else {}
+            if last.get("invalid_attempts"):
+                attempted = [item.get("attempted_bid")
+                             for item in last["invalid_attempts"]]
+                print(f"  Rejected model bids: {attempted}; "
+                      f"allowed bids: {last['invalid_attempts'][-1]['allowed_bids'][:25]}; "
+                      f"reason: {last.get('agent_error')}", flush=True)
     return record
 
 
@@ -287,6 +346,9 @@ def run_pair(args, report: dict) -> None:
                 "official_success": record["official_success"],
                 "initial_sha256": record.get("initial_sha256"),
                 "steps": record["steps"], "model_calls": record["model_calls"],
+                "invalid_model_actions": record["invalid_model_actions"],
+                "repair_requests": record["repair_requests"],
+                "repaired_steps": record["repaired_steps"],
                 "probe_opportunities": record["probe_opportunities"],
                 "policy_overrides": record["policy_overrides"],
                 "end_reason": record.get("end_reason"),

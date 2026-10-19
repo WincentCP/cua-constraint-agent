@@ -25,29 +25,73 @@ MAX_PROBES = 6
 MAX_CONSTRAINTS = 6
 
 COMMON_SYSTEM = (
-    "You are a computer-use agent. Complete the public goal using only the "
-    "visible browser accessibility tree. Return ONE JSON object, no markdown. "
-    "Always provide a next action such as "
-    '{"action":"click","bid":"40"}, '
-    '{"action":"fill","bid":"21","text":"Call Mom"}, '
-    '{"action":"press","bid":"21","key":"Enter"}, '
-    '{"action":"back"}, or {"action":"finish"}. '
-    "Use only observed element IDs. A click on a textbox does not type; "
-    "use fill to enter text. Submit only when required inputs are filled. "
-    "Finish only after the requested change is visible. "
-    "If there are two or more meaningful UI controls to INSPECT information "
-    "before acting, you may additionally include "
-    '"decision":"probe","probes":[{"bid":"40","progress_score":4,'
-    '"forward_cost":1,"may_answer":["c1"]},...]. '
-    "A probe is a click on an observed control to discover information, "
-    "not a submit/write action. Score generic forward progress 0..5; "
-    "may_answer must cite public constraint IDs; forward_cost 1..5. "
-    "If no real inspection choice, omit probes and use decision act. "
-    "Optional evidence: [{\"constraint\":\"c1\",\"state\":\"SATISFIED\","
-    "\"quote\":\"exact substring from the current accessibility tree\"}]. "
-    "Report evidence only with literal visible quotes; do not guess. "
-    "Do not mention or use private evaluator state."
+    "You are a computer-use agent. Complete the public goal using ONLY the "
+    "current visible browser accessibility tree. Respond with ONE valid JSON "
+    "object containing an action: click, fill, press, back, or finish. "
+    "For click, fill, and press, include bid as a JSON STRING copied exactly "
+    "from the CURRENT Allowed element IDs. Never guess an ID or reuse a "
+    "previous page's ID. For fill include text; for press include key. "
+    "The bid must identify the control for the intended action, not just "
+    "an arbitrary allowed control. Click on a textbox does not type: fill "
+    "to enter or replace text. Submit only after required inputs are filled. "
+    "Use finish only after the requested change was actually made. "
+    "If there are TWO or more meaningful controls to INSPECT information "
+    "before acting, you may set decision to probe and include a probes array. "
+    "Each probe has bid, progress_score (integer 0..5), forward_cost "
+    "(integer 1..5), and may_answer (public constraint ID list). "
+    "Probe bids must be observed controls that reveal information, NEVER "
+    "write, submit, send, delete, transfer or purchase controls. "
+    "For direct navigation or writing, omit probes and choose the action. "
+    "Optional evidence has constraint, state (SATISFIED or REFUTED), and "
+    "quote (an exact substring of the CURRENT accessibility tree). "
+    "Never fabricate evidence or use any private evaluator state."
 )
+
+
+def rejected_action_diagnostic(reply: dict, bids: set[str]) -> dict:
+    """Log only safe structured metadata, not raw model text or private state."""
+    message = reply.get("message") if isinstance(reply, dict) else None
+    raw = message.get("content") if isinstance(message, dict) else None
+    data = {
+        "allowed_bids": sorted(bids)[:128],
+        "allowed_bid_count": len(bids),
+        "raw_content_sha256": (sha256(raw.encode("utf-8")).hexdigest()
+                               if isinstance(raw, str) else None),
+        "raw_content_length": len(raw) if isinstance(raw, str) else 0,
+    }
+    if isinstance(reply, dict):
+        data["done_reason"] = str(reply.get("done_reason") or "")[:80]
+    try:
+        obj = json.loads(raw) if isinstance(raw, str) else None
+    except (ValueError, TypeError):
+        obj = None
+    if isinstance(obj, dict):
+        action = obj.get("action")
+        bid = obj.get("bid")
+        data["attempted_action"] = str(action)[:60] if action is not None else None
+        data["attempted_bid"] = str(bid)[:80] if bid is not None else None
+        data["bid_type"] = type(bid).__name__
+        data["bid_was_allowed"] = isinstance(bid, str) and bid in bids
+    return data
+
+
+def repair_message(error: Exception, bids: set[str]) -> dict:
+    """One shared public-observation-only self-correction prompt per browser step."""
+    ids = json.dumps(sorted(bids), ensure_ascii=False)
+    return {
+        "role": "user",
+        "content": (
+            "Your previous JSON action was rejected by the action validator "
+            "WITHOUT executing any browser action. Reason: "
+            + type(error).__name__ + ": " + str(error)[:160]
+            + ". The page and current accessibility tree are UNCHANGED. "
+            "For click/fill/press, bid MUST be a JSON STRING copied exactly "
+            "from these currently allowed IDs: " + ids
+            + ". Do not copy ID examples, guess, or auto-substitute a control. "
+            "Choose an appropriate element from the CURRENT accessibility "
+            "tree, and return ONE corrected JSON action with no markdown."
+        ),
+    }
 
 
 def public_constraints(goal: str) -> list[dict]:

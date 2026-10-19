@@ -169,6 +169,38 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(action, 'fill("30", "100")')
         self.assertFalse(meta["probe_opportunity"])
 
+    def test_prompt_has_no_literal_example_browsergym_ids(self):
+        # Hard-coded sample IDs like 40 and 21 can be copied literally by
+        # small local models, even when the real page uses different bids.
+        self.assertNotIn('"bid":"40"', policy.COMMON_SYSTEM)
+        self.assertNotIn('"bid":"21"', policy.COMMON_SYSTEM)
+        self.assertNotIn("Call Mom", policy.COMMON_SYSTEM)
+        self.assertIn("CURRENT Allowed element IDs", policy.COMMON_SYSTEM)
+        self.assertIn("JSON STRING", policy.COMMON_SYSTEM)
+
+    def test_repair_feedback_and_diagnostics_only_use_public_bids(self):
+        invalid = reply({"action": "click", "bid": "999"})
+        info = policy.rejected_action_diagnostic(invalid, {"10", "20"})
+        self.assertEqual(info["attempted_action"], "click")
+        self.assertEqual(info["attempted_bid"], "999")
+        self.assertFalse(info["bid_was_allowed"])
+        self.assertEqual(info["allowed_bids"], ["10", "20"])
+        self.assertNotIn("raw_content", info)
+        repair = policy.repair_message(ValueError("unobserved element"), {"20", "10"})
+        self.assertEqual(repair["role"], "user")
+        self.assertIn('["10", "20"]', repair["content"])
+        self.assertIn("UNCHANGED", repair["content"])
+        self.assertNotIn("private evaluator", repair["content"])
+
+    def test_untyped_numeric_bid_not_silently_substituted(self):
+        reply_numeric = reply({"action": "click", "bid": 10})
+        for method in policy.METHODS:
+            with self.assertRaises(ValueError):
+                policy.choose_action(
+                    reply_numeric, method, observation(), TREE, CONSTRAINTS,
+                    policy.initial_ledger(CONSTRAINTS), 1,
+                )
+
     def test_invalid_primary_never_becomes_valid_through_candidates(self):
         data = reply({"action": "click", "bid": "not-present"},
                      decision="probe", probes=[
