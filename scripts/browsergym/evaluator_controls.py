@@ -15,7 +15,7 @@ from urllib.request import urlopen
 from uuid import uuid4
 
 from isolated_openapps import isolated_openapps
-from smoke import extract_axtree_text, hash_state
+from smoke import extract_axtree_text, hash_state, validate_url
 
 ROOT = Path(__file__).resolve().parents[2]
 TASK = "add_call_mom_to_my_todo"
@@ -40,7 +40,10 @@ def find_visible_bid(obs: dict, *, role: str, name: str) -> str:
                 and ax_value(node, "name").strip().casefold() == name.casefold()):
             hits.append(bid)
     if len(hits) != 1:
-        raise RuntimeError(f"Expected one visible {role} named {name!r}; got {len(hits)}")
+        raise RuntimeError(
+            f"Expected one visible {role} named {name!r}; "
+            f"got {len(hits)} candidate bids: {hits[:12]}"
+        )
     return hits[0]
 
 
@@ -89,30 +92,57 @@ def make_env_args(root: Path, url: str, task):
     return env_args
 
 
-def execute_control(env, title: str, trace: list[dict]) -> tuple[dict, float]:
-    """Navigate, fill, and submit with observed IDs using official actions."""
+def execute_control(env, title: str, trace: list[dict], base_url: str) -> tuple[dict, float]:
+    """Exercise the official navigation + Todo form action path deterministically.
+
+    OpenApps may expose multiple accessible links named OpenTodos on its home
+    screen (e.g. duplicate launcher and chrome links). An evaluator *oracle*
+    must not guess which identical link to click. The official BrowserGym
+    HighLevelActionSet(nav) supports goto(url), so navigate to the known local
+    Todo route and then interact via observed live AXTree bids.
+
+    This is a development evaluator control, NEVER an agent policy.
+    """
+    todo_url = validate_url(base_url).rstrip("/") + "/todo"
     obs, _ = env.reset(seed=233)
-    def perform(kind: str, *, role: str, name: str, value: str | None = None):
+
+    def perform(action: str, *, role: str, name: str, final: bool = False) -> float:
         nonlocal obs
-        bid = find_visible_bid(obs, role=role, name=name)
-        action = f"{kind}({json.dumps(bid)}"
-        if value is not None:
-            action += f", {json.dumps(value)}"
-        action += ")"
         obs, reward, terminated, truncated, _ = env.step(action)
+        trace.append({
+            "action": action, "role": role, "name": name,
+            "official_reward": float(reward),
+            "terminated": bool(terminated), "truncated": bool(truncated),
+        })
         if obs.get("last_action_error"):
-            raise RuntimeError(f"Official BrowserGym action error: {obs['last_action_error']}")
-        trace.append({"action": action, "role": role, "name": name, "reward": float(reward)})
-        if (terminated or truncated) and len(trace) < 3:
-            # This task should not terminate on navigation or entering text.
-            raise RuntimeError("BrowserGym ended before Todo submission")
+            raise RuntimeError(
+                f"Official BrowserGym action error after {role} {name}: "
+                + str(obs["last_action_error"])[:500]
+            )
+        if (terminated or truncated) and not final:
+            raise RuntimeError(f"BrowserGym ended before Todo submission on action: {action}")
         return float(reward)
 
-    perform("click", role="link", name="OpenTodos")
-    perform("fill", role="textbox", name="New Todo", value=title)
-    reward = perform("click", role="button", name="Add")
-    return obs, reward
+    # Known local application URL is legitimate for a deterministic evaluator
+    # control; the agent itself still must navigate from its observations.
+    perform("goto(" + json.dumps(todo_url) + ")", role="navigation", name="Todo page")
+    current_url = str(obs.get("url") or "").rstrip("/")
+    if current_url and current_url != todo_url:
+        raise RuntimeError(
+            f"Official BrowserGym navigation did not reach Todo page: {current_url}"
+        )
 
+    textbox_bid = find_visible_bid(obs, role="textbox", name="New Todo")
+    perform(
+        "fill(" + json.dumps(textbox_bid) + ", " + json.dumps(title) + ")",
+        role="textbox", name="New Todo",
+    )
+    submit_bid = find_visible_bid(obs, role="button", name="Add")
+    reward = perform(
+        "click(" + json.dumps(submit_bid) + ")",
+        role="button", name="Add", final=True,
+    )
+    return obs, reward
 
 def check_one(root: Path, run_dir: Path, label: str, report: dict) -> dict:
     from hydra import compose, initialize_config_dir
@@ -142,7 +172,7 @@ def check_one(root: Path, run_dir: Path, label: str, report: dict) -> dict:
         env = None
         try:
             env = env_args.make_env(action_mapping=actions.to_python_code, exp_dir=experiment_dir)
-            _obs, reward = execute_control(env, title, record["trace"])
+            _obs, reward = execute_control(env, title, record["trace"], server.url)
             official_initial = env.unwrapped.task.initial_state
             if hash_state(official_initial) != record["initial_sha256"]:
                 raise RuntimeError("Evaluator's initial state differs from captured baseline")

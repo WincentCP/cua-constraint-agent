@@ -156,6 +156,92 @@ class TestEvaluatorGates(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "got 0"):
                 controls.find_visible_bid(obs, role="button", name="Add")
 
+
+    def test_control_uses_official_goto_with_duplicate_launcher_links(self):
+        """Reproduce live OpenTodos duplicates without an OpenApps installation."""
+        origin = "http://127.0.0.1:15001"
+
+        class FakeBrowserGym:
+            def __init__(self):
+                self.commands = []
+                self.url = origin
+                self.value = ""
+
+            def observation(self):
+                if self.url == origin:
+                    nodes = [
+                        {"browsergym_id": "40", "role": {"value": "link"}, "name": {"value": "OpenTodos"}},
+                        {"browsergym_id": "41", "role": {"value": "link"}, "name": {"value": "OpenTodos"}},
+                    ]
+                else:
+                    nodes = [
+                        {"browsergym_id": "21", "role": {"value": "textbox"},
+                         "name": {"value": "New Todo"}, "value": {"value": self.value}},
+                        {"browsergym_id": "22", "role": {"value": "button"}, "name": {"value": "Add"}},
+                    ]
+                return {"url": self.url, "axtree_object": {"nodes": nodes}, "last_action_error": ""}
+
+            def reset(self, seed):
+                self.commands = []
+                self.url = origin
+                self.value = ""
+                return self.observation(), {}
+
+            def step(self, action):
+                self.commands.append(action)
+                if action == 'goto("http://127.0.0.1:15001/todo")':
+                    self.url = origin + "/todo"
+                    return self.observation(), 0.0, False, False, {}
+                if action.startswith('fill("21", '):
+                    self.value = json.loads(action[len('fill("21", '):-1])
+                    return self.observation(), 0.0, False, False, {}
+                if action == 'click("22")' and self.value:
+                    reward = 1.0 if self.value == "Call Mom" else 0.0
+                    return self.observation(), reward, reward == 1.0, False, {}
+                raise AssertionError("Unexpected control action: " + action)
+
+        for title, expected_reward in (("Call Mom", 1.0), ("Unrelated diagnostic item", 0.0)):
+            env = FakeBrowserGym()
+            trace = []
+            # Stub only tree formatting; all bid selection and action logic
+            # comes from the real evaluator_controls.execute_control().
+            def fake_tree(obs):
+                return "\n".join(
+                    f"[{node['browsergym_id']}] {node['role']['value']} {node['name']['value']}"
+                    for node in obs["axtree_object"]["nodes"]
+                )
+            with patch.object(controls, "extract_axtree_text", side_effect=fake_tree):
+                _obs, reward = controls.execute_control(env, title, trace, origin)
+            self.assertEqual(reward, expected_reward)
+            self.assertEqual(env.commands[0], 'goto("http://127.0.0.1:15001/todo")')
+            self.assertEqual(env.commands[1], 'fill("21", ' + json.dumps(title) + ')')
+            self.assertEqual(env.commands[2], 'click("22")')
+            self.assertEqual(len(trace), 3)
+            self.assertEqual([item["role"] for item in trace], ["navigation", "textbox", "button"])
+
+    def test_control_rejects_navigation_that_did_not_reach_todo(self):
+        class BadEnv:
+            def reset(self, seed):
+                return {"url": "http://127.0.0.1:15001"}, {}
+            def step(self, action):
+                return {"url": "http://127.0.0.1:15001",
+                        "last_action_error": ""}, 0.0, False, False, {}
+        trace = []
+        with self.assertRaisesRegex(RuntimeError, "did not reach Todo"):
+            controls.execute_control(
+                BadEnv(), "Call Mom", trace, "http://127.0.0.1:15001",
+            )
+        self.assertEqual(len(trace), 1)
+
+    def test_duplicate_submit_candidates_fail_closed(self):
+        obs = {"axtree_object": {"nodes": [
+            {"browsergym_id": "22", "role": {"value": "button"}, "name": {"value": "Add"}},
+            {"browsergym_id": "32", "role": {"value": "button"}, "name": {"value": "Add"}},
+        ]}}
+        with patch.object(controls, "extract_axtree_text", return_value="[22] button Add\n[32] button Add"):
+            with self.assertRaisesRegex(RuntimeError, "candidate bids: \\[\'22\', \'32\'\\]"):
+                controls.find_visible_bid(obs, role="button", name="Add")
+
     def test_initial_hash_mismatch_fails_gate(self):
         def fake(root, dirname, label, report):
             record = {"initial_sha256": "a" if label == "negative" else "b",

@@ -35,3 +35,15 @@ Baseline/CDEA methods are implemented and evaluated.
 Ownership validation parses actual `database_path` fields from OpenApps,
 normalizes Windows path separators and escaped JSON, and rejects unrelated
 servers or mixed database directories. CI includes Windows path regressions.
+
+## Duplicate OpenTodos links (fixed)
+
+A live AXTree may expose multiple accessible links named `OpenTodos` on the
+home screen. Evaluator controls deliberately use the official BrowserGym
+`nav` action `goto(<local-server>/todo)` instead of requiring a unique home
+link. Input and submit remain real BrowserGym `fill(bid, text)` and
+`click(bid)` actions resolved from the fresh public AXTree. This navigation
+is an evaluator oracle convenience **only**, never exposed to Qwen and not a
+change to Baseline/CDEA. Offline regression tests model duplicate launcher
+links and verify negative and positive control traces. Live acceptance must
+still be confirmed on the Windows research machine.
