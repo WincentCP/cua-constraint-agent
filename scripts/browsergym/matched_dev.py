@@ -167,7 +167,9 @@ def run_episode(root: Path, server, method: str, identity: dict,
                 "action": action, "model_seconds": elapsed, **decision,
             }
             if action.startswith(("click(", "fill(", "press(")):
-                bid = json.loads(action[action.index("(") + 1:].split(",", 1)[0])
+                bid = json.loads(
+                    action[action.index("(") + 1:].split(",", 1)[0].rstrip(")")
+                )
                 entry["target"] = describe_bid(obs, bid)
             record["trace"].append(entry)
             if action == "finish":
