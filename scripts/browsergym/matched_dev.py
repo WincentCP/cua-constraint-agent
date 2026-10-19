@@ -121,6 +121,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
         "model_input_characters": 0, "max_prompt_eval_tokens": None,
         "invalid_model_actions": 0, "repair_requests": 0, "repaired_steps": 0,
         "max_action_validation_retries_per_step": 1,
+        "validation_includes_shared_safety_guards": True,
         "trace": [], "probe_opportunities": 0, "policy_overrides": 0,
     }
     started = time.monotonic()
@@ -179,10 +180,10 @@ def run_episode(root: Path, server, method: str, identity: dict,
             action = None
             decision = None
             model_seconds_for_step = 0.0
-            # At most ONE shared repair request for a rejected model JSON
-            # action. The environment and observation never change on a
-            # parser rejection. Neither method receives a hidden target,
-            # additional evaluator information or a fabricated fallback bid.
+            # At most ONE shared repair for a rejected model action or public
+            # safety-guard violation, without executing the rejected action.
+            # Neither method gets evaluator information, a hidden target, an
+            # extra browser step or a fabricated fallback bid.
             for attempt in range(2):
                 request["messages"] = (
                     messages if attempt == 0
@@ -218,7 +219,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
                 # evidence ledger before we ask the model to correct it.
                 trial_ledger = {key: dict(value) for key, value in ledger.items()}
                 try:
-                    action, decision = choose_action(
+                    trial_action, trial_decision = choose_action(
                         reply, method, obs, tree, constraints,
                         trial_ledger, step + 1,
                     )
@@ -227,9 +228,18 @@ def run_episode(root: Path, server, method: str, identity: dict,
                     # reloads the root instead of opening an account row.
                     # Reject identical current-app root link actions before
                     # BrowserGym execution for BOTH methods.
-                    loop_error = redundant_current_app_link(action, obs)
+                    loop_error = redundant_current_app_link(trial_action, obs)
                     if loop_error:
                         raise ValueError(loop_error)
+                    # Like a nonexistent BID, a guard-rejected action must
+                    # NEVER survive as the selected executable action. Give
+                    # the model the same ONE shared correction opportunity
+                    # using this unchanged public observation.
+                    guard_error = guarded_action(
+                        trial_action, obs, history, str(obs.get("url", "")),
+                    )
+                    if guard_error:
+                        raise ValueError("safety_guard_blocked: " + guard_error)
                 except (ValueError, TypeError, KeyError) as exc:
                     attempted_error = exc
                     diagnostic = rejected_action_diagnostic(reply, bids)
@@ -242,6 +252,9 @@ def run_episode(root: Path, server, method: str, identity: dict,
                     if attempt == 0:
                         record["repair_requests"] += 1
                     continue
+                # Commit only an accepted, parser- and guard-validated action.
+                # The tentative ledger is discarded for rejected candidates.
+                action, decision = trial_action, trial_decision
                 ledger.update(trial_ledger)
                 if attempt > 0:
                     record["repaired_steps"] += 1
@@ -249,7 +262,13 @@ def run_episode(root: Path, server, method: str, identity: dict,
 
             if action is None:
                 last = invalid_attempts[-1]
-                record["trace"].append({
+                guard_prefix = "ValueError: safety_guard_blocked: "
+                end_reason = (
+                    "safety_guard_blocked"
+                    if last["error"].startswith(guard_prefix)
+                    else "agent_output_invalid"
+                )
+                rejected = {
                     "step": step + 1,
                     "model_seconds": model_seconds_for_step,
                     "agent_error": last["error"],
@@ -259,8 +278,10 @@ def run_episode(root: Path, server, method: str, identity: dict,
                     "axtree_characters": len(tree),
                     "axtree_truncated_for_model": len(tree) > 16000,
                     "observation_sha256": sha256(tree.encode()).hexdigest(),
-                })
-                end_reason = "agent_output_invalid"
+                }
+                if end_reason == "safety_guard_blocked":
+                    rejected["guard_blocked"] = last["error"][len(guard_prefix):]
+                record["trace"].append(rejected)
                 break
             record["probe_opportunities"] += int(decision["probe_opportunity"])
             record["policy_overrides"] += int(decision["policy_overrode_primary"])
@@ -284,11 +305,8 @@ def run_episode(root: Path, server, method: str, identity: dict,
             if action == "finish":
                 end_reason = "model_finish"
                 break
-            guard = guarded_action(action, obs, history, str(obs.get("url", "")))
-            if guard:
-                entry["guard_blocked"] = guard
-                end_reason = "safety_guard_blocked"
-                break
+            # This action was already checked against shared safety guards
+            # before accepting it from the bounded validation/repair loop.
             history.append(action)
             t0 = time.monotonic()
             obs, reward, terminated, truncated, _ = env.step(action)

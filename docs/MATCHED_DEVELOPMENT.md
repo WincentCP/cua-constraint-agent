@@ -71,6 +71,32 @@ Shared development adapter changes (both Baseline and Proposed):
 This remains a controller development patch, not a policy performance
 result. It must be frozen *before* formal pilot/main runs.
 
+## Matched Qwen Todo safety-guard checkpoint (2026-10-19)
+
+New local matched pair `cab5013d6a17421b83ca93f2df478295` returned
+`paired_development_completed` with initial-state parity PASS. Both
+methods executed one browser action (two model calls total per arm),
+then ended `safety_guard_blocked`, official success False, with zero
+probe opportunities. Since three repeated consecutive clicks require
+at least two prior browser actions, the likely guard was
+`empty_todo_submission`; the saved episode JSON must still be consulted
+for the actual attempted second action.
+
+The DEV controller now includes BOTH safety guards in the one-repair
+shared public observation/action validator, not only JSON/BID and dock
+checks. This is symmetric for Baseline and CDEA. The model itself must
+choose the correction (typically `fill` on a current public textbox);
+the code never substitutes a guessed BID or inserts the expected Todo
+title. A repeat guard rejection ends without executing the action.
+The candidate action is assigned to the executable slot ONLY after all
+parsing and guard checks pass; this fixes a rejected-action retention
+bug after two failed attempts.
+
+The two-arm regression covers premature Add -> successful model-selected
+fill; repeat premature Add -> safe stop; and repeat current-app dock
+link -> no stale action executed. These are synthetic CI tests, NOT
+live post-fix acceptance or evidence of CDEA benefit.
+
 ## New low-cost compatibility and artifact inspection gates
 
 After git pull --ff-only, before spending time on another live pair:

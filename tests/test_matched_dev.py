@@ -294,8 +294,10 @@ class FakeBankBrowserGym(FakeBrowserGym):
 
 class EpisodeTests(unittest.TestCase):
     def run_fake_episode(self, method, *, first_invalid=False,
-                         invalid_forever=False, bank_loop=False):
-        fake = FakeBankBrowserGym() if bank_loop else FakeBrowserGym()
+                         invalid_forever=False, bank_loop=False,
+                         early_submit=False, guard_forever=False,
+                         dock_forever=False):
+        fake = FakeBankBrowserGym() if bank_loop or dock_forever else FakeBrowserGym()
         server = Server(url=fake.url, database_dir="/fake/db")
 
         class EnvArgs:
@@ -313,6 +315,25 @@ class EpisodeTests(unittest.TestCase):
                 json.dumps({"action": "click", "bid": "96"}),
                 json.dumps({"action": "click", "bid": "111"}),
                 json.dumps({"action": "finish"}),
+            ]
+        if early_submit:
+            responses = [
+                json.dumps({"action": "click", "bid": "40"}),
+                json.dumps({"action": "click", "bid": "22"}),
+                json.dumps({"action": "fill", "bid": "21", "text": "Call Mom"}),
+                json.dumps({"action": "click", "bid": "22"}),
+            ]
+        if guard_forever:
+            responses = [
+                json.dumps({"action": "click", "bid": "40"}),
+                json.dumps({"action": "click", "bid": "22"}),
+                json.dumps({"action": "click", "bid": "22"}),
+            ]
+        if dock_forever:
+            responses = [
+                json.dumps({"action": "click", "bid": "64"}),
+                json.dumps({"action": "click", "bid": "96"}),
+                json.dumps({"action": "click", "bid": "96"}),
             ]
         if first_invalid:
             responses.insert(0, json.dumps({"action": "click", "bid": "999"}))
@@ -381,6 +402,62 @@ class EpisodeTests(unittest.TestCase):
                 [a["attempted_bid"] for a in saved["trace"][0]["invalid_attempts"]],
                 ["999", "998"],
             )
+            self.assertTrue(fake.closed)
+            return result
+        if early_submit:
+            self.assertTrue(saved["valid"], saved.get("error"))
+            self.assertTrue(saved["official_success"])
+            self.assertEqual(saved["steps"], 3)
+            self.assertEqual(saved["model_calls"], 4)
+            self.assertEqual(saved["repair_requests"], 1)
+            self.assertEqual(saved["repaired_steps"], 1)
+            self.assertEqual(saved["invalid_model_actions"], 1)
+            self.assertEqual(
+                fake.commands, ['click("40")', 'fill("21", "Call Mom")',
+                                'click("22")']
+            )
+            second = saved["trace"][1]
+            self.assertIn("safety_guard_blocked: empty_todo_submission",
+                          second["invalid_attempts"][0]["error"])
+            self.assertEqual(second["action"], 'fill("21", "Call Mom")')
+            self.assertTrue(second["repair_used"])
+            self.assertEqual(len(second["model_telemetry"]), 2)
+            self.assertEqual(model_requests[1]["messages"][1],
+                             model_requests[2]["messages"][1])
+            self.assertIn("empty_todo_submission",
+                          model_requests[2]["messages"][-1]["content"])
+            self.assertTrue(fake.closed)
+            return result
+        if guard_forever:
+            self.assertTrue(saved["valid"], saved.get("error"))
+            self.assertFalse(saved["official_success"])
+            self.assertEqual(saved["status"], "development_unsuccessful")
+            self.assertEqual(saved["end_reason"], "safety_guard_blocked")
+            self.assertEqual(saved["steps"], 1)
+            self.assertEqual(saved["model_calls"], 3)
+            self.assertEqual(saved["invalid_model_actions"], 2)
+            self.assertEqual(saved["repair_requests"], 1)
+            self.assertEqual(saved["repaired_steps"], 0)
+            self.assertEqual(fake.commands, ['click("40")'])
+            self.assertIn("empty_todo_submission",
+                          saved["trace"][1]["guard_blocked"])
+            self.assertNotIn("action", saved["trace"][1])
+            self.assertEqual(len(saved["trace"][1]["invalid_attempts"]), 2)
+            self.assertTrue(fake.closed)
+            return result
+        if dock_forever:
+            self.assertFalse(saved["valid"])
+            self.assertIsNone(saved["official_success"])
+            self.assertEqual(saved["status"], "invalid_agent_episode")
+            self.assertEqual(saved["end_reason"], "agent_output_invalid")
+            self.assertEqual(saved["steps"], 1)
+            self.assertEqual(saved["model_calls"], 3)
+            self.assertEqual(saved["invalid_model_actions"], 2)
+            self.assertEqual(saved["repair_requests"], 1)
+            self.assertEqual(saved["repaired_steps"], 0)
+            self.assertEqual(fake.commands, ['click("64")'])
+            self.assertEqual(len(saved["trace"][1]["invalid_attempts"]), 2)
+            self.assertNotIn("action", saved["trace"][1])
             self.assertTrue(fake.closed)
             return result
         if bank_loop:
@@ -454,6 +531,21 @@ class EpisodeTests(unittest.TestCase):
         for method in matched.METHODS:
             with self.subTest(method=method):
                 self.run_fake_episode(method, bank_loop=True)
+
+    def test_guard_rejects_premature_add_and_repairs_with_public_fill(self):
+        for method in matched.METHODS:
+            with self.subTest(method=method):
+                self.run_fake_episode(method, early_submit=True)
+
+    def test_second_premature_add_stops_without_submitting_empty_todo(self):
+        for method in matched.METHODS:
+            with self.subTest(method=method):
+                self.run_fake_episode(method, guard_forever=True)
+
+    def test_second_dock_self_link_rejection_never_executes_stale_action(self):
+        for method in matched.METHODS:
+            with self.subTest(method=method):
+                self.run_fake_episode(method, dock_forever=True)
 
     def test_second_invalid_bid_fails_closed_without_browser_actions(self):
         for method in matched.METHODS:

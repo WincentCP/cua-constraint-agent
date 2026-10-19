@@ -29,6 +29,27 @@ receive the same public page route path (instead of different random local
 server ports). The paired report includes an explicit mechanism status plus
 token/AXTree diagnostic counters.
 
+## Shared safety-action repair in development (2026-10-19)
+
+A newer user-reported matched Qwen Todo pair (ID
+`cab5013d6a17421b83ca93f2df478295`) confirmed both clean isolated
+initial states but both arms stopped after one browser step at a safety
+guard. Both official success flags were false; no probes occurred. The
+guard source indicates a likely attempted empty Todo Add, but the exact
+`guard_blocked` entry should be checked in the retained episode files.
+
+The shared action validator now treats a guard-rejected action as eligible
+for the SAME single same-observation repair already available to both
+methods. No rejected Add, repeated click, or self-dock link is executed;
+the model must select its own corrected visible BID/action. If it still
+selects a blocked action, the run stops with an explicit diagnostic.
+Previously rejected candidate actions can no longer remain in the
+executable action variable after a failed correction. Windows and Linux
+contract tests simulate both correction and fail-closed behavior.
+
+This is a DEVELOPMENT controller change, not a formal result. It must be
+frozen and independently validated before pilot/main.
+
 ## Next: official OpenBanking information-acquisition development pair
 
 With the existing Qwen3.5 model and Ollama active, from PowerShell in this repo:
