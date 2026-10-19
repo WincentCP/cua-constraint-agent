@@ -426,7 +426,10 @@ class EpisodeTests(unittest.TestCase):
             self.assertTrue(saved["trace"][0]["repair_used"])
             self.assertNotIn("raw_content", saved["trace"][0]["invalid_attempts"][0])
         self.assertTrue(saved["valid"], saved.get("error"))
-        self.assertEqual(len(saved["trace"][0]["model_telemetry"]), 1)
+        self.assertEqual(
+            len(saved["trace"][0]["model_telemetry"]),
+            1 + int(first_invalid),
+        )
         self.assertIn("axtree_truncated_for_model", saved["trace"][0])
         self.assertTrue(saved["official_success"])
         self.assertEqual(saved["official_reward"], 1.0)
