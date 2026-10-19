@@ -213,6 +213,7 @@ class FakeBrowserGym:
         self.commands = []
         self.closed = False
         self.timeout_on_add = False
+        self.timeout_modal_on_add = False
 
     def reward(self):
         return 1.0 if any(t["title"] == "Call Mom" for t in self.state["todo"]) else 0.0
@@ -243,6 +244,8 @@ class FakeBrowserGym:
             observation["last_action_error"] = (
                 "TimeoutError: Locator.click: Timeout 3000ms exceeded.\n"
                 "Call log: waiting for get_by_test_id('22')"
+                + ('\n<dialog open="" bid="141"></dialog> intercepts pointer events'
+                   if self.timeout_modal_on_add else "")
             )
             return observation, 0.0, False, False, {"action_exec_timeout": 3.0}
         if action == 'click("40")':
@@ -303,13 +306,81 @@ class FakeBankBrowserGym(FakeBrowserGym):
         return self.observation(), 0.0, False, False, {}
 
 
+class FakeModalBankBrowserGym(FakeBankBrowserGym):
+    """Simulated public AXTree dialog blocking clicks behind the UI overlay."""
+    def __init__(self):
+        super().__init__()
+        self.dialog_open = False
+
+    def observation(self):
+        if self.url.endswith("/openbanking"):
+            nodes = [
+                {"nodeId": "cta", "browsergym_id": "20",
+                 "role": {"value": "button"}, "name": {"value": "Open an account"}},
+                {"nodeId": "account", "browsergym_id": "111",
+                 "role": {"value": "generic"}, "name": {"value": ""},
+                 "childIds": ["account-label"]},
+                {"nodeId": "account-label", "role": {"value": "StaticText"},
+                 "name": {"value": "Business Checking (...5555)"}},
+            ]
+            if self.dialog_open:
+                nodes.extend([
+                    {"nodeId": "dlg", "browsergym_id": "141",
+                     "role": {"value": "dialog"},
+                     "name": {"value": "Open an account"},
+                     "childIds": ["article"]},
+                    {"nodeId": "article", "role": {"value": "generic"},
+                     "childIds": ["header", "footer"]},
+                    {"nodeId": "header", "role": {"value": "StaticText"},
+                     "name": {"value": "Call our customer service line"}},
+                    {"nodeId": "footer", "role": {"value": "generic"},
+                     "childIds": ["close"]},
+                    {"nodeId": "close", "browsergym_id": "142",
+                     "role": {"value": "button"},
+                     "name": {"value": "Close"}},
+                ])
+            return {
+                "goal": "Find largest Card charge; then add a todo",
+                "url": self.url, "axtree_object": {"nodes": nodes},
+                "extra_element_properties": {
+                    "20": {"clickable": True, "visibility": 1.0},
+                    "111": {"clickable": True, "visibility": 1.0},
+                    "141": {"visibility": 1.0},
+                    "142": {"clickable": True, "visibility": 1.0},
+                },
+                "last_action_error": "",
+            }
+        return super().observation()
+
+    def step(self, action):
+        self.commands.append(action)
+        if action == 'click("64")' and self.url.endswith(":15001"):
+            self.url += "/openbanking"
+        elif action == 'click("20")' and self.url.endswith("/openbanking") and not self.dialog_open:
+            self.dialog_open = True
+        elif action == 'click("142")' and self.dialog_open:
+            self.dialog_open = False
+        elif action == 'click("111")' and not self.dialog_open and self.url.endswith("/openbanking"):
+            self.url += "/accounts/0"
+        else:
+            raise RuntimeError("Unexpected simulated dialog action: " + action)
+        return self.observation(), 0.0, False, False, {}
+
+
 class EpisodeTests(unittest.TestCase):
     def run_fake_episode(self, method, *, first_invalid=False,
                          invalid_forever=False, bank_loop=False,
                          early_submit=False, guard_forever=False,
-                         dock_forever=False, browser_timeout=False):
-        fake = FakeBankBrowserGym() if bank_loop or dock_forever else FakeBrowserGym()
-        fake.timeout_on_add = browser_timeout
+                         dock_forever=False, browser_timeout=False,
+                         modal_repair=False, modal_forever=False,
+                         browser_modal_timeout=False):
+        fake = (
+            FakeModalBankBrowserGym() if (modal_repair or modal_forever)
+            else FakeBankBrowserGym() if bank_loop or dock_forever
+            else FakeBrowserGym()
+        )
+        fake.timeout_on_add = browser_timeout or browser_modal_timeout
+        fake.timeout_modal_on_add = browser_modal_timeout
         server = Server(url=fake.url, database_dir="/fake/db")
 
         class EnvArgs:
@@ -331,6 +402,22 @@ class EpisodeTests(unittest.TestCase):
                 json.dumps({"action": "click", "bid": "96"}),
                 json.dumps({"action": "click", "bid": "111"}),
                 json.dumps({"action": "finish"}),
+            ]
+        if modal_repair:
+            responses = [
+                json.dumps({"action": "click", "bid": "64"}),
+                json.dumps({"action": "click", "bid": "20"}),
+                json.dumps({"action": "click", "bid": "20"}),
+                json.dumps({"action": "click", "bid": "142"}),
+                json.dumps({"action": "click", "bid": "111"}),
+                json.dumps({"action": "finish"}),
+            ]
+        if modal_forever:
+            responses = [
+                json.dumps({"action": "click", "bid": "64"}),
+                json.dumps({"action": "click", "bid": "20"}),
+                json.dumps({"action": "click", "bid": "20"}),
+                json.dumps({"action": "click", "bid": "20"}),
             ]
         if early_submit:
             responses = [
@@ -420,6 +507,60 @@ class EpisodeTests(unittest.TestCase):
         self.assertEqual(saved["browsergym_core_version"], "0.13.4")
         self.assertEqual(saved["bid_click_timeout_ms"], 3000)
         self.assertFalse(saved["click_force_retry"])
+        if browser_modal_timeout:
+            self.assertFalse(saved["valid"])
+            self.assertIsNone(saved["official_success"])
+            self.assertEqual(saved["end_reason"], "browser_action_occluded_by_dialog")
+            self.assertEqual(saved["status"], "invalid_episode")
+            self.assertEqual(saved["trace"][-1]["browser_error_category"],
+                             "browser_action_occluded_by_dialog")
+            self.assertIn("intercepts pointer events",
+                          saved["trace"][-1]["browser_error"])
+            self.assertEqual(saved["model_calls"], 3)
+            self.assertEqual(fake.commands, [
+                'click("40")', 'fill("21", "Call Mom")', 'click("22")'
+            ])
+            self.assertTrue(fake.closed)
+            return result
+        if modal_repair:
+            self.assertTrue(saved["valid"], saved.get("error"))
+            self.assertEqual(saved["status"], "development_unsuccessful")
+            self.assertEqual(saved["steps"], 4)
+            self.assertEqual(saved["model_calls"], 6)
+            self.assertEqual(saved["repair_requests"], 1)
+            self.assertEqual(saved["repaired_steps"], 1)
+            self.assertEqual(saved["invalid_model_actions"], 1)
+            self.assertEqual(fake.commands, [
+                'click("64")', 'click("20")', 'click("142")', 'click("111")'
+            ])
+            self.assertIn("dialog_blocks_background_action",
+                          saved["trace"][2]["invalid_attempts"][0]["error"])
+            self.assertEqual(saved["trace"][2]["action"], 'click("142")')
+            self.assertEqual(saved["trace"][2]["active_dialog"]["dialog_bid"], "141")
+            self.assertEqual(
+                model_requests[2]["messages"][1],
+                model_requests[3]["messages"][1],
+            )
+            self.assertIn("dialog", model_requests[3]["messages"][-1]["content"])
+            self.assertEqual(saved["probe_opportunities"], 0)
+            self.assertTrue(fake.closed)
+            return result
+        if modal_forever:
+            self.assertTrue(saved["valid"], saved.get("error"))
+            self.assertFalse(saved["official_success"])
+            self.assertEqual(saved["end_reason"], "safety_guard_blocked")
+            self.assertEqual(saved["steps"], 2)
+            self.assertEqual(saved["model_calls"], 4)
+            self.assertEqual(saved["repair_requests"], 1)
+            self.assertEqual(saved["repaired_steps"], 0)
+            self.assertEqual(saved["invalid_model_actions"], 2)
+            self.assertEqual(fake.commands, ['click("64")', 'click("20")'])
+            self.assertNotIn("action", saved["trace"][2])
+            self.assertIn("dialog_blocks_background_action",
+                          saved["trace"][2]["guard_blocked"])
+            self.assertEqual(len(saved["trace"][2]["invalid_attempts"]), 2)
+            self.assertTrue(fake.closed)
+            return result
         if browser_timeout:
             self.assertFalse(saved["valid"])
             self.assertIsNone(saved["official_success"])
@@ -600,6 +741,21 @@ class EpisodeTests(unittest.TestCase):
         for method in matched.METHODS:
             with self.subTest(method=method):
                 self.run_fake_episode(method, dock_forever=True)
+
+    def test_open_dialog_background_click_is_repaired_into_close_for_both_methods(self):
+        for method in matched.METHODS:
+            with self.subTest(method=method):
+                self.run_fake_episode(method, modal_repair=True)
+
+    def test_open_dialog_rejected_twice_never_clicks_through_overlay(self):
+        for method in matched.METHODS:
+            with self.subTest(method=method):
+                self.run_fake_episode(method, modal_forever=True)
+
+    def test_dialog_interception_is_classified_as_invalid_not_model_failure(self):
+        for method in matched.METHODS:
+            with self.subTest(method=method):
+                self.run_fake_episode(method, browser_modal_timeout=True)
 
     def test_action_timeout_is_invalid_without_automatic_duplicate_click(self):
         for method in matched.METHODS:

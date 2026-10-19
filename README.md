@@ -71,6 +71,34 @@ This is a development controller adaptation (not an official upstream
 default). It must be documented and frozen BEFORE pilot/main; its live
 effect on OpenBanking has not yet been independently verified.
 
+## OpenBanking dialog occlusion: root cause and DEV guard (2026-10-19)
+
+A new local OpenBanking DEVELOPMENT attempt
+`4d005cffea6641b382ea8bd60a84dc15` confirmed that retrying
+the visible "Open an account" button at 3,000 ms does NOT resolve its
+timeout. The Playwright log explicitly shows an open `<dialog>` subtree
+(BID 141) intercepting pointer events. This is browser UI occlusion,
+NOT a short-timeout issue. The upstream OpenApps source shows that
+the button opens a read-only contact-information dialog with Close
+controls; it is NOT the task's transaction ledger.
+
+The shared development runner now detects ONE exposed accessibility
+dialog and its current descendant BIDs using ONLY public BrowserGym
+AXTree/extra_element_properties. It tells BOTH policies which current
+dialog controls are visible, and rejects a background click/fill/press
+BEFORE browser execution. The model gets the existing ONE identical
+same-observation correction request, but the controller never automatically
+closes the dialog, force-clicks, retries a click, or invents a BID.
+Missing or ambiguous AXTree dialog information falls back to normal
+execution and an explicit browser-error classification.
+
+BrowserGym errors containing a dialog intercept are labeled
+`browser_action_occluded_by_dialog`, remain invalid episodes,
+and never become official task failures. This is a DEVELOPMENT controller
+change, validated by simulated tests only; freeze it before pilot/main.
+Even if navigation becomes reliable, CDEA is still unproven until
+comparable information-probe decisions and policy divergences occur.
+
 ## Next: official OpenBanking information-acquisition development pair
 
 With the existing Qwen3.5 model and Ollama active, from PowerShell in this repo:

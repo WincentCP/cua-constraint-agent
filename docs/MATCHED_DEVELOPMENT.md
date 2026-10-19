@@ -286,3 +286,38 @@ After git pull, rerun ONE new development pair only if needed:
 Even if no click times out, evaluate the model's action choices and
 whether CDEA generated two comparable evidence probes. Do not count a
 click timeout as an official task failure in main results.
+
+## Visible accessibility dialog interception (2026-10-19)
+
+Local failed matched DEV pair `4d005cffea6641b382ea8bd60a84dc15` was
+`invalid_episode` after 3 browser steps in Baseline and before Proposed.
+Playwright saw `<dialog open bid=141 class=ob-dialog>` intercept pointer events
+when Qwen chose the page's "Open an account" button (BID 20).
+The clicked button was behind an already-open dialog, so 3,000 ms
+could not remedy this particular timeout. No official result or
+CDEA advantage can be claimed.
+
+Pinned OpenApps uses that CTA to show a read-only phone/contact modal
+with Close buttons. Agent navigation was also unproductive for the
+goal of finding the largest card charge.
+
+In DEVELOPMENT only, a generic public-AXTree adapter finds ONE accessible
+dialog role plus its visible descendant controls. It builds a shared,
+BID-scoped dialog cue and a shared guard for clicks/fills/keypresses
+on BIDs outside that dialog, with the SAME at-most-one model correction
+available to BOTH Baseline and Proposed. No private state, DOM query,
+target answer, static known BID, forced click or automatic dismissal
+is provided. A missing/unusable dialog hierarchy leaves the decision
+unchanged; the browser error is still logged as invalid.
+
+The adapter is intentionally conservative and NOT a replacement for
+real browser hit testing; not every nonmodal dialog occludes background
+controls. Simulated tests cover public descendant checks, guard correction
+and fail-closed stopping for both methods. The actual OpenBanking case
+still requires one post-patch local DEV confirmation.
+
+Browser errors explicitly containing a dialog intercept are tagged
+`browser_action_occluded_by_dialog` with the timeout and
+current public dialog context when available. Existing artifacts
+remain unchanged. Further failure of an action-valid model to find
+the correct card ledger is a task-solving issue, not infrastructure.

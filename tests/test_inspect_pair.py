@@ -100,6 +100,10 @@ class InspectPairTests(unittest.TestCase):
                 "TimeoutError: Locator.click: Timeout 3000ms exceeded."
             )
             rec["trace"][-1]["browser_error_category"] = "browser_action_timeout"
+            rec["trace"][-1]["active_dialog_after_error"] = {
+                "dialog_bid": "141", "dialog_name": "Open an account",
+                "controls": [{"bid": "142", "role": "button", "name": "Close"}],
+            }
             rec["trace"][-1]["browser_timeout_ms"] = 3000
             ep.write_text(json.dumps(rec), encoding="utf-8")
             out = inspector.describe_pair(path)
@@ -108,6 +112,8 @@ class InspectPairTests(unittest.TestCase):
             self.assertIn("category=browser_action_timeout", out)
             self.assertIn("timeout_ms=3000", out)
             self.assertIn("forced retry=False", out)
+            self.assertIn("ACTIVE DIALOG: Open an account", out)
+            self.assertIn("142 button:Close", out)
             self.assertIn("Click timeout: 3000 ms", out)
             self.assertIn("VALIDITY GATE", out)
 

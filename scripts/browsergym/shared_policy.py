@@ -46,6 +46,9 @@ COMMON_SYSTEM = (
     "Probe bids must be observed controls that reveal information, NEVER "
     "write, submit, send, delete, transfer or purchase controls. "
     "For direct navigation or writing, omit probes and choose the action. "
+    "If an accessibility dialog is open, do NOT click page controls "
+    "behind it. Use a visible control inside that dialog (such as Close "
+    "when the dialog is irrelevant to the goal). "
     "If CURRENT URL is already the app root, do NOT click that same app's "
     "dock/launcher icon again. Instead inspect controls within the app. "
     "A labelled generic clickable row can be a valid click target when "
@@ -140,7 +143,8 @@ def stable_public_page_path(url: str) -> str:
 
 def public_messages(goal: str, url: str, tree: str, bids: set[str],
                     history: list[str], constraints: list[dict], ledger: dict,
-                    clickable_hints: list[dict] | None = None) -> list[dict]:
+                    clickable_hints: list[dict] | None = None,
+                    active_dialog: dict | None = None) -> list[dict]:
     """Identical for Baseline and Proposed; no policy name in model messages."""
     visible_ledger = {
         key: {"state": ledger[key]["state"], "quote": ledger[key]["quote"]}
@@ -155,6 +159,16 @@ def public_messages(goal: str, url: str, tree: str, bids: set[str],
         + json.dumps(visible_ledger, ensure_ascii=False)
         + "\nPrevious actions: " + json.dumps(history[-6:])
         + "\nCurrent accessibility tree:\n" + tree[:16000]
+        + (
+            "\nCurrent active accessibility dialog and its OWN controls: "
+            + json.dumps({
+                "dialog_bid": active_dialog.get("dialog_bid"),
+                "dialog_name": active_dialog.get("dialog_name"),
+                "controls": active_dialog.get("controls", []),
+            }, ensure_ascii=False)
+            + "\nDo NOT click controls behind this dialog."
+            if active_dialog else ""
+        )
         + (
             "\nOther clickable visible generic containers from BrowserGym "
             "AXTree plus public extra_element_properties (not backend data): "

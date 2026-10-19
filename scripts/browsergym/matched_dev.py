@@ -20,7 +20,8 @@ from uuid import uuid4
 
 from action_timeout import DEV_CLICK_TIMEOUT_MS, configure_bounded_click_timeout
 from evaluator_controls import require_state
-from public_ui import clickable_generic_hints, redundant_current_app_link
+from public_ui import (active_dialog_context, clickable_generic_hints,
+                       dialog_background_action_guard, redundant_current_app_link)
 from isolated_openapps import isolated_openapps
 from ollama_preflight import (MODELS_FILE, find_installed_model, get_model,
                               request_json, validate_ollama_url)
@@ -172,9 +173,11 @@ def run_episode(root: Path, server, method: str, identity: dict,
             if not bids:
                 raise RuntimeError("No visible BrowserGym element IDs")
             clickable_hints = clickable_generic_hints(obs, bids)
+            dialog = active_dialog_context(obs, bids)
             messages = public_messages(goal, str(obs.get("url", "")), tree,
                                        bids, history, constraints, ledger,
-                                       clickable_hints=clickable_hints)
+                                       clickable_hints=clickable_hints,
+                                       active_dialog=dialog)
             request = {
                 "model": identity["name"], "stream": False,
                 "think": False, "format": "json",
@@ -237,6 +240,9 @@ def run_episode(root: Path, server, method: str, identity: dict,
                     loop_error = redundant_current_app_link(trial_action, obs)
                     if loop_error:
                         raise ValueError(loop_error)
+                    dialog_error = dialog_background_action_guard(trial_action, dialog)
+                    if dialog_error:
+                        raise ValueError("safety_guard_blocked: " + dialog_error)
                     # Like a nonexistent BID, a guard-rejected action must
                     # NEVER survive as the selected executable action. Give
                     # the model the same ONE shared correction opportunity
@@ -280,6 +286,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
                     "agent_error": last["error"],
                     "invalid_attempts": invalid_attempts,
                     "model_telemetry": model_telemetry,
+                    "active_dialog": dialog,
                     "url_before": str(obs.get("url", "")),
                     "axtree_characters": len(tree),
                     "axtree_truncated_for_model": len(tree) > 16000,
@@ -299,6 +306,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
                 "axtree_truncated_for_model": len(tree) > 16000,
                 "model_telemetry": model_telemetry,
                 "public_clickable_hints": clickable_hints,
+                "active_dialog": dialog,
                 "invalid_attempts": invalid_attempts,
                 "repair_used": bool(invalid_attempts), **decision,
             }
@@ -331,8 +339,20 @@ def run_episode(root: Path, server, method: str, identity: dict,
                 entry["browser_error"] = raw_error[:1600]
                 is_timeout = ("TimeoutError:" in raw_error
                               and re.search(r"Timeout [0-9]+ms exceeded", raw_error))
-                failure = "browser_action_timeout" if is_timeout else "browser_action_error"
+                dialog_occlusion = (
+                    "intercepts pointer events" in raw_error.lower()
+                    and "<dialog" in raw_error.lower()
+                )
+                failure = (
+                    "browser_action_occluded_by_dialog" if dialog_occlusion
+                    else "browser_action_timeout" if is_timeout
+                    else "browser_action_error"
+                )
                 entry["browser_error_category"] = failure
+                from qwen_dev import permitted_bids as _permitted
+                entry["active_dialog_after_error"] = active_dialog_context(
+                    obs, _permitted(obs, next_tree),
+                )
                 timeout_match = re.search(r"Timeout ([0-9]+)ms exceeded", raw_error)
                 if timeout_match:
                     entry["browser_timeout_ms"] = int(timeout_match.group(1))

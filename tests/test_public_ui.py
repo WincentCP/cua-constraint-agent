@@ -41,6 +41,36 @@ def bank_tree(url="http://127.0.0.1:5011/openbanking"):
     }
 
 
+def modal_tree():
+    """Synthetic public AXTree for native OpenBanking-like informational dialog."""
+    return {
+        "url": "http://127.0.0.1:5001/openbanking",
+        "axtree_object": {"nodes": [
+            {"nodeId": "behind", "browsergym_id": "20",
+             "role": {"value": "button"},
+             "name": {"value": "Open an account"}},
+            {"nodeId": "rootdlg", "browsergym_id": "141",
+             "role": {"value": "dialog"}, "name": {"value": "Open an account"},
+             "childIds": ["article"]},
+            {"nodeId": "article", "role": {"value": "generic"},
+             "childIds": ["close", "body", "footer"]},
+            {"nodeId": "close", "browsergym_id": "142",
+             "role": {"value": "button"}, "name": {"value": "Close"}},
+            {"nodeId": "body", "role": {"value": "StaticText"},
+             "name": {"value": "Call our customer service line"}},
+            {"nodeId": "footer", "role": {"value": "generic"}, "childIds": ["x"]},
+            {"nodeId": "x", "browsergym_id": "143",
+             "role": {"value": "button"}, "name": {"value": "Close"}},
+        ]},
+        "extra_element_properties": {
+            "20": {"clickable": True, "visibility": 1.0},
+            "141": {"visibility": 1.0},
+            "142": {"clickable": True, "visibility": 1.0},
+            "143": {"clickable": True, "visibility": 1.0},
+        },
+    }
+
+
 class PublicUITests(unittest.TestCase):
     def test_generic_click_hints_are_visible_public_axtree_nodes_only(self):
         obs = bank_tree()
@@ -73,6 +103,57 @@ class PublicUITests(unittest.TestCase):
         obs["url"] = "http://127.0.0.1:5011/openbanking"
         self.assertIsNone(ui.redundant_current_app_link('fill("96", "Hi")', obs))
         self.assertIsNone(ui.redundant_current_app_link('go_back()', obs))
+
+    def test_active_dialog_exposes_only_current_public_descendant_controls(self):
+        obs = modal_tree()
+        dialog = ui.active_dialog_context(obs, {"20", "141", "142", "143"})
+        self.assertIsNotNone(dialog)
+        self.assertEqual(dialog["dialog_bid"], "141")
+        self.assertEqual(dialog["dialog_name"], "Open an account")
+        self.assertEqual(set(dialog["allowed_inside_bids"]), {"141", "142", "143"})
+        self.assertEqual([c["bid"] for c in dialog["controls"]], ["142", "143"])
+        self.assertNotIn("20", dialog["allowed_inside_bids"])
+        self.assertEqual(
+            ui.dialog_background_action_guard('click("20")', dialog)[:31],
+            "dialog_blocks_background_action",
+        )
+        self.assertIsNone(ui.dialog_background_action_guard('click("142")', dialog))
+        self.assertIsNone(ui.dialog_background_action_guard('press("141", "Escape")', dialog))
+        self.assertIsNone(ui.dialog_background_action_guard('go_back()', dialog))
+        self.assertIsNone(ui.dialog_background_action_guard('finish', dialog))
+
+    def test_dialog_invisible_ambiguous_or_missing_hierarchy_fails_open(self):
+        obs = modal_tree()
+        obs["extra_element_properties"]["141"]["visibility"] = 0
+        self.assertIsNone(ui.active_dialog_context(obs, {"20", "141", "142"}))
+        obs = modal_tree()
+        obs["axtree_object"]["nodes"][1]["childIds"] = []
+        self.assertIsNone(ui.active_dialog_context(obs, {"20", "141", "142"}))
+        obs = modal_tree()
+        obs["axtree_object"]["nodes"].append({
+            "nodeId": "dlg2", "browsergym_id": "144",
+            "role": {"value": "alertdialog"}, "childIds": ["close"]
+        })
+        self.assertIsNone(ui.active_dialog_context(obs, {"20", "141", "142", "144"}))
+        self.assertIsNone(ui.dialog_background_action_guard('click("20")', None))
+
+    def test_modal_guidance_is_public_and_same_for_both_policies(self):
+        obs = modal_tree()
+        dialog = ui.active_dialog_context(obs, {"20", "141", "142", "143"})
+        constraints = policy.public_constraints("Find largest card charge")
+        ledger = policy.initial_ledger(constraints)
+        msg = policy.public_messages(
+            "Find largest card charge", obs["url"],
+            "[20] button Open an account\n[142] button Close",
+            {"20", "141", "142", "143"}, [], constraints, ledger,
+            active_dialog=dialog,
+        )
+        self.assertIn("dialog", msg[1]["content"].lower())
+        self.assertIn('"bid": "142"', msg[1]["content"])
+        self.assertIn("Do NOT click controls behind", msg[1]["content"])
+        self.assertNotIn("openbanking_all", str(msg))
+        self.assertNotIn("target_state", str(msg))
+        self.assertIn("dialog", policy.COMMON_SYSTEM.lower())
 
     def test_hint_prompt_is_pure_and_shared_between_methods(self):
         obs = bank_tree()

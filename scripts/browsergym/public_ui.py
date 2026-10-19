@@ -117,3 +117,112 @@ def redundant_current_app_link(action: str, observation: dict) -> str | None:
                 "Inspect information in the current app using other observed "
                 "controls; a generic clickable entry may represent a card/row.")
     return None
+
+
+def active_dialog_context(observation: dict, allowed_bids: set[str]) -> dict | None:
+    """Identify ONE dialog from the public BrowserGym accessibility tree.
+
+    nodeId / childIds reveal which current BIDs belong to a dialog versus
+    the page behind it. This is NOT a DOM or backend lookup, nor a task-
+    specific heuristic. No controls or BIDs are synthesized.
+
+    Missing hierarchy or incomplete visibility info fails open. This is a
+    conservative proxy for possible modal occlusion, not a hit test.
+    """
+    obj = observation.get("axtree_object") or {}
+    nodes = obj.get("nodes") if isinstance(obj, dict) else None
+    props = observation.get("extra_element_properties") or {}
+    if not isinstance(nodes, list) or not isinstance(props, dict):
+        return None
+
+    def role(node: dict) -> str:
+        v = node.get("role")
+        return str(v.get("value") or "").casefold() if isinstance(v, dict) else ""
+
+    def visible(node: dict) -> bool:
+        if node.get("ignored"):
+            return False
+        bid = node.get("browsergym_id")
+        meta = props.get(str(bid)) if bid is not None else None
+        visibility = meta.get("visibility") if isinstance(meta, dict) else None
+        return not (isinstance(visibility, (int, float))
+                    and not isinstance(visibility, bool) and visibility <= 0)
+
+    dialogs = [
+        node for node in nodes if isinstance(node, dict)
+        and role(node) in ("dialog", "alertdialog") and visible(node)
+    ]
+    if len(dialogs) != 1:
+        return None
+
+    dialog = dialogs[0]
+    by_id = {
+        str(n["nodeId"]): n for n in nodes
+        if isinstance(n, dict) and n.get("nodeId") is not None
+    }
+    queue = list(dialog.get("childIds") or [])
+    visited = set()
+    inside = set()
+    controls = []
+    allowed = {str(bid) for bid in allowed_bids}
+    dialog_bid = dialog.get("browsergym_id")
+    if dialog_bid is not None and str(dialog_bid) in allowed:
+        inside.add(str(dialog_bid))
+
+    while queue and len(visited) < 500:
+        nid = str(queue.pop(0))
+        if nid in visited:
+            continue
+        visited.add(nid)
+        node = by_id.get(nid)
+        if not node or not visible(node):
+            continue
+        bid = node.get("browsergym_id")
+        bid = str(bid) if bid is not None else ""
+        if bid in allowed:
+            inside.add(bid)
+            kind = role(node)
+            extra = props.get(bid) or {}
+            if (kind in ("button", "link", "textbox", "combobox", "checkbox",
+                         "radio", "tab", "menuitem", "option")
+                    or kind in ("generic", "group")
+                    and isinstance(extra, dict) and extra.get("clickable") is True):
+                if len(controls) < 20:
+                    controls.append({
+                        "bid": bid,
+                        "role": kind,
+                        "name": _node_text(node)[:120],
+                    })
+        queue.extend(node.get("childIds") or [])
+    if queue or not controls:
+        return None
+
+    return {
+        "dialog_bid": str(dialog_bid) if dialog_bid is not None else None,
+        "dialog_name": _node_text(dialog)[:120],
+        "allowed_inside_bids": sorted(inside),
+        "controls": controls,
+    }
+
+
+def dialog_background_action_guard(action: str, dialog: dict | None) -> str | None:
+    """Reject foreground-dialog-incompatible BID actions for both methods.
+
+    Never auto-dismiss dialogs, force click, or run browser retries. The
+    shared model may choose an alternative in the same observation once.
+    """
+    if dialog is None or not action.startswith(("click(", "fill(", "press(")):
+        return None
+    try:
+        bid = json.loads(action[action.index("(") + 1:].split(",", 1)[0].rstrip(")"))
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(bid, str) or bid in dialog["allowed_inside_bids"]:
+        return None
+    return (
+        "dialog_blocks_background_action: a visible dialog is active. "
+        "The selected BID belongs to the page BEHIND the dialog and may be "
+        "intercepted. Choose one of the current dialog controls from the "
+        "accessibility tree (e.g. Close if available). Do not force-click "
+        "or invent element IDs."
+    )

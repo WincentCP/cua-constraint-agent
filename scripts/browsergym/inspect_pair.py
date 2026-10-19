@@ -131,6 +131,21 @@ def describe_pair(path: Path) -> str:
                         f"    rejected bid={_text(bad.get('attempted_bid'), 50)}"
                         f" reason={_text(bad.get('error'), 200)}"
                     )
+            for modal_key in ("active_dialog", "active_dialog_after_error"):
+                modal = item.get(modal_key)
+                if isinstance(modal, dict):
+                    controls = modal.get("controls") or []
+                    names = "; ".join(
+                        _text(control.get("bid"), 30) + " "
+                        + _text(control.get("role"), 30) + ":"
+                        + _text(control.get("name"), 80)
+                        for control in controls[:8] if isinstance(control, dict)
+                    )
+                    lines.append(
+                        "    ACTIVE DIALOG: " + _text(modal.get("dialog_name"))
+                        + " | BID=" + _text(modal.get("dialog_bid"))
+                        + " | controls=" + (names or "-")
+                    )
             if item.get("guard_blocked"):
                 lines.append("    GUARD BLOCKED: " + _text(item["guard_blocked"]))
             if item.get("agent_error"):
