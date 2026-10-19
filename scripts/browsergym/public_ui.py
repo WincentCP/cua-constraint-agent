@@ -110,7 +110,8 @@ def redundant_current_app_link(action: str, observation: dict) -> str | None:
     if not path or "/" in path:
         return None
     app_name = title[4:]
-    if app_name == path or (app_name.endswith("s") and app_name[:-1] == path):
+    if (title == path or app_name == path
+            or (app_name.endswith("s") and app_name[:-1] == path)):
         return ("redundant_current_app_link: the current URL is already this "
                 "app's root page. Do not reload the same dock/launcher icon. "
                 "Inspect information in the current app using other observed "
