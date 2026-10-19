@@ -70,7 +70,16 @@ def clickable_generic_hints(observation: dict, allowed_bids: set[str],
         if bid not in allowed_bids or bid in seen_bids:
             continue
         meta = props.get(bid)
-        if not isinstance(meta, dict) or meta.get("clickable") is not True:
+        if not isinstance(meta, dict):
+            continue
+        # HTMX/cursor-pointer elements can be actionable without appearing
+        # in Chrome's DOMSnapshot.isClickable. BrowserGym's public
+        # set_of_marks flag identifies elements whose visible center accepts
+        # pointer clicks, including cursor:pointer generic containers.
+        # Never fabricate a BID: this still requires a current AXTree ID.
+        clickable = meta.get("clickable") is True
+        marked = meta.get("set_of_marks") is True
+        if not (clickable or marked):
             continue
         visibility = meta.get("visibility")
         if isinstance(visibility, (int, float)) and visibility <= 0:
@@ -79,7 +88,9 @@ def clickable_generic_hints(observation: dict, allowed_bids: set[str],
         if not label:
             continue
         hints.append({"bid": bid, "role": node["role"]["value"],
-                      "visible_label": label})
+                      "visible_label": label,
+                      "browsergym_marker": ("clickable" if clickable
+                                            else "set_of_marks")})
         seen_bids.add(bid)
         if len(hints) >= limit:
             break

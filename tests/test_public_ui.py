@@ -84,6 +84,26 @@ class PublicUITests(unittest.TestCase):
         self.assertNotIn("hx-get", str(hints))
         self.assertEqual(ui.clickable_generic_hints(obs, {"96"}), [])
 
+    def test_public_set_of_marks_fallback_for_htmx_generic_rows(self):
+        """BrowserGym marks pointer-cursor rows even if CDP isClickable=False."""
+        obs = bank_tree()
+        obs["extra_element_properties"]["111"] = {
+            "visibility": 1.0, "clickable": False, "set_of_marks": True
+        }
+        # BrowserGym still must actually expose the BID in the current AXTree.
+        hints = ui.clickable_generic_hints(obs, {"96", "111", "112", "113"})
+        self.assertEqual(len(hints), 1)
+        self.assertEqual(hints[0]["bid"], "111")
+        self.assertEqual(hints[0]["browsergym_marker"], "set_of_marks")
+        self.assertIn("BUS COMPLETE CHK", hints[0]["visible_label"])
+        self.assertEqual(ui.clickable_generic_hints(obs, {"96"}), [])
+
+        obs["extra_element_properties"]["111"]["visibility"] = 0
+        self.assertEqual(ui.clickable_generic_hints(obs, {"111"}), [])
+        obs["extra_element_properties"]["111"]["visibility"] = 1.0
+        obs["extra_element_properties"]["111"]["set_of_marks"] = False
+        self.assertEqual(ui.clickable_generic_hints(obs, {"111"}), [])
+
     def test_unavailable_clickable_metadata_never_guesses_targets(self):
         obs = bank_tree()
         del obs["extra_element_properties"]

@@ -321,3 +321,50 @@ Browser errors explicitly containing a dialog intercept are tagged
 current public dialog context when available. Existing artifacts
 remain unchanged. Further failure of an action-valid model to find
 the correct card ledger is a task-solving issue, not infrastructure.
+
+## Qwen OpenBanking 20-step no-op loop and model-free UI observability gate
+
+User-provided `inspect_pair.ps1` result: `c312dda398474449a46bc2efbcacb8bb`,
+both Baseline and CDEA `development_unsuccessful`, reward 0, 20 browser
+steps, 22 model calls, 2 repaired steps, 0 probe opportunities, and
+initial SHA parity true. The two ordered action traces are identical:
+they repeatedly click `Your accounts` heading BID 22 (no AXTree/URL
+change), or bounce between `Return to List of Apps` and `OpenBanking`.
+No account detail route was reached. The report prints no public generic
+clickable hints. These are development symptoms, not a confirmatory result.
+
+The pinned upstream OpenApps page generates the root account entries
+as `Div(..., hx_get='/openbanking/accounts/{id}',
+hx_push_url='true', style='cursor: pointer;')`. BrowserGym v0.13.4
+also records a public `set_of_marks` property for center-clickable
+pointer-cursor elements; the earlier adapter required only Chrome
+DOMSnapshot `isClickable`. Because HTMX may delegate event listeners,
+`isClickable` alone is too restrictive. The generic-row hint helper
+now checks (clickable == True OR set_of_marks == True), while keeping
+the original current AXTree BID allowlist, observed role, visibility
+and descendant label requirements. It does not manufacture BIDs or
+provide a task-specific routing shortcut and applies to both arms.
+
+Not proven: which BIDs the live OpenBanking accessibility tree actually
+contains. An ignored generic node or truncated AXTree can still hide an
+HTMX row. A MODEL-FREE OFFICIAL BrowserGym audit now exists:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\audit_public_ui.ps1
+
+This starts ONE isolated pinned OpenApps server, creates the official
+BrowserGym task environment, clicks ONE observed public OpenBanking
+launcher BID (without Ollama), and inspects the resulting public page.
+It records: AXTree size, allowed BIDs, generic hints and their BrowserGym
+marker origin, current AXTree role/metadata, nonallowed actionable IDs,
+and public DOM HTMX/pointer markers including whether each BID is allowed.
+The DOM data are restricted to this development diagnosis and NEVER
+fed to the agent or included as candidate probes; no oracle data
+is read and no task reward is used. This is not a benchmark episode.
+
+If DOM rows exist but their BIDs are missing from the AXTree allowlist,
+do not silently switch to a DOM-driven agent: document the limitation,
+consider an explicitly shared and frozen public-observation modality
+decision, then validate independently. If generic rows are present in
+the audit, rerun ONE matched development pair and examine whether
+the model selects relevant BIDs and supplies 2+ eligible information
+probes. The remaining mandatory CDEA mechanism gate is still unmet.

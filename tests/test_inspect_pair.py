@@ -117,6 +117,23 @@ class InspectPairTests(unittest.TestCase):
             self.assertIn("Click timeout: 3000 ms", out)
             self.assertIn("VALIDITY GATE", out)
 
+    def test_explicit_zero_hints_and_marker_provenance_are_visible(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = self.make_pair(Path(folder), complete=True, traces=True)
+            ep = path.parent / "Baseline" / "episode" / "episode.json"
+            record = json.loads(ep.read_text(encoding="utf-8"))
+            record["trace"][0]["public_clickable_hints"] = []
+            record["trace"][1]["public_clickable_hints"] = [
+                {"bid": "111", "role": "generic",
+                 "visible_label": "Business Checking",
+                 "browsergym_marker": "set_of_marks"}
+            ]
+            ep.write_text(json.dumps(record), encoding="utf-8")
+            result = inspector.describe_pair(path)
+            self.assertIn("Public actionable generic hints: 0", result)
+            self.assertIn("Public actionable generic hints: 1", result)
+            self.assertIn("marker=set_of_marks", result)
+
     def test_latest_selects_only_pair_reports(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

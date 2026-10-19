@@ -99,6 +99,42 @@ change, validated by simulated tests only; freeze it before pilot/main.
 Even if navigation becomes reliable, CDEA is still unproven until
 comparable information-probe decisions and policy divergences occur.
 
+## OpenBanking no-op navigation and UI audit (2026-10-19)
+
+Matched Qwen development pair `c312dda398474449a46bc2efbcacb8bb`
+completed with equal initial states but BOTH arms spent all 20 steps
+navigating between desktop and OpenBanking and clicking the inert
+`Your accounts` heading. Both official rewards were zero and both had
+ZERO generated probe menus or policy divergence. This is a model/controller
+observability blocker, not evidence that CDEA loses/wins.
+
+The printed trace contained no `Public clickable rows` hints. The pinned
+OpenApps code implements account navigation as HTMX `div` rows with
+`cursor: pointer`, not ordinary links. BrowserGym `isClickable` can
+miss delegated HTMX events; public `set_of_marks=True` is a second
+BrowserGym-provided sign of an actionable pointer target. The common
+generic-row helper now accepts either positive marker, but only on a
+nonignored, currently permitted AXTree BID with visible child text.
+Exactly the same hints are available to Baseline and Proposed.
+
+Instead of another 40 Ollama-driven browser steps, run a ONE-SERVER,
+ONE-BROWSER-ACTION model-free audit from the thesis repo:
+
+    git pull --ff-only
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\audit_public_ui.ps1
+
+This emits `output/browsergym/ui_audit/<id>/ui_audit.json` and counts
+the publicly marked account-like generic candidates, AXTree allowlist
+coverage, and diagnostic public DOM HTMX targets. The raw DOM markers
+are developer diagnostics ONLY; they are NOT given to either model
+and do not create or promote model-visible BIDs. No Ollama or pilot
+runs are started and no official task reward is reported.
+
+If hints remain at zero but public DOM identifies HTMX rows missing
+from the AXTree BID allowlist, stop before further agent runs and
+investigate observation coverage. A change to the allowed observation
+modality would need symmetric application and a frozen research protocol.
+
 ## Next: official OpenBanking information-acquisition development pair
 
 With the existing Qwen3.5 model and Ollama active, from PowerShell in this repo:

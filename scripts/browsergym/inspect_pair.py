@@ -156,15 +156,22 @@ def describe_pair(path: Path) -> str:
                     + " | category=" + _text(item.get("browser_error_category"))
                     + " | timeout_ms=" + _text(item.get("browser_timeout_ms"))
                 )
-            if item.get("public_clickable_hints"):
-                sample = item["public_clickable_hints"][:5]
+            if "public_clickable_hints" in item:
+                hints = item.get("public_clickable_hints") or []
                 lines.append(
-                    "    Public clickable rows: "
-                    + "; ".join(
-                        _text(h.get("bid"), 30) + " " + _text(h.get("visible_label"), 95)
-                        for h in sample if isinstance(h, dict)
-                    )
+                    "    Public actionable generic hints: " + str(len(hints))
                 )
+                if hints:
+                    sample = hints[:5]
+                    lines.append(
+                        "    Public clickable rows: "
+                        + "; ".join(
+                            _text(h.get("bid"), 30) + " "
+                            + _text(h.get("visible_label"), 95)
+                            + " (marker=" + _text(h.get("browsergym_marker")) + ")"
+                            for h in sample if isinstance(h, dict)
+                        )
+                    )
         if len(trace) > 40:
             lines.append(f"  ({len(trace) - 40} more recorded trace entries omitted)")
     lines.append("")
