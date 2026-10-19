@@ -192,11 +192,18 @@ class EpisodeTests(unittest.TestCase):
                 self.to_python_code = object()
                 self.subsets = subsets
         highlevel.HighLevelActionSet = ActionSet
+        packages = {}
+        for name in ("browsergym", "browsergym.core", "browsergym.core.action",
+                     "open_apps"):
+            module = types.ModuleType(name)
+            module.__path__ = []
+            packages[name] = module
         state = types.ModuleType("open_apps.state")
         state.get_current_state = lambda _: copy.deepcopy(fake.state)
         with tempfile.TemporaryDirectory() as folder:
             destination = Path(folder) / "episode"
-            with (patch.dict(sys.modules, {"browsergym.core.action.highlevel": highlevel,
+            with (patch.dict(sys.modules, {**packages,
+                                           "browsergym.core.action.highlevel": highlevel,
                                            "open_apps.state": state}),
                   patch.object(matched, "build_env_args", return_value=(EnvArgs(), None)),
                   patch.object(matched, "require_state"),
@@ -207,7 +214,7 @@ class EpisodeTests(unittest.TestCase):
                 )
             saved = json.loads((destination / "episode.json").read_text())
         self.assertEqual(saved["model_prompt_policy"], "shared_identical_for_both_methods")
-        self.assertTrue(saved["valid"])
+        self.assertTrue(saved["valid"], saved.get("error"))
         self.assertTrue(saved["official_success"])
         self.assertEqual(saved["official_reward"], 1.0)
         self.assertEqual(saved["steps"], 3)
