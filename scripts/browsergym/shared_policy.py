@@ -14,9 +14,13 @@ from qwen_dev import describe_bid, parse_action, permitted_bids
 
 METHODS = ("Baseline", "Proposed")
 PROBE_ROLES = frozenset({
-    "link", "button", "generic", "checkbox", "radio", "tab",
-    "menuitem", "option", "combobox",
+    "link", "button", "generic", "tab", "menuitem", "option",
 })
+WRITE_BUTTON = re.compile(
+    r"\b(add|submit|save|delete|remove|pay|purchase|buy|send|transfer|confirm|"
+    r"checkout|create|update|edit|mark done|toggle|post|place order)\b",
+    flags=re.IGNORECASE,
+)
 MAX_PROBES = 6
 MAX_CONSTRAINTS = 6
 
@@ -142,8 +146,13 @@ def _probe_candidates(obj: dict, bids: set[str], observation: dict,
         bid = item.get("bid")
         if not isinstance(bid, str) or bid not in bids or bid in seen:
             continue
-        role = describe_bid(observation, bid)["role"].casefold()
+        target = describe_bid(observation, bid)
+        role = target["role"].casefold()
         if role not in PROBE_ROLES:
+            continue
+        # Never reinterpret an obvious write/submit button as a read probe.
+        # Generic clickable nodes may still require UI-level screening.
+        if role == "button" and WRITE_BUTTON.search(target["name"]):
             continue
         score, cost, answers = (item.get("progress_score"),
                                 item.get("forward_cost"), item.get("may_answer"))
@@ -152,10 +161,12 @@ def _probe_candidates(obj: dict, bids: set[str], observation: dict,
                 or not isinstance(answers, list)):
             continue
         ids = [key for key in answers if isinstance(key, str) and key in constraint_ids]
+        if not ids:
+            continue
         result.append({"bid": bid, "action": "click(" + json.dumps(bid) + ")",
                        "progress_score": score, "forward_cost": cost,
                        "may_answer": sorted(set(ids)), "order": len(result),
-                       "target": describe_bid(observation, bid)})
+                       "target": target})
         seen.add(bid)
     return result
 
@@ -173,7 +184,11 @@ def choose_action(reply: dict, method: str, observation: dict, tree: str,
     evidence = grounded_evidence(obj, tree, ledger, step)
     probes = _probe_candidates(obj, bids, observation,
                                {item["id"] for item in constraints})
-    opportunity = obj.get("decision") == "probe" and len(probes) >= 2
+    opportunity = (
+        obj.get("decision") == "probe" and len(probes) >= 2
+        and any(ledger[key]["state"] == "UNKNOWN"
+                for item in probes for key in item["may_answer"])
+    )
     selected = primary
     selected_probe = None
     if opportunity:

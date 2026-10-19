@@ -135,6 +135,40 @@ class PolicyTests(unittest.TestCase):
             self.assertEqual(chosen, 'fill("30", "100")')
             self.assertFalse(meta["probe_opportunity"])
 
+    def test_submit_button_never_becomes_information_probe(self):
+        probes = [
+            {"bid": "40", "progress_score": 5, "forward_cost": 1,
+             "may_answer": ["c1"]},
+            {"bid": "10", "progress_score": 2, "forward_cost": 1,
+             "may_answer": ["c1"]},
+        ]
+        action, meta = policy.choose_action(
+            reply(probes=probes, decision="probe"), "Proposed",
+            observation(), TREE, CONSTRAINTS,
+            policy.initial_ledger(CONSTRAINTS), 1,
+        )
+        self.assertEqual(action, 'click("10")')
+        self.assertFalse(meta["probe_opportunity"])
+        self.assertEqual([p["bid"] for p in meta["candidate_probes"]], ["10"])
+
+    def test_no_unresolved_public_constraints_means_no_reranking(self):
+        probes = [
+            {"bid": "10", "progress_score": 1, "forward_cost": 1,
+             "may_answer": ["c1"]},
+            {"bid": "20", "progress_score": 2, "forward_cost": 1,
+             "may_answer": ["c2"]},
+        ]
+        ledger = policy.initial_ledger(CONSTRAINTS)
+        for cell in ledger.values():
+            cell["state"] = "SATISFIED"
+        action, meta = policy.choose_action(
+            reply({"action": "fill", "bid": "30", "text": "100"},
+                  probes=probes, decision="probe"),
+            "Proposed", observation(), TREE, CONSTRAINTS, ledger, 1,
+        )
+        self.assertEqual(action, 'fill("30", "100")')
+        self.assertFalse(meta["probe_opportunity"])
+
     def test_invalid_primary_never_becomes_valid_through_candidates(self):
         data = reply({"action": "click", "bid": "not-present"},
                      decision="probe", probes=[
