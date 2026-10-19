@@ -1,0 +1,48 @@
+{
+  "protocol": "cdea_pilot_v1",
+  "status": "exploratory_pilot_not_main",
+  "seed": 233,
+  "max_steps": 20,
+  "model_timeout": 240,
+  "model_labels": [
+    "qwen3.5-9b",
+    "ministral3-8b",
+    "granite4.1-8b",
+    "xlam2-8b"
+  ],
+  "tasks": [
+    {
+      "task_group": "all_tasks",
+      "task": "add_call_mom_to_my_todo",
+      "family": "todo_create_control"
+    },
+    {
+      "task_group": "all_tasks",
+      "task": "mark_water_plants_as_done",
+      "family": "todo_find_existing"
+    },
+    {
+      "task_group": "longer_horizon",
+      "task": "plan_elena_birthday_todo_message",
+      "family": "two_app_composite"
+    },
+    {
+      "task_group": "openbanking",
+      "task": "message_bob_the_savings_balance",
+      "family": "read_balance_then_message"
+    },
+    {
+      "task_group": "openbanking",
+      "task": "add_todo_for_the_card_minimum_payment",
+      "family": "read_card_metric_then_todo"
+    },
+    {
+      "task_group": "openbanking",
+      "task": "add_todo_to_review_largest_card_charge",
+      "family": "read_transaction_ledger_then_todo"
+    }
+  ],
+  "pair_validity_rule": "Both arms must be present, run_complete, valid, and share equal initial SHA256; otherwise exclude both from paired success denominator but retain raw records.",
+  "invalid_episode_rule": "Keep invalid as invalid or not_run (never silently convert to success=False); no automatic rerun of a pair or click after timeout.",
+  "analysis_rule": "Report task success on valid matched pairs plus invalid/not-run coverage and CDEA comparable probes and action divergences; do not claim superiority from zero opportunities."
+}

@@ -1,5 +1,22 @@
 # Acceptance gates — live smoke verified 2026-10-18
 
+## Updated sequencing decision — October 19, 2026
+
+The former strict requirement to demonstrate CDEA action divergence BEFORE
+any pilot has been relaxed: a pilot is exploratory and may legitimately
+find zero probe opportunities. The mechanism gate is still mandatory
+BEFORE interpreting an effectiveness claim or freezing the confirmatory
+main study, not a condition for measuring pilot viability.
+
+A new six-task x four-model x two-method pilot ORCHESTRATOR is described in
+docs/PILOT_PROTOCOL.md and configured in config/pilot_plan.json. CI is an
+offline contract only. No pilot episode or four-model success is implied
+by installing the runner; the first live Qwen pilot pair and other model
+compatibility checks are still pending. Running a fixed pilot also must
+not substitute for independently screening/fixing the 32 main task
+families.
+
+
 1. **PASS (local Windows, user-supplied console evidence, 2026-10-18):** live OpenApps + BrowserGym smoke executed a single Python `pass` action, returned a nonempty AXTree and official reward `0.0`, and printed `PASS: official BrowserGym observation, action, and reward`. The official evaluator also printed `Differences found` as expected for an intentionally unsolved task. This verifies the one-action harness path, **not** task solvability, evaluator accuracy, state reset or model/CDEA performance.
 2. **USER-SUPPLIED GATED LIVE EVIDENCE:** The user completed the one-command run_validation pipeline through a Qwen success with official reward 1.0; the pipeline only runs Qwen after negative/positive official evaluator controls pass. Independent control artifacts should still be retained for thesis audit.
 3. **PASS FOR QWEN DEVELOPMENT PAIR (2026-10-19, user-supplied console output):** Fresh isolated Baseline and Proposed Todo episodes completed with identical initial app state; pair artifact: `output/browsergym/matched_dev/9e6c49d077dc4475a5ddbb5f95b2fc9d/pair.json`. This does not validate all task families.

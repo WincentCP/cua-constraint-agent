@@ -108,10 +108,16 @@ def run_episode(root: Path, server, method: str, identity: dict,
     from browsergym.core.action.highlevel import HighLevelActionSet
     from open_apps.state import get_current_state
 
+    phase = getattr(args, "study_phase", "development")
+    if phase not in ("development", "pilot"):
+        raise ValueError("Unknown study phase")
     destination.mkdir(parents=True, exist_ok=False)
     path = destination / "episode.json"
     record = {
-        "mode": "paired_development_only", "task": args.task,
+        "mode": ("paired_pilot_exploratory" if phase == "pilot"
+                 else "paired_development_only"),
+        "study_phase": phase,
+        "pilot_id": getattr(args, "pilot_id", None), "task": args.task,
         "task_group": args.task_group, "method": method,
         "model": identity["name"], "model_digest": identity["digest"],
         "server": asdict(server), "upstream_commit": UPSTREAM_PIN,
@@ -387,8 +393,8 @@ def run_episode(root: Path, server, method: str, identity: dict,
         record["official_success"] = bool(reward >= 1.0)
         record["valid"] = end_reason not in ("agent_output_invalid", "unexpected_empty_todo")
         record["run_complete"] = True
-        record["status"] = ("development_success" if reward >= 1.0
-                            else "development_unsuccessful")
+        record["status"] = (phase + "_success" if reward >= 1.0
+                            else phase + "_unsuccessful")
         record["end_reason"] = end_reason
         record["final_ledger"] = ledger
         if not record["valid"]:
@@ -454,6 +460,7 @@ def run_pair(args, report: dict) -> None:
     report["order"] = pair_order(args.task, args.model_label, args.seed)
     report["planned_methods"] = list(METHODS)
     report["parameters"] = {
+        "study_phase": getattr(args, "study_phase", "development"),
         "task_group": args.task_group, "seed": args.seed, "max_steps": args.max_steps,
         "model_timeout": args.model_timeout, "temperature": TEMPERATURE,
         "bid_click_timeout_ms": DEV_CLICK_TIMEOUT_MS,
@@ -512,7 +519,11 @@ def run_pair(args, report: dict) -> None:
     else:
         reason = "policy_separation_observed"
     report["mechanism_status"] = reason
-    report["status"] = "paired_development_completed"
+    report["status"] = (
+        "paired_pilot_completed"
+        if getattr(args, "study_phase", "development") == "pilot"
+        else "paired_development_completed"
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

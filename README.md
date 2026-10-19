@@ -1,5 +1,34 @@
 # CUA Thesis: official BrowserGym + OpenApps
 
+## Exploratory pilot v1 runner (new; no pilot results yet)
+
+The study has now advanced from one-off matched DEVELOPMENT checks to
+a **24-pair / 48-episode** exploratory pilot runner. The implementation
+reuses the same matched Baseline/CDEA BrowserGym code and isolated initial
+states; no changes were made to information-probe ranking. The 6 official
+task candidates, 4 exact model labels, seed, budgets and all 24 fixed pair
+orders are in config/pilot_plan.json. The pilot task shortlist is exploratory,
+not evidence of method performance or a frozen set of 32 main tasks.
+
+See docs/PILOT_PROTOCOL.md for scientific validity, staged execution,
+immutable pilot manifest, digest locks and invalid handling.
+
+Minimal Windows commands (with the pinned OpenApps checkout and uv installed):
+
+    git pull --ff-only
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_pilot.ps1 -DryRun
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_pilot.ps1 -CheckModels -ModelLabel qwen3.5-9b
+
+The actual pilot requires an **explicit** -Run and stable -PilotId:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_pilot.ps1 -Run -PilotId pilot_v1 -ModelLabel qwen3.5-9b -MaxPairs 1 -StopOnInvalid
+
+Results, including blank/not-run and invalid outcomes, are written under
+output/pilot/pilot_v1/manifest.json, results.csv, summary.csv, and
+episodes/pair_001 ... pair_024. No actual pilot result is claimed until
+the Windows machine has executed these episodes.
+
+
 **Status: Qwen official matched Baseline/CDEA Todo development pair succeeded with equal fresh-state hashes (2026-10-19). CDEA evidence-acquisition mechanism still untested; not pilot/main results.**
 
 ## Review outcome (2026-10-19): developer-ready, NOT experiment-ready
