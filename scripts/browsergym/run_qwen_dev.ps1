@@ -8,7 +8,7 @@ try {
     $env:PYTHONUTF8 = '1'
     $env:PYTHONIOENCODING = 'utf-8'
     $env:USER = $env:USERNAME
-    & uv run python (Join-Path $repo 'scripts/browsergym/qwen_dev.py') --openapps-dir $openapps --fresh-state-confirmed
-    if ($LASTEXITCODE -ne 0) { throw "Qwen development run failed" }
+    & uv run python (Join-Path $repo 'scripts/browsergym/isolated_qwen.py') --openapps-dir $openapps
+    if ($LASTEXITCODE -ne 0) { throw "Isolated Qwen development run failed (exit $LASTEXITCODE)" }
 }
 finally { Pop-Location }

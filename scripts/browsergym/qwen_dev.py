@@ -126,7 +126,9 @@ def messages(goal: str, url: str, tree: str, bids: set[str], history: list[str])
         '{"action":"fill","bid":"a2","text":"Call Mom"}, '
         '{"action":"press","bid":"a2","key":"Enter"}, '
         '{"action":"back"}, {"action":"finish"}. '
-        "Use only observed element ids. You can navigate by clicking visible links. "
+        "Use only observed element ids. Navigate with click on visible links. "
+        "Use fill on a textbox to enter or replace text; clicking the textbox alone does not type. "
+        "Click a submit button only after the required nonempty text is visible in the textbox. "
         "Use finish only after the actual requested change was made. "
         "Do not invent controls or claim success without a UI action."
     )
