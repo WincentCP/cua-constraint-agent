@@ -1,13 +1,27 @@
 # CUA Thesis: official BrowserGym + OpenApps
 
-**Status: research infrastructure prototype. Not a completed CDEA experiment.**
+**Status: end-to-end Qwen development PoC succeeded; shared matched Baseline/CDEA runner now implemented. Not pilot/main results.**
+
+## Next: isolated matched development pair
+
+With Ollama active, from the thesis repository in PowerShell:
+
+    git pull --ff-only
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_matched_dev.ps1
+
+This launches Baseline and Proposed on separate fresh OpenApps databases
+and checks initial-state SHA parity. It uses an identical AXTree, JSON action
+interface, model tag/digest, model settings and step budget. CDEA reranks only
+real public information-acquisition alternatives. The simple Todo task may have
+no treatment opportunity. Read docs/MATCHED_DEVELOPMENT.md before interpreting
+results. Do NOT label development outcomes as pilot or confirmatory results.
 
 The former custom TypeScript runner (Baseline/CDEA), tests, documentation and Git history are preserved at branch **archive/custom-openapps-runner-20261018** (commit c2fae213b203dc4899d3ee05958c9a66bb3ba6a2).
 
 ## Architecture
 
 - **Models:** four planned local Ollama models in config/models.json.
-- **Treatment:** Baseline vs Constraint-Directed Evidence Acquisition (CDEA) is not yet connected to the new harness.
+- **Treatment:** Baseline vs CDEA is implemented in a new matched *development* runner, with a shared policy API; live treatment separation on eligible information tasks is pending.
 - **Harness:** official OpenApps task registration with BrowserGym environment and official evaluator. The smoke implementation exercises this foundation on a single non-mutating browser action.
 - **Benchmark:** OpenApps apps/tasks including OpenBanking and Todo. Task suitability and a final set of 32 tasks still require screening.
 
