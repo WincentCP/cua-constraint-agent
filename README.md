@@ -2,6 +2,33 @@
 
 **Status: Qwen official matched Baseline/CDEA Todo development pair succeeded with equal fresh-state hashes (2026-10-19). CDEA evidence-acquisition mechanism still untested; not pilot/main results.**
 
+## Review outcome (2026-10-19): developer-ready, NOT experiment-ready
+
+See docs/REPO_AUDIT_2026-10-19.md for verified evidence, limitations and
+remaining research blockers. The Windows + Ubuntu CI compiles and runs
+71 offline/simulated tests; it cannot verify live Ollama, Playwright or the
+OpenApps banking HTML.
+
+After git pull --ff-only, use these independent, less error-prone commands:
+
+Read the latest paired trace WITHOUT another browser/model run:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\inspect_pair.ps1
+
+Check one installed local model's shared JSON and BID actions WITHOUT OpenApps:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\check_model_compatibility.ps1
+
+The compatibility check uses three synthetic public-AXTree decisions, prints
+action-format validity, and separately warns if the model misses synthetic
+targets or never generates two eligible probes. It does **not** count as
+an official task or a successful CDEA comparison.
+
+Both arms now revalidate the installed model digest before each episode and
+receive the same public page route path (instead of different random local
+server ports). The paired report includes an explicit mechanism status plus
+token/AXTree diagnostic counters.
+
 ## Next: official OpenBanking information-acquisition development pair
 
 With the existing Qwen3.5 model and Ollama active, from PowerShell in this repo:

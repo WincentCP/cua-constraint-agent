@@ -45,3 +45,17 @@ shared public BrowserGym AXTree/extra-properties adapter now offers a
 bounded same-app-link repair and publicly labelled clickable generic rows.
 Its live effectiveness remains UNVERIFIED; do not treat this task as a
 valid mechanism comparison until real acquisition alternatives occur.
+
+## Repo reliability audit checkpoint (2026-10-19)
+
+Code-review improvements are documented in docs/REPO_AUDIT_2026-10-19.md.
+Offline CI now checks 71 contracts on both Windows and Ubuntu (not a live
+OpenApps/Ollama benchmark). Added: 3-case synthetic model action preflight,
+read-only one-command trace inspector, Ollama digest recheck before each arm,
+public page-path normalization to avoid random-port prompt differences,
+explicit mechanism status, AXTree/context telemetry, and shared untrusted
+UI-text warning. The next live banking pair after these changes is pending.
+
+Remaining scientific blockers: genuine information acquisition choice and
+CDEA action divergence, full model compatibility, independent task-family
+screening, and preregistered treatment/error-rate/statistical protocol.

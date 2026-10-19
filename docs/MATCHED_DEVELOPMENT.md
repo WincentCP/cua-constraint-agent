@@ -71,6 +71,48 @@ Shared development adapter changes (both Baseline and Proposed):
 This remains a controller development patch, not a policy performance
 result. It must be frozen *before* formal pilot/main runs.
 
+## New low-cost compatibility and artifact inspection gates
+
+After git pull --ff-only, before spending time on another live pair:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\inspect_pair.ps1
+
+This summarizes the most recent paired JSON report without starting Ollama,
+OpenApps or Chromium; no hand-written PowerShell variables or JSON parsing
+needed. To inspect a nonlatest pair use -PairPath followed by its pair.json
+file path.
+
+When evaluating a newly installed model (including the existing Qwen):
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\check_model_compatibility.ps1
+
+For another ALREADY installed configured model:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\check_model_compatibility.ps1 -ModelLabel ministral3-8b
+
+The synthetic preflight uses normal Ollama JSON action format, exactly the
+shared public goal/constraint/AXTree prompt API, the same 640-token output
+ceiling and bounded single-step correction policy. It tests fake navigation,
+a Todo textbox and a two-option information-acquisition opportunity. It
+validates the **action interface**, not actual app solvability. Target
+correctness and whether it created a probe menu are reported separately and
+are NOT reasons to cherry-pick better-outcome models.
+
+The paired runner also rechecks the model name/digest before EACH arm,
+strips the random localhost port from the **model text only**, records
+per-step URL before/after, AXTree lengths/truncation and available Ollama
+prompt token counters, and reports the explicit mechanism status:
+
+- no_probe_candidates: neither arm invoked a two-option probe decision;
+- no_comparable_probe_decisions: menus arose, but at different observations;
+- same_actions_at_comparable_probe_decisions: both picked the same probes;
+- policy_separation_observed: the two policies chose different probes at
+  equivalent public menu/observation; this is only evidence the policy was
+  exercised, NOT that CDEA improves task success.
+
+Even if both arms have official reward 1.0, zero comparable probe decisions
+is a RESEARCH BLOCKER for any claim about CDEA effectiveness.
+
 ## One-command Windows validation
 
 From the thesis repository, with Ollama running:
