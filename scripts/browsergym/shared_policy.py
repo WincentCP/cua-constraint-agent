@@ -34,7 +34,7 @@ COMMON_SYSTEM = (
     "If there are two or more meaningful UI controls to INSPECT information "
     "before acting, you may additionally include "
     '"decision":"probe","probes":[{"bid":"40","progress_score":4,'
-    '"forward_cost":1,"may_answer":["c1"]},...]'. '
+    '"forward_cost":1,"may_answer":["c1"]},...]. '
     "A probe is a click on an observed control to discover information, "
     "not a submit/write action. Score generic forward progress 0..5; "
     "may_answer must cite public constraint IDs; forward_cost 1..5. "
