@@ -80,6 +80,8 @@ class PairTests(unittest.TestCase):
                     record = {"valid": True, "status": "development_success",
                               "official_reward": 1.0, "official_success": True,
                               "steps": 4, "model_calls": 4, "probe_opportunities": 0,
+                              "invalid_model_actions": 0, "repair_requests": 0,
+                              "repaired_steps": 0,
                               "policy_overrides": 0, "end_reason": "official_success",
                               "initial_sha256": fake_hash, "trace": []}
                     (destination / "episode.json").write_text(json.dumps(record))
