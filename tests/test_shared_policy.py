@@ -63,6 +63,27 @@ class PolicyTests(unittest.TestCase):
         self.assertNotIn("expected_target_state", prompt)
         self.assertNotIn("method=Proposed", prompt)
 
+    def test_isolated_port_not_model_prompt_treatment_variable(self):
+        goal = "Find largest charge"
+        ledger = policy.initial_ledger(CONSTRAINTS)
+        m1 = policy.public_messages(
+            goal, "http://127.0.0.1:15101/openbanking/accounts/2?showing=0",
+            TREE, {"10", "20"}, [], CONSTRAINTS, ledger
+        )
+        m2 = policy.public_messages(
+            goal, "http://127.0.0.1:39101/openbanking/accounts/2?showing=0",
+            TREE, {"10", "20"}, [], CONSTRAINTS, ledger
+        )
+        self.assertEqual(m1, m2)
+        self.assertIn(
+            "Current OpenApps page path: /openbanking/accounts/2?showing=0",
+            m1[1]["content"],
+        )
+        self.assertNotIn("15101", m1[1]["content"])
+        self.assertNotIn("39101", m2[1]["content"])
+        self.assertEqual(policy.stable_public_page_path("http://127.0.0.1:5001"),
+                         "/")
+
     def test_policy_ranking_diverges_only_at_real_probe_opportunity(self):
         probes = [
             {"bid": "10", "progress_score": 5, "forward_cost": 4,

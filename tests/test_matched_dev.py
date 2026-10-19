@@ -64,6 +64,20 @@ class PairTests(unittest.TestCase):
             matched.model_identity(models[0]["label"], "http://127.0.0.1:11434",
                                    bad_client)
 
+    def test_model_digest_rechecked_and_fail_closed_on_change(self):
+        def good_client(url, timeout):
+            self.assertEqual(url, "http://127.0.0.1:11434/api/tags")
+            return {"models": [{
+                "name": "qwen3.5:9b-q4_K_M", "digest": "sha256:fixed"
+            }]}
+        self.assertIsNone(matched.verify_model_identity(identity(), good_client))
+        def drifted_client(url, timeout):
+            return {"models": [{
+                "name": "qwen3.5:9b-q4_K_M", "digest": "sha256:drifted"
+            }]}
+        with self.assertRaisesRegex(RuntimeError, "digest changed"):
+            matched.verify_model_identity(identity(), drifted_client)
+
     def test_parity_pass_and_fail_closed_if_mismatched(self):
         @contextmanager
         def server(root, directory):
@@ -80,7 +94,9 @@ class PairTests(unittest.TestCase):
                     fake_hash = "OTHER" if method == "Proposed" and second_mismatch else "START"
                     record = {"valid": True, "status": "development_success",
                               "official_reward": 1.0, "official_success": True,
-                              "steps": 4, "model_calls": 4, "probe_opportunities": 0,
+                              "steps": 4, "model_calls": 4,
+                              "max_prompt_eval_tokens": None,
+                              "probe_opportunities": 0,
                               "invalid_model_actions": 0, "repair_requests": 0,
                               "repaired_steps": 0,
                               "policy_overrides": 0, "end_reason": "official_success",
@@ -88,6 +104,7 @@ class PairTests(unittest.TestCase):
                     (destination / "episode.json").write_text(json.dumps(record))
                     return record
                 with (patch.object(matched, "model_identity", return_value=identity()),
+                      patch.object(matched, "verify_model_identity"),
                       patch.object(matched, "isolated_openapps", side_effect=server),
                       patch.object(matched, "run_episode", side_effect=run_fake),
                       patch.object(matched, "pair_order", return_value=["Baseline", "Proposed"])):
@@ -98,6 +115,7 @@ class PairTests(unittest.TestCase):
                         matched.run_pair(args(), report)
                         self.assertEqual(report["status"], "paired_development_completed")
                         self.assertTrue(report["initial_hash_parity"])
+                        self.assertEqual(report["mechanism_status"], "no_probe_candidates")
                         self.assertEqual(set(report["episodes"]), set(matched.METHODS))
                         self.assertEqual(report["policy_diagnostics"]["comparable_probe_decisions"], 0)
         perform()
@@ -344,6 +362,8 @@ class EpisodeTests(unittest.TestCase):
                 )
             saved = json.loads((destination / "episode.json").read_text())
         self.assertEqual(saved["model_prompt_policy"], "shared_identical_for_both_methods")
+        self.assertGreater(saved["model_input_characters"], 0)
+        self.assertIsNone(saved["max_prompt_eval_tokens"])
         if invalid_forever:
             self.assertFalse(saved["valid"])
             self.assertIsNone(saved["official_success"])
@@ -406,6 +426,8 @@ class EpisodeTests(unittest.TestCase):
             self.assertTrue(saved["trace"][0]["repair_used"])
             self.assertNotIn("raw_content", saved["trace"][0]["invalid_attempts"][0])
         self.assertTrue(saved["valid"], saved.get("error"))
+        self.assertEqual(len(saved["trace"][0]["model_telemetry"]), 1)
+        self.assertIn("axtree_truncated_for_model", saved["trace"][0])
         self.assertTrue(saved["official_success"])
         self.assertEqual(saved["official_reward"], 1.0)
         self.assertEqual(saved["steps"], 3)

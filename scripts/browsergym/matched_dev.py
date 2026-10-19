@@ -55,6 +55,20 @@ def model_identity(label: str, ollama_url: str, client=request_json) -> dict:
     return {"label": label, "name": name, "digest": digest, "ollama_url": origin}
 
 
+def verify_model_identity(identity: dict, client=request_json) -> None:
+    """Fail closed if the installed model changed between paired arms."""
+    installed = find_installed_model(
+        client(identity["ollama_url"] + "/api/tags", timeout=15),
+        identity["name"],
+    )
+    observed_digest = installed.get("digest")
+    if observed_digest != identity["digest"]:
+        raise RuntimeError(
+            "Ollama model digest changed during matched development; "
+            "pair cannot be interpreted as a same-checkpoint comparison"
+        )
+
+
 def build_env_args(root: Path, url: str, task_key: str, max_steps: int,
                    task_group: str = "all_tasks"):
     from hydra import compose, initialize_config_dir
@@ -104,6 +118,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
         "status": "invalid_episode", "valid": False, "run_complete": False,
         "official_reward": None, "official_success": None,
         "steps": 0, "model_calls": 0, "model_seconds": 0,
+        "model_input_characters": 0, "max_prompt_eval_tokens": None,
         "invalid_model_actions": 0, "repair_requests": 0, "repaired_steps": 0,
         "max_action_validation_retries_per_step": 1,
         "trace": [], "probe_opportunities": 0, "policy_overrides": 0,
@@ -159,6 +174,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
                 "options": {"temperature": TEMPERATURE, "num_predict": NUM_PREDICT},
             }
             invalid_attempts = []
+            model_telemetry = []
             attempted_error = None
             action = None
             decision = None
@@ -172,6 +188,10 @@ def run_episode(root: Path, server, method: str, identity: dict,
                     messages if attempt == 0
                     else messages + [repair_message(attempted_error, bids)]
                 )
+                request_characters = sum(
+                    len(message["content"]) for message in request["messages"]
+                )
+                record["model_input_characters"] += request_characters
                 started_model = time.monotonic()
                 reply = request_json(
                     identity["ollama_url"] + "/api/chat",
@@ -180,6 +200,17 @@ def run_episode(root: Path, server, method: str, identity: dict,
                 elapsed = round(time.monotonic() - started_model, 3)
                 model_seconds_for_step = round(model_seconds_for_step + elapsed, 3)
                 record["model_calls"] += 1
+                counts = reply.get("prompt_eval_count")
+                if isinstance(counts, int) and not isinstance(counts, bool):
+                    previous_max = record["max_prompt_eval_tokens"] or 0
+                    record["max_prompt_eval_tokens"] = max(previous_max, counts)
+                model_telemetry.append({
+                    "attempt": attempt + 1,
+                    "prompt_characters": request_characters,
+                    "prompt_eval_count": counts if isinstance(counts, int) else None,
+                    "output_eval_count": reply.get("eval_count"),
+                    "done_reason": str(reply.get("done_reason") or "")[:60],
+                })
                 record["model_seconds"] = round(
                     record["model_seconds"] + elapsed, 3
                 )
@@ -223,6 +254,10 @@ def run_episode(root: Path, server, method: str, identity: dict,
                     "model_seconds": model_seconds_for_step,
                     "agent_error": last["error"],
                     "invalid_attempts": invalid_attempts,
+                    "model_telemetry": model_telemetry,
+                    "url_before": str(obs.get("url", "")),
+                    "axtree_characters": len(tree),
+                    "axtree_truncated_for_model": len(tree) > 16000,
                     "observation_sha256": sha256(tree.encode()).hexdigest(),
                 })
                 end_reason = "agent_output_invalid"
@@ -233,6 +268,9 @@ def run_episode(root: Path, server, method: str, identity: dict,
                 "step": step + 1, "observation_sha256": sha256(tree.encode()).hexdigest(),
                 "action": action, "model_seconds": model_seconds_for_step,
                 "url_before": str(obs.get("url", "")),
+                "axtree_characters": len(tree),
+                "axtree_truncated_for_model": len(tree) > 16000,
+                "model_telemetry": model_telemetry,
                 "public_clickable_hints": clickable_hints,
                 "invalid_attempts": invalid_attempts,
                 "repair_used": bool(invalid_attempts), **decision,
@@ -365,6 +403,7 @@ def run_pair(args, report: dict) -> None:
     directories = set()
     base = Path(report["artifact_dir"])
     for method in report["order"]:
+        verify_model_identity(identity)
         with isolated_openapps(root, base / method / "server") as server:
             record = run_episode(
                 root, server, method, identity, args,
@@ -376,6 +415,7 @@ def run_pair(args, report: dict) -> None:
                 "official_success": record["official_success"],
                 "initial_sha256": record.get("initial_sha256"),
                 "steps": record["steps"], "model_calls": record["model_calls"],
+                "max_prompt_eval_tokens": record["max_prompt_eval_tokens"],
                 "invalid_model_actions": record["invalid_model_actions"],
                 "repair_requests": record["repair_requests"],
                 "repaired_steps": record["repaired_steps"],
@@ -400,6 +440,16 @@ def run_pair(args, report: dict) -> None:
     full = {method: episode_from_file(method) for method in METHODS}
     report["initial_hash_parity"] = True
     report["policy_diagnostics"] = comparable_decisions(full)
+    comparison = report["policy_diagnostics"]
+    if comparison["comparable_probe_decisions"] == 0:
+        reason = ("no_probe_candidates" if not any(
+            record["probe_opportunities"] for record in report["episodes"].values()
+        ) else "no_comparable_probe_decisions")
+    elif comparison["policy_action_divergences"] == 0:
+        reason = "same_actions_at_comparable_probe_decisions"
+    else:
+        reason = "policy_separation_observed"
+    report["mechanism_status"] = reason
     report["status"] = "paired_development_completed"
 
 
@@ -438,7 +488,17 @@ def main(argv: list[str] | None = None) -> int:
         print("PASS: matched development episodes finished with isolated equal initial states")
         print("Official success:", {k: report["episodes"][k]["official_success"]
                                     for k in METHODS})
+        for method in METHODS:
+            episode = report["episodes"][method]
+            print(f"  {method}: end_reason={episode.get('end_reason')} "
+                  f"steps={episode['steps']} model_calls={episode['model_calls']} "
+                  f"probe_opportunities={episode['probe_opportunities']} "
+                  f"repairs={episode['repair_requests']}")
         print("Policy diagnostics:", report["policy_diagnostics"])
+        print("Mechanism status:", report["mechanism_status"])
+        if report["mechanism_status"] != "policy_separation_observed":
+            print("RESEARCH GATE: CDEA intervention has not demonstrated "
+                  "a different decision on a comparable public probe menu.")
         print("NOT pilot/main results. Inspect probe opportunities and action divergence.")
         result = 0
     finally:
