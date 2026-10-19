@@ -18,6 +18,7 @@ import time
 from urllib.request import urlopen
 from uuid import uuid4
 
+from action_timeout import DEV_CLICK_TIMEOUT_MS, configure_bounded_click_timeout
 from evaluator_controls import require_state
 from public_ui import clickable_generic_hints, redundant_current_app_link
 from isolated_openapps import isolated_openapps
@@ -115,6 +116,9 @@ def run_episode(root: Path, server, method: str, identity: dict,
         "server": asdict(server), "upstream_commit": UPSTREAM_PIN,
         "seed": args.seed, "max_steps": args.max_steps, "num_predict": NUM_PREDICT,
         "temperature": TEMPERATURE, "think": False, "action_subsets": list(ACTION_SUBSETS),
+        "browsergym_core_version": None,
+        "bid_click_timeout_ms": DEV_CLICK_TIMEOUT_MS,
+        "click_force_retry": False,
         "status": "invalid_episode", "valid": False, "run_complete": False,
         "official_reward": None, "official_success": None,
         "steps": 0, "model_calls": 0, "model_seconds": 0,
@@ -137,7 +141,9 @@ def run_episode(root: Path, server, method: str, identity: dict,
                                          args.max_steps, args.task_group)
         actions = HighLevelActionSet(
             subsets=list(ACTION_SUBSETS), strict=True, multiaction=False,
+            retry_with_force=False,
         )
+        record["browsergym_core_version"] = configure_bounded_click_timeout(actions)
         experiment_dir = destination / "browsergym"
         experiment_dir.mkdir(parents=True, exist_ok=True)
         env = env_args.make_env(
@@ -309,7 +315,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
             # before accepting it from the bounded validation/repair loop.
             history.append(action)
             t0 = time.monotonic()
-            obs, reward, terminated, truncated, _ = env.step(action)
+            obs, reward, terminated, truncated, step_info = env.step(action)
             record["steps"] += 1
             entry["url_after"] = str(obs.get("url", ""))
             entry["url_changed"] = entry["url_after"] != entry["url_before"]
@@ -321,7 +327,23 @@ def run_episode(root: Path, server, method: str, identity: dict,
             entry["official_reward"] = float(reward)
             entry["action_seconds"] = round(time.monotonic() - t0, 3)
             if obs.get("last_action_error"):
-                entry["browser_error"] = str(obs["last_action_error"])[:400]
+                raw_error = str(obs["last_action_error"])
+                entry["browser_error"] = raw_error[:1600]
+                is_timeout = ("TimeoutError:" in raw_error
+                              and re.search(r"Timeout [0-9]+ms exceeded", raw_error))
+                failure = "browser_action_timeout" if is_timeout else "browser_action_error"
+                entry["browser_error_category"] = failure
+                timeout_match = re.search(r"Timeout ([0-9]+)ms exceeded", raw_error)
+                if timeout_match:
+                    entry["browser_timeout_ms"] = int(timeout_match.group(1))
+                if isinstance(step_info, dict) and "action_exec_timeout" in step_info:
+                    entry["browsergym_action_exec_timeout_s"] = step_info["action_exec_timeout"]
+                record["end_reason"] = failure
+                record["failure_stage"] = "browsergym_action_execution"
+                record["failed_action"] = action
+                record["failed_action_target"] = entry.get("target")
+                # Never automatically retry a click after an ambiguous timeout:
+                # the target application may have already processed it.
                 raise RuntimeError("BrowserGym action error: " + entry["browser_error"])
             current_state = get_current_state(server.url)
             delta = summarize_todo_delta(previous_state, current_state)
@@ -414,6 +436,8 @@ def run_pair(args, report: dict) -> None:
     report["parameters"] = {
         "task_group": args.task_group, "seed": args.seed, "max_steps": args.max_steps,
         "model_timeout": args.model_timeout, "temperature": TEMPERATURE,
+        "bid_click_timeout_ms": DEV_CLICK_TIMEOUT_MS,
+        "click_force_retry": False,
         "num_predict": NUM_PREDICT, "think": False,
         "action_subsets": list(ACTION_SUBSETS),
     }

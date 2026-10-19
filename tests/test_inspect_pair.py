@@ -84,6 +84,33 @@ class InspectPairTests(unittest.TestCase):
             self.assertIn("VALIDITY GATE", out)
             self.assertIn("RESEARCH GATE", out)
 
+    def test_timeout_invalid_episode_is_distinct_from_task_failure(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = self.make_pair(Path(folder), complete=False, traces=True)
+            ep = path.parent / "Baseline" / "episode" / "episode.json"
+            rec = json.loads(ep.read_text(encoding="utf-8"))
+            rec.update({
+                "status": "invalid_episode", "official_success": None,
+                "official_reward": None, "failure_stage": "browsergym_action_execution",
+                "end_reason": "browser_action_timeout", "failed_action": 'click("20")',
+                "bid_click_timeout_ms": 3000, "click_force_retry": False,
+                "browsergym_core_version": "0.13.4",
+            })
+            rec["trace"][-1]["browser_error"] = (
+                "TimeoutError: Locator.click: Timeout 3000ms exceeded."
+            )
+            rec["trace"][-1]["browser_error_category"] = "browser_action_timeout"
+            rec["trace"][-1]["browser_timeout_ms"] = 3000
+            ep.write_text(json.dumps(rec), encoding="utf-8")
+            out = inspector.describe_pair(path)
+            self.assertIn("Failure stage: browsergym_action_execution", out)
+            self.assertIn("failed_action=click", out)
+            self.assertIn("category=browser_action_timeout", out)
+            self.assertIn("timeout_ms=3000", out)
+            self.assertIn("forced retry=False", out)
+            self.assertIn("Click timeout: 3000 ms", out)
+            self.assertIn("VALIDITY GATE", out)
+
     def test_latest_selects_only_pair_reports(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

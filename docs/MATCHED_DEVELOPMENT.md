@@ -248,3 +248,41 @@ or:
 
 This is a read-only diagnostic command. It does not launch any inference
 or affect previous experiment data.
+
+## OpenBanking BrowserGym click timeout checkpoint (2026-10-19)
+
+User-reported development pair `eb6e44ecfb9e4832ba4e5a8c825c87ee`: the
+Baseline produced valid model actions, executed three BrowserGym steps,
+then `Locator.click: Timeout 500ms exceeded` on `Open an account` (BID 20).
+The run was marked invalid and Proposed did not run. The element was
+found, visible and stable; the click was not completed within the stock
+action's deadline. Task success and information-probe divergence are unknown.
+
+BrowserGym core v0.13.4 hardcodes 500 ms inside the stock BID `click`
+function itself; changing BrowserEnv timeout does NOT override it.
+The matched DEV runner now applies a narrow, fail-closed 3,000-ms
+click timeout to the normal BrowserGym HighLevelActionSet generated
+function, without touching the official environment or reward evaluator.
+The model still uses the identical official parser and action vocabulary.
+Both methods use the same bounded timeout. No forced or duplicate clicks
+are attempted after a timeout, since the first click might have had effects.
+An unexpected browsergym-core version or changed stock click function
+source causes a hard error rather than an unchecked patch.
+
+The episode contains `browsergym_core_version`, `bid_click_timeout_ms`,
+`click_force_retry=false`; the pair records the same shared setting.
+If a click still fails, the invalid episode includes `failure_stage`,
+`end_reason=browser_action_timeout`, `failed_action`, and trace-level
+`browser_timeout_ms`. This is an error classification, not a model score.
+
+Existing failed artifacts are unchanged. Inspect an existing run:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\inspect_pair.ps1 -PairPath '.\output\browsergym\matched_dev\eb6e44ecfb9e4832ba4e5a8c825c87ee\pair.json'
+
+After git pull, rerun ONE new development pair only if needed:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_matched_dev.ps1 -TaskGroup openbanking -Task add_todo_to_review_largest_card_charge -MaxSteps 20
+
+Even if no click times out, evaluate the model's action choices and
+whether CDEA generated two comparable evidence probes. Do not count a
+click timeout as an official task failure in main results.

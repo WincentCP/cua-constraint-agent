@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parents[1] / "scripts/browsergym"
 sys.path.insert(0, str(HERE))
+import action_timeout
 spec = importlib.util.spec_from_file_location("matched_dev", HERE / "matched_dev.py")
 matched = importlib.util.module_from_spec(spec)
 sys.modules["matched_dev"] = matched
@@ -211,6 +212,7 @@ class FakeBrowserGym:
                                           reward=self.reward)
         self.commands = []
         self.closed = False
+        self.timeout_on_add = False
 
     def reward(self):
         return 1.0 if any(t["title"] == "Call Mom" for t in self.state["todo"]) else 0.0
@@ -234,6 +236,15 @@ class FakeBrowserGym:
 
     def step(self, action):
         self.commands.append(action)
+        if self.timeout_on_add and action == 'click("22")':
+            # This is an attempted browser action, but not an official
+            # successful application interaction. Never retry it blindly.
+            observation = self.observation()
+            observation["last_action_error"] = (
+                "TimeoutError: Locator.click: Timeout 3000ms exceeded.\n"
+                "Call log: waiting for get_by_test_id('22')"
+            )
+            return observation, 0.0, False, False, {"action_exec_timeout": 3.0}
         if action == 'click("40")':
             self.url += "/todo"
         elif action == 'fill("21", "Call Mom")':
@@ -296,14 +307,19 @@ class EpisodeTests(unittest.TestCase):
     def run_fake_episode(self, method, *, first_invalid=False,
                          invalid_forever=False, bank_loop=False,
                          early_submit=False, guard_forever=False,
-                         dock_forever=False):
+                         dock_forever=False, browser_timeout=False):
         fake = FakeBankBrowserGym() if bank_loop or dock_forever else FakeBrowserGym()
+        fake.timeout_on_add = browser_timeout
         server = Server(url=fake.url, database_dir="/fake/db")
 
         class EnvArgs:
             def make_env(self, action_mapping, exp_dir):
                 self.mapping = action_mapping
                 self.exp_dir = exp_dir
+                mapped = action_mapping('click("40")')
+                self.assert_timeout_adapter = "timeout=3000" in mapped
+                if not self.assert_timeout_adapter:
+                    raise AssertionError("Expected validated shared bounded click mapping")
                 return fake
 
         responses = [json.dumps({"action": "click", "bid": "40"}),
@@ -357,9 +373,23 @@ class EpisodeTests(unittest.TestCase):
         # hashes, trace, and independent evaluator assertions remain real.
         highlevel = types.ModuleType("browsergym.core.action.highlevel")
         class ActionSet:
-            def __init__(self, subsets, strict, multiaction):
-                self.to_python_code = object()
+            def __init__(self, subsets, strict, multiaction, retry_with_force=False):
                 self.subsets = subsets
+                self.python_includes = (
+                    "retry_with_force=False\n"
+                    "def fill(bid, value):\n"
+                    "    elem.fill(value, timeout=500)\n\n"
+                    "def click(bid):\n"
+                    "    def do(force):\n"
+                    "        elem.click(button=button, modifiers=modifiers, "
+                    "force=force, timeout=500)\n"
+                    "    call_fun(do, retry_with_force)\n\n"
+                    "def dblclick(bid):\n"
+                    "    elem.click(button=button, modifiers=modifiers, "
+                    "force=False, timeout=500)\n"
+                )
+            def to_python_code(self, action):
+                return self.python_includes + "\n" + action
         highlevel.HighLevelActionSet = ActionSet
         packages = {}
         for name in ("browsergym", "browsergym.core", "browsergym.core.action",
@@ -377,7 +407,9 @@ class EpisodeTests(unittest.TestCase):
                   patch.object(matched, "build_env_args", return_value=(EnvArgs(), None)),
                   patch.object(matched, "require_state"),
                   patch.object(matched, "extract_axtree_text", side_effect=tree),
-                  patch.object(matched, "request_json", side_effect=fake_model_request)):
+                  patch.object(matched, "request_json", side_effect=fake_model_request),
+                  patch.object(action_timeout, "distribution_version",
+                               return_value="0.13.4")):
                 result = matched.run_episode(
                     Path(folder), server, method, identity(), args(), destination, None,
                 )
@@ -385,6 +417,28 @@ class EpisodeTests(unittest.TestCase):
         self.assertEqual(saved["model_prompt_policy"], "shared_identical_for_both_methods")
         self.assertGreater(saved["model_input_characters"], 0)
         self.assertIsNone(saved["max_prompt_eval_tokens"])
+        self.assertEqual(saved["browsergym_core_version"], "0.13.4")
+        self.assertEqual(saved["bid_click_timeout_ms"], 3000)
+        self.assertFalse(saved["click_force_retry"])
+        if browser_timeout:
+            self.assertFalse(saved["valid"])
+            self.assertIsNone(saved["official_success"])
+            self.assertEqual(saved["status"], "invalid_episode")
+            self.assertFalse(saved["run_complete"])
+            self.assertEqual(saved["end_reason"], "browser_action_timeout")
+            self.assertEqual(saved["failure_stage"], "browsergym_action_execution")
+            self.assertEqual(saved["failed_action"], 'click("22")')
+            self.assertEqual(saved["trace"][-1]["browser_error_category"],
+                             "browser_action_timeout")
+            self.assertEqual(saved["trace"][-1]["browser_timeout_ms"], 3000)
+            self.assertEqual(saved["trace"][-1]["browsergym_action_exec_timeout_s"], 3.0)
+            self.assertEqual(saved["model_calls"], 3)
+            self.assertEqual(saved["steps"], 3)
+            self.assertEqual(fake.commands,
+                             ['click("40")', 'fill("21", "Call Mom")',
+                              'click("22")'])
+            self.assertTrue(fake.closed)
+            return result
         if invalid_forever:
             self.assertFalse(saved["valid"])
             self.assertIsNone(saved["official_success"])
@@ -546,6 +600,11 @@ class EpisodeTests(unittest.TestCase):
         for method in matched.METHODS:
             with self.subTest(method=method):
                 self.run_fake_episode(method, dock_forever=True)
+
+    def test_action_timeout_is_invalid_without_automatic_duplicate_click(self):
+        for method in matched.METHODS:
+            with self.subTest(method=method):
+                self.run_fake_episode(method, browser_timeout=True)
 
     def test_second_invalid_bid_fails_closed_without_browser_actions(self):
         for method in matched.METHODS:

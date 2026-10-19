@@ -92,6 +92,18 @@ def describe_pair(path: Path) -> str:
         )
         if rec.get("error"):
             lines.append("Episode error: " + _text(rec["error"], 350))
+        if rec.get("failure_stage"):
+            lines.append(
+                "Failure stage: " + _text(rec["failure_stage"])
+                + " | end_reason=" + _text(rec.get("end_reason"))
+                + " | failed_action=" + _text(rec.get("failed_action"))
+            )
+        if rec.get("bid_click_timeout_ms"):
+            lines.append(
+                "Click timeout: " + _text(rec["bid_click_timeout_ms"]) + " ms"
+                + " | BrowserGym core=" + _text(rec.get("browsergym_core_version"))
+                + " | forced retry=" + _text(rec.get("click_force_retry"))
+            )
         trace = rec.get("trace") or []
         if not isinstance(trace, list):
             lines.append("Malformed trace array.")
@@ -124,7 +136,11 @@ def describe_pair(path: Path) -> str:
             if item.get("agent_error"):
                 lines.append("    MODEL ACTION ERROR: " + _text(item["agent_error"]))
             if item.get("browser_error"):
-                lines.append("    BROWSER ERROR: " + _text(item["browser_error"]))
+                lines.append(
+                    "    BROWSER ERROR: " + _text(item["browser_error"])
+                    + " | category=" + _text(item.get("browser_error_category"))
+                    + " | timeout_ms=" + _text(item.get("browser_timeout_ms"))
+                )
             if item.get("public_clickable_hints"):
                 sample = item["public_clickable_hints"][:5]
                 lines.append(

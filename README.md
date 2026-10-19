@@ -50,6 +50,27 @@ contract tests simulate both correction and fail-closed behavior.
 This is a DEVELOPMENT controller change, not a formal result. It must be
 frozen and independently validated before pilot/main.
 
+## BrowserGym click timeout development fix (2026-10-19)
+
+The user-reported OpenBanking DEVELOPMENT pair `eb6e44ecfb9e4832ba4e5a8c825c87ee`
+ended as an invalid episode when a BrowserGym click on the visible
+`Open an account` button (BID 20) timed out at 500 milliseconds.
+The other arm did not run, so this is NOT evidence for/against CDEA.
+
+The pinned browsergym-core 0.13.4 `click` function explicitly uses
+`elem.click(..., timeout=500)` regardless of BrowserEnv default timeout.
+The paired DEVELOPMENT runner now uses the official BrowserGym action
+parser/environment/evaluator, but applies a narrowly scoped, audited
+3,000-ms timeout to the generated `click` action for BOTH methods.
+It never retries or forces a timed-out click because that may duplicate
+a write action already applied by the app. Other BID actions are untouched.
+The runner records the version, timeout and error category in artifacts
+and refuses an unexpected BrowserGym version/source change.
+
+This is a development controller adaptation (not an official upstream
+default). It must be documented and frozen BEFORE pilot/main; its live
+effect on OpenBanking has not yet been independently verified.
+
 ## Next: official OpenBanking information-acquisition development pair
 
 With the existing Qwen3.5 model and Ollama active, from PowerShell in this repo:
