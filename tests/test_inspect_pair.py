@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 HERE = Path(__file__).resolve().parents[1] / "scripts/browsergym"
 sys.path.insert(0, str(HERE))
@@ -99,6 +100,34 @@ class InspectPairTests(unittest.TestCase):
                 inspector.resolve_pair(str(root / "does-not-exist"))
             with self.assertRaises(FileNotFoundError):
                 inspector.latest_pair(root / "empty")
+
+    def test_repo_relative_pair_path_from_another_working_directory(self):
+        """Regression for PowerShell Push-Location to OpenApps."""
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            expected = self.make_pair(
+                repo / "output" / "browsergym" / "matched_dev",
+                complete=True, traces=True,
+            )
+            elsewhere = repo / "OpenApps"
+            elsewhere.mkdir()
+            before = Path.cwd()
+            try:
+                os.chdir(elsewhere)
+                with patch.object(inspector, "ROOT", repo):
+                    path = "output/browsergym/matched_dev/sample/pair.json"
+                    self.assertEqual(inspector.resolve_pair(path), expected)
+                    self.assertEqual(
+                        inspector.resolve_pair("output/browsergym/matched_dev/sample"),
+                        expected,
+                    )
+                    buf = io.StringIO()
+                    with redirect_stdout(buf):
+                        self.assertEqual(inspector.main(["--pair", path]), 0)
+                    self.assertIn("Baseline", buf.getvalue())
+                    self.assertIn("Proposed", buf.getvalue())
+            finally:
+                os.chdir(before)
 
     def test_command_line_prints_without_ollama(self):
         with tempfile.TemporaryDirectory() as folder:

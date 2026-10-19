@@ -31,6 +31,12 @@ def resolve_pair(path: str | None, root: Path = DEFAULT_OUTPUT) -> Path:
     if path is None:
         return latest_pair(root)
     result = Path(path).expanduser()
+    if not result.is_absolute():
+        # Prefer an explicit path relative to the caller if it exists. If a
+        # caller has changed into the OpenApps checkout, support the common
+        # thesis-repo-relative output/browsergym/... form as well.
+        from_cwd = Path.cwd() / result
+        result = from_cwd if from_cwd.exists() else ROOT / result
     if result.is_dir():
         result = result / "pair.json"
     if not result.is_file():

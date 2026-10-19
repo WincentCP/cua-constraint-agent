@@ -227,3 +227,24 @@ model tag and digest before starting BrowserGym.
 
 Reference: docs/RESEARCH_GATES.md and the archived design at
 archive/custom-openapps-runner-20261018/docs/EXPERIMENT.md.
+
+## Fix for relative -PairPath in inspect_pair.ps1
+
+Earlier versions changed directory to OpenApps before passing a relative
+`-PairPath` to Python, so an existing `output/browsergym/matched_dev/<id>/pair.json`
+under the thesis repo was incorrectly reported as missing. The PowerShell
+wrapper now resolves relative paths against the thesis repository **before**
+changing directory. The underlying standard-library-only inspector also
+recognizes repo-relative paths from another working directory. Absolute
+paths and the default no-argument `--latest` behavior remain unchanged.
+
+Use either:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\inspect_pair.ps1
+
+or:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\inspect_pair.ps1 -PairPath '.\output\browsergym\matched_dev\cab5013d6a17421b83ca93f2df478295\pair.json'
+
+This is a read-only diagnostic command. It does not launch any inference
+or affect previous experiment data.
