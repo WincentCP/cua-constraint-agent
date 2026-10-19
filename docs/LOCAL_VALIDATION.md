@@ -31,3 +31,7 @@ Todo episodes, not all tasks or the final study.
 On any failure, inspect the corresponding report and the isolated
 \`server/server.log\`. Do not proceed to the pilot until these pass and matched
 Baseline/CDEA methods are implemented and evaluated.
+
+Ownership validation parses actual `database_path` fields from OpenApps,
+normalizes Windows path separators and escaped JSON, and rejects unrelated
+servers or mixed database directories. CI includes Windows path regressions.

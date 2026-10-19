@@ -1,5 +1,6 @@
 """Offline contracts for live evaluator/isolation gates (live Windows test separate)."""
 import importlib.util
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -47,6 +48,51 @@ class TestIsolation(unittest.TestCase):
             )):
                 with self.assertRaisesRegex(RuntimeError, "ownership mismatch"):
                     isolation.require_ownership("http://127.0.0.1:15001", db)
+
+    def test_owner_probe_accepts_json_escaped_paths(self):
+        with tempfile.TemporaryDirectory() as folder:
+            db = Path(folder) / "databases"
+            body = json.dumps({
+                "todo": {"database_path": str(db / "todo.db")},
+                "calendar": {"database_path": str(db / "calendar.db")},
+            })
+            with patch.object(isolation, "urlopen", return_value=FakeResponse(body)):
+                self.assertTrue(isolation.require_ownership("http://127.0.0.1:15001", db))
+
+    def test_windows_paths_in_json_repr_and_plain_text(self):
+        win = r"C:\Users\Administrator\cua-constraint-agent\output\browsergym\controls\abc\server\databases"
+        todo = win + r"\todo.db"
+        calendar = win + r"\calendar.db"
+        entries = {"todo": {"database_path": todo}, "calendar": {"database_path": calendar}}
+        for body in (json.dumps(entries), str(entries), "database_path: " + todo):
+            matched, observed = isolation.database_paths_match_episode(
+                body, [win.upper().replace("\\", "/")]
+            )
+            self.assertTrue(matched, body)
+            self.assertTrue(observed)
+
+    def test_foreign_database_and_prefix_collision_rejected(self):
+        d = r"C:\Users\Administrator\research\episode\databases"
+        bad_cases = [
+            {"todo": {"database_path": d + r"-other\todo.db"}},
+            {"todo": {"database_path": d + r"\todo.db"},
+             "calendar": {"database_path": r"C:\other\calendar.db"}},
+            {"todo": {"database_path": r"C:\other\todo.db"},
+             "goal": "path mentioned: " + d + r"\todo.db"},
+            {"goal": d + r"\todo.db"},
+        ]
+        for example in bad_cases:
+            self.assertFalse(
+                isolation.database_paths_match_episode(json.dumps(example), [d])[0],
+                example,
+            )
+
+    def test_missing_database_metadata_fails_closed(self):
+        self.assertFalse(
+            isolation.database_paths_match_episode(
+                json.dumps({"todo": [{"title": "Call Mom"}]}), [r"C:\episode\db"]
+            )[0]
+        )
 
     def test_unique_database_and_fail_closed_reuse(self):
         with tempfile.TemporaryDirectory() as folder:

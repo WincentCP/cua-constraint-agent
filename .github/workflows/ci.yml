@@ -13,6 +13,6 @@ jobs:
         with:
           python-version: '3.11'
       - name: Compile smoke
-        run: python -m py_compile scripts/browsergym/smoke.py
+        run: python -m compileall -q scripts/browsergym tests
       - name: Verify contract
         run: python -m unittest discover -s tests -v

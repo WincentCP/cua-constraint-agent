@@ -7,8 +7,12 @@ unrelated process on a reused port. Only the child we started may be stopped.
 from __future__ import annotations
 
 from contextlib import contextmanager
+import ast
+from html import unescape
+import json
 from dataclasses import dataclass
 import os
+import re
 from pathlib import Path
 import secrets
 import signal
@@ -64,6 +68,63 @@ def pick_job_id() -> int:
     raise RuntimeError("Could not reserve an OpenApps job port")
 
 
+
+def _normalized_database_path(value: str) -> str:
+    """Compare Windows and Unix paths independently of JSON escaping."""
+    value = unescape(str(value)).strip().strip("\"'")
+    value = value.replace("\\\\", "/").replace("\\", "/")
+    return re.sub(r"/+", "/", value).casefold().rstrip("/")
+
+
+def _observed_database_paths(body: str) -> list[str]:
+    """Extract explicit database_path fields; never trust unrelated body text."""
+    clean = unescape(body)
+    for decoder in (json.loads, ast.literal_eval):
+        try:
+            payload = decoder(clean)
+        except (ValueError, SyntaxError, TypeError):
+            continue
+        paths = []
+
+        def visit(node):
+            if isinstance(node, dict):
+                for key, value in node.items():
+                    if key == "database_path" and isinstance(value, str):
+                        paths.append(value)
+                    else:
+                        visit(value)
+            elif isinstance(node, (list, tuple)):
+                for item in node:
+                    visit(item)
+
+        visit(payload)
+        if paths:
+            return paths
+    # Some FastHTML versions return a plain representation of DictConfig.
+    # Restrict fallback matching to database_path fields; do not match a path
+    # embedded in a task description or another unrelated response field.
+    pattern = r"""["']?database_path["']?\s*:\s*(?:["']([^"']+)["']|([^\r\n,}<>]+))"""
+    paths = []
+    for match in re.finditer(pattern, clean, flags=re.IGNORECASE):
+        value = (match.group(1) or match.group(2)).strip()
+        if value:
+            paths.append(value)
+    return paths
+
+
+def database_paths_match_episode(body: str, directories: list[str]) -> tuple[bool, list[str]]:
+    """Require the Todo DB and every exposed DB to belong to this episode."""
+    observed = _observed_database_paths(body)
+    normalized = [_normalized_database_path(path) for path in observed]
+    for directory in directories:
+        prefix = _normalized_database_path(directory) + "/"
+        if prefix + "todo.db" in normalized and all(
+            path.startswith(prefix) for path in normalized
+        ):
+            return True, observed
+    return False, observed
+
+
 def require_ownership(url: str, database_dir: Path, timeout: float = 2.0) -> bool:
     """Return False while booting; raise if a different server owns the port."""
     try:
@@ -73,10 +134,20 @@ def require_ownership(url: str, database_dir: Path, timeout: float = 2.0) -> boo
             body = reply.read().decode("utf-8", errors="replace")
     except (URLError, HTTPError, TimeoutError, ConnectionError, OSError):
         return False
-    expected = database_dir.resolve().as_posix()
-    if expected not in body and str(database_dir.resolve()) not in body:
+    # FastHTML may serialize app.config as JSON, Python repr or plain text.
+    # On Windows, escaped backslashes, forward slashes and case can differ.
+    # Keep both original and resolved paths: Path.resolve() may expand an
+    # eight-dot-three Windows TEMP alias even though the server used the
+    # original spelling from its command-line override.
+    candidates = [str(database_dir), database_dir.as_posix(),
+                  str(database_dir.resolve())]
+    matches, observed = database_paths_match_episode(body, candidates)
+    if not matches:
+        shown = ", ".join(_normalized_database_path(path) for path in observed[:3])
         raise RuntimeError(
-            "OpenApps port ownership mismatch: responding server uses another database_dir"
+            "OpenApps port ownership mismatch: isolated Todo/app databases "
+            "not confirmed. Expected under " + _normalized_database_path(str(database_dir))
+            + "; observed_database_paths=[" + (shown or "none") + "]"
         )
     return True
 
