@@ -9,6 +9,13 @@ With the existing Qwen3.5 model and Ollama active, from PowerShell in this repo:
     git pull --ff-only
     powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_matched_dev.ps1 -TaskGroup openbanking -Task add_todo_to_review_largest_card_charge -MaxSteps 20
 
+The previous Qwen OpenBanking pair ended with reward=0 for both arms and
+no information-probe divergence: both repeatedly chose the OpenBanking
+launcher/dock link rather than a bank row. The shared controller now guards
+against current-app root reloads and exposes labelled nonsemantic clickable
+rows *only when BrowserGym marks them in its public AXTree/metadata*, with
+URL-before/after diagnostics. This patch still needs live validation.
+
 OpenBanking tasks are in the upstream **standalone** `config/tasks/openbanking.yaml`
 group, not the default canonical `all_tasks`. Both methods get their own
 isolated OpenApps database, common public BrowserGym AXTree/action budgets, and

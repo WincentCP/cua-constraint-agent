@@ -42,6 +42,10 @@ COMMON_SYSTEM = (
     "Probe bids must be observed controls that reveal information, NEVER "
     "write, submit, send, delete, transfer or purchase controls. "
     "For direct navigation or writing, omit probes and choose the action. "
+    "If CURRENT URL is already the app root, do NOT click that same app's "
+    "dock/launcher icon again. Instead inspect controls within the app. "
+    "A labelled generic clickable row can be a valid click target when "
+    "its ID is in the current BrowserGym allowlist. "
     "Optional evidence has constraint, state (SATISFIED or REFUTED), and "
     "quote (an exact substring of the CURRENT accessibility tree). "
     "Never fabricate evidence or use any private evaluator state."
@@ -117,7 +121,8 @@ def initial_ledger(constraints: list[dict]) -> dict:
 
 
 def public_messages(goal: str, url: str, tree: str, bids: set[str],
-                    history: list[str], constraints: list[dict], ledger: dict) -> list[dict]:
+                    history: list[str], constraints: list[dict], ledger: dict,
+                    clickable_hints: list[dict] | None = None) -> list[dict]:
     """Identical for Baseline and Proposed; no policy name in model messages."""
     visible_ledger = {
         key: {"state": ledger[key]["state"], "quote": ledger[key]["quote"]}
@@ -132,6 +137,12 @@ def public_messages(goal: str, url: str, tree: str, bids: set[str],
         + json.dumps(visible_ledger, ensure_ascii=False)
         + "\nPrevious actions: " + json.dumps(history[-6:])
         + "\nCurrent accessibility tree:\n" + tree[:16000]
+        + (
+            "\nOther clickable visible generic containers from BrowserGym "
+            "AXTree plus public extra_element_properties (not backend data): "
+            + json.dumps(clickable_hints, ensure_ascii=False)
+            if clickable_hints else ""
+        )
     )
     return [{"role": "system", "content": COMMON_SYSTEM},
             {"role": "user", "content": user}]

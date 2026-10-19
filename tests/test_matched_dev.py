@@ -231,9 +231,53 @@ class FakeBrowserGym:
         self.closed = True
 
 
+class FakeBankBrowserGym(FakeBrowserGym):
+    """Simulate actual OpenApps dock reappearing on the bank account index."""
+    def __init__(self):
+        super().__init__()
+        self.state = {"todo": [], "openbanking": {}, "calendar": [],
+                      "map": [], "messenger": []}
+        self.task.initial_state = copy.deepcopy(self.state)
+
+    def observation(self):
+        if self.url.endswith("/openbanking"):
+            nodes = [
+                {"nodeId": "dock", "browsergym_id": "96",
+                 "role": {"value": "link"}, "name": {"value": "OpenBanking"}},
+                {"nodeId": "account-row", "browsergym_id": "111",
+                 "role": {"value": "generic"}, "name": {"value": ""},
+                 "childIds": ["account-label"]},
+                {"nodeId": "account-label", "role": {"value": "StaticText"},
+                 "name": {"value": "BUS COMPLETE CHK (...5555)"}},
+            ]
+            extra = {"111": {"clickable": True, "visibility": 1.0}}
+        elif self.url.endswith("/openbanking/accounts/0"):
+            nodes = [{"browsergym_id": "41", "role": {"value": "link"},
+                      "name": {"value": "Back to accounts"}}]
+            extra = {}
+        else:
+            nodes = [{"browsergym_id": "64", "role": {"value": "link"},
+                      "name": {"value": "OpenBanking"}}]
+            extra = {}
+        return {"goal": "Find the largest Card charge; then add a todo",
+                "url": self.url, "axtree_object": {"nodes": nodes},
+                "extra_element_properties": extra, "last_action_error": ""}
+
+    def step(self, action):
+        self.commands.append(action)
+        if action == 'click("64")' and self.url.endswith(":15001"):
+            self.url += "/openbanking"
+        elif action == 'click("111")' and self.url.endswith("/openbanking"):
+            self.url += "/accounts/0"
+        else:
+            raise RuntimeError("Unexpected simulated bank action: " + action)
+        return self.observation(), 0.0, False, False, {}
+
+
 class EpisodeTests(unittest.TestCase):
-    def run_fake_episode(self, method, *, first_invalid=False, invalid_forever=False):
-        fake = FakeBrowserGym()
+    def run_fake_episode(self, method, *, first_invalid=False,
+                         invalid_forever=False, bank_loop=False):
+        fake = FakeBankBrowserGym() if bank_loop else FakeBrowserGym()
         server = Server(url=fake.url, database_dir="/fake/db")
 
         class EnvArgs:
@@ -245,6 +289,13 @@ class EpisodeTests(unittest.TestCase):
         responses = [json.dumps({"action": "click", "bid": "40"}),
                      json.dumps({"action": "fill", "bid": "21", "text": "Call Mom"}),
                      json.dumps({"action": "click", "bid": "22"})]
+        if bank_loop:
+            responses = [
+                json.dumps({"action": "click", "bid": "64"}),
+                json.dumps({"action": "click", "bid": "96"}),
+                json.dumps({"action": "click", "bid": "111"}),
+                json.dumps({"action": "finish"}),
+            ]
         if first_invalid:
             responses.insert(0, json.dumps({"action": "click", "bid": "999"}))
         if invalid_forever:
@@ -261,6 +312,7 @@ class EpisodeTests(unittest.TestCase):
             return "\n".join(
                 f"[{n['browsergym_id']}] {n['role']['value']} {n['name']['value']}"
                 for n in obs["axtree_object"]["nodes"]
+                if n.get("browsergym_id") is not None
             )
         # Only mock unavailable external packages. Shared planning, guard,
         # hashes, trace, and independent evaluator assertions remain real.
@@ -311,6 +363,32 @@ class EpisodeTests(unittest.TestCase):
             )
             self.assertTrue(fake.closed)
             return result
+        if bank_loop:
+            self.assertTrue(saved["valid"], saved.get("error"))
+            self.assertEqual(saved["status"], "development_unsuccessful")
+            self.assertEqual(saved["steps"], 2)
+            self.assertEqual(saved["model_calls"], 4)
+            self.assertEqual(saved["repair_requests"], 1)
+            self.assertEqual(saved["repaired_steps"], 1)
+            self.assertEqual(fake.commands, ['click("64")', 'click("111")'])
+            self.assertTrue(saved["trace"][0]["url_changed"])
+            self.assertEqual(
+                saved["trace"][0]["url_after"],
+                "http://127.0.0.1:15001/openbanking",
+            )
+            self.assertEqual(
+                saved["trace"][1]["url_after"],
+                "http://127.0.0.1:15001/openbanking/accounts/0",
+            )
+            self.assertIn("redundant_current_app_link",
+                          saved["trace"][1]["invalid_attempts"][0]["error"])
+            self.assertEqual(
+                saved["trace"][1]["public_clickable_hints"][0]["bid"], "111"
+            )
+            self.assertEqual(model_requests[1]["messages"][1],
+                             model_requests[2]["messages"][1])
+            self.assertTrue(fake.closed)
+            return result
         self.assertEqual(saved["invalid_model_actions"], int(first_invalid))
         self.assertEqual(saved["repair_requests"], int(first_invalid))
         self.assertEqual(saved["repaired_steps"], int(first_invalid))
@@ -346,6 +424,11 @@ class EpisodeTests(unittest.TestCase):
         for method in matched.METHODS:
             with self.subTest(method=method):
                 self.run_fake_episode(method, first_invalid=True)
+
+    def test_same_app_dock_reclick_repaired_into_real_bank_account_for_both_policies(self):
+        for method in matched.METHODS:
+            with self.subTest(method=method):
+                self.run_fake_episode(method, bank_loop=True)
 
     def test_second_invalid_bid_fails_closed_without_browser_actions(self):
         for method in matched.METHODS:

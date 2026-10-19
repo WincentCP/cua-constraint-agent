@@ -31,3 +31,17 @@ initial-hash parity PASS, Baseline 3 browser steps / 3 model calls and ZERO
 comparable probe decisions (ZERO treatment divergences). Next validate the
 standalone OpenBanking group; the 32 qualifying main task families remain
 conditional on independent screening.
+
+## Observed OpenBanking mechanism test (2026-10-19)
+
+The user ran matched Qwen Baseline/Proposed with the official standalone
+OpenBanking task `add_todo_to_review_largest_card_charge`. Both returned
+`official_success=False`, with 0 comparable information probes and 0
+observed treatment divergence. Trace showed three actual clicks on
+OpenBanking-labelled links (BIDs 64, 96, 96) followed by the common
+repeated-click guard. The upstream desktop chrome exposes persistent app
+links on app pages while its account rows are nonsemantic HTMX divs. A
+shared public BrowserGym AXTree/extra-properties adapter now offers a
+bounded same-app-link repair and publicly labelled clickable generic rows.
+Its live effectiveness remains UNVERIFIED; do not treat this task as a
+valid mechanism comparison until real acquisition alternatives occur.

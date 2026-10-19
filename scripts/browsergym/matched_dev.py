@@ -19,6 +19,7 @@ from urllib.request import urlopen
 from uuid import uuid4
 
 from evaluator_controls import require_state
+from public_ui import clickable_generic_hints, redundant_current_app_link
 from isolated_openapps import isolated_openapps
 from ollama_preflight import (MODELS_FILE, find_installed_model, get_model,
                               request_json, validate_ollama_url)
@@ -148,8 +149,10 @@ def run_episode(root: Path, server, method: str, identity: dict,
             bids = permitted_bids(obs, tree)
             if not bids:
                 raise RuntimeError("No visible BrowserGym element IDs")
+            clickable_hints = clickable_generic_hints(obs, bids)
             messages = public_messages(goal, str(obs.get("url", "")), tree,
-                                       bids, history, constraints, ledger)
+                                       bids, history, constraints, ledger,
+                                       clickable_hints=clickable_hints)
             request = {
                 "model": identity["name"], "stream": False,
                 "think": False, "format": "json",
@@ -188,6 +191,14 @@ def run_episode(root: Path, server, method: str, identity: dict,
                         reply, method, obs, tree, constraints,
                         trial_ledger, step + 1,
                     )
+                    # The OpenApps chrome has a persistent app dock even
+                    # *inside* the selected app. Clicking its own icon again
+                    # reloads the root instead of opening an account row.
+                    # Reject identical current-app root link actions before
+                    # BrowserGym execution for BOTH methods.
+                    loop_error = redundant_current_app_link(action, obs)
+                    if loop_error:
+                        raise ValueError(loop_error)
                 except (ValueError, TypeError, KeyError) as exc:
                     attempted_error = exc
                     diagnostic = rejected_action_diagnostic(reply, bids)
@@ -221,6 +232,8 @@ def run_episode(root: Path, server, method: str, identity: dict,
             entry = {
                 "step": step + 1, "observation_sha256": sha256(tree.encode()).hexdigest(),
                 "action": action, "model_seconds": model_seconds_for_step,
+                "url_before": str(obs.get("url", "")),
+                "public_clickable_hints": clickable_hints,
                 "invalid_attempts": invalid_attempts,
                 "repair_used": bool(invalid_attempts), **decision,
             }
@@ -242,6 +255,13 @@ def run_episode(root: Path, server, method: str, identity: dict,
             t0 = time.monotonic()
             obs, reward, terminated, truncated, _ = env.step(action)
             record["steps"] += 1
+            entry["url_after"] = str(obs.get("url", ""))
+            entry["url_changed"] = entry["url_after"] != entry["url_before"]
+            next_tree = extract_axtree_text(obs)
+            entry["axtree_changed"] = (
+                sha256(next_tree.encode("utf-8")).hexdigest()
+                != entry["observation_sha256"]
+            )
             entry["official_reward"] = float(reward)
             entry["action_seconds"] = round(time.monotonic() - t0, 3)
             if obs.get("last_action_error"):

@@ -26,6 +26,51 @@ requires at least two substantive information-acquisition alternatives.
 For a later harder alternative, `-Task reconcile_the_largest_account` requires
 cross-account comparison plus two follow-on app edits.
 
+## Observed Qwen OpenBanking development failure (2026-10-19)
+
+User-reported paired episode `52e1e3ff2cec4c6aab7daedf1d84c3a4`:
+both methods scored official reward 0.0 with no probe opportunities. Both
+trajectories selected OpenBanking dock/launcher links in the order
+`click("64")`, `click("96")`, `click("96")`, then the fourth identical
+click was blocked by the pre-existing three-consecutive-click guard. The
+trace did not preserve per-action URLs, so it alone does NOT prove that
+`click("64")` reached `/openbanking`; inspect the new URL diagnostics.
+
+The pinned upstream OpenApps source shows that the desktop shell **and the
+persistent cross-app chrome dock** both include a link named OpenBanking.
+The account-index rows themselves are visible `div[hx-get]` controls
+without a semantic link/button role. BrowserGym can click a generic
+element BID when it has been assigned one, but Qwen may not recognize it
+from a bare generic accessibility entry.
+
+Shared development adapter changes (both Baseline and Proposed):
+
+- The currently observed page URL and accessible link name may identify a
+  redundant click on the same app's ROOT dock link. Such an action is
+  rejected before browser execution and uses the existing ONE shared model
+  correction allowance; it does not auto-navigate, substitute a BID, grant
+  extra steps, or make a privileged API call. Clicking from desktop to the
+  app is allowed, as is an app-detail back-link to the app root.
+- `public_ui.clickable_generic_hints()` uses **only BrowserGym public
+  axtree_object and extra_element_properties** to describe visible,
+  clickable generic containers via their public descendant accessibility
+  text. Each displayed BID must already exist in the current AXTree
+  allowlist. No HTML attribute, bank database, account ID, target answer,
+  evaluator config or invented bid is exposed. If BrowserGym does not
+  identify a row as clickable, no hint is invented; the row will need
+  separate live inspection.
+- Every executed action logs URL before/after, whether it changed, and
+  whether the public AXTree text changed. This distinguishes a dock reload
+  from actual navigation into a bank account and helps locate missing
+  accessibility affordances without wasting another model run.
+- The symmetric simulated regression reproduces OpenBanking root + dock
+  and tests rejection of the self-link, repair to a generic bank row and
+  subsequent official BrowserGym click. Simulated behavior is NOT proof
+  that the live website supplies matching clickable metadata.
+
+This remains a controller development patch, not a policy performance
+result. It must be frozen *before* formal pilot/main runs.
+
 ## One-command Windows validation
 
 From the thesis repository, with Ollama running:
