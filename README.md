@@ -37,6 +37,8 @@ negatives, and read-only app routes; it saves a report under
 output/preflight/main_suitability/. Neither command is a Main episode or a
 substitute for live model/evaluator and CDEA mechanism evidence.
 
+ALL FOUR Ollama checkpoints/digests must be installed and frozen before the first Main pair, even when using -ModelLabel for staged collection.
+
 Do NOT run Main before every required check genuinely passes. Do NOT
 resume an old Pilot ID using the newly changed controller commit: the
 Pilot manifest pins its original Git SHA.
