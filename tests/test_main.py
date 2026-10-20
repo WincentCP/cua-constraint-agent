@@ -31,11 +31,15 @@ class MainContracts(unittest.TestCase):
         self.root_patch = patch.object(experiment, "OUTPUT_ROOT", self.base / "output")
         self.root_patch.start()
         self.addCleanup(self.root_patch.stop)
-        self.identity = {
-            "label": self.plan["model_labels"][0],
-            "name": experiment.get_model(self.models, self.plan["model_labels"][0]),
-            "digest": "test-fixture-ollama-digest",
+        self.identities = {
+            label: {
+                "label": label,
+                "name": experiment.get_model(self.models, label),
+                "digest": "test-fixture-ollama-digest-" + label,
+            }
+            for label in self.plan["model_labels"]
         }
+        self.identity = self.identities[self.plan["model_labels"][0]]
 
     def make_approval(self):
         evidence = self.base / "non-live-synthetic-contract-fixture.txt"
@@ -53,7 +57,7 @@ class MainContracts(unittest.TestCase):
         return experiment.create_manifest(
             "main_contracts", self.plan, self.tasks, self.models,
             "fixture-repo-commit", experiment.matched_dev.UPSTREAM_PIN,
-            self.make_approval(),
+            self.make_approval(), self.identities,
         )
 
     def make_pair(self, directory, manifest, slot, *, baseline=False, proposed=True):
@@ -153,6 +157,30 @@ class MainContracts(unittest.TestCase):
         changed2["tasks"][0]["task"] = self.roster["pilot_exclusions"][0]["task"]
         with self.assertRaises(ValueError):
             experiment.validate_plan(self.plan, changed2, self.models)
+
+    def test_all_four_checkpoint_digests_locked_before_main_begins(self):
+        reduced = {self.identity["label"]: self.identity}
+        with self.assertRaisesRegex(ValueError, "ALL FOUR"):
+            experiment.create_manifest(
+                "main_contracts", self.plan, self.tasks, self.models,
+                "fixture-repo-commit", experiment.matched_dev.UPSTREAM_PIN,
+                self.make_approval(), reduced,
+            )
+        manifest = self.manifest()
+        self.assertEqual(
+            set(manifest["model_checkpoint_digests"]),
+            set(self.plan["model_labels"]),
+        )
+        directory, _ = experiment.open_main("main_contracts", manifest)
+        for identity in self.identities.values():
+            experiment.freeze_model_digest(directory, manifest, identity)
+        registry = experiment.pilot.load_object(
+            directory / "model_digests.json"
+        )
+        self.assertEqual(set(registry), set(self.plan["model_labels"]))
+        drift = dict(self.identity, digest="changed-before-first-use")
+        with self.assertRaisesRegex(RuntimeError, "immutable manifest"):
+            experiment.freeze_model_digest(directory, manifest, drift)
 
     def test_main_manifest_immutability_and_digest_lock(self):
         manifest = self.manifest()
