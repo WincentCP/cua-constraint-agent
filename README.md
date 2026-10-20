@@ -44,7 +44,7 @@ resume an old Pilot ID using the newly changed controller commit: the
 Pilot manifest pins its original Git SHA.
 
 
-## Exploratory pilot v1 runner (new; no pilot results yet)
+## Exploratory pilot v1 runner (local Pilot reported complete by researcher)
 
 The study has now advanced from one-off matched DEVELOPMENT checks to
 a **24-pair / 48-episode** exploratory pilot runner. The implementation
@@ -69,8 +69,8 @@ The actual pilot requires an **explicit** -Run and stable -PilotId:
 
 Results, including blank/not-run and invalid outcomes, are written under
 output/pilot/pilot_v1/manifest.json, results.csv, summary.csv, and
-episodes/pair_001 ... pair_024. No actual pilot result is claimed until
-the Windows machine has executed these episodes.
+episodes/pair_001 ... pair_024. The researcher reports completion of
+the local live Pilot; GitHub CI does not collect or authenticate those outputs.
 
 
 **Status: Qwen official matched Baseline/CDEA Todo development pair succeeded with equal fresh-state hashes (2026-10-19). CDEA evidence-acquisition mechanism still untested; not pilot/main results.**
