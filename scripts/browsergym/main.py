@@ -259,9 +259,20 @@ def initialize_readiness(path: Path, plan: dict, controller_sha: str) -> Path:
 
 def create_manifest(main_id: str, plan: dict, tasks: list[dict],
                     models: list, repo_sha: str, openapps_sha: str,
-                    approval: dict) -> dict:
+                    approval: dict, identities: dict) -> dict:
     if openapps_sha != matched_dev.UPSTREAM_PIN:
         raise RuntimeError("Official OpenApps pin mismatch before Main")
+    if set(identities) != set(plan["model_labels"]):
+        raise ValueError("ALL FOUR model checkpoints must be available before first Main pair")
+    locked_digests = {}
+    for label in plan["model_labels"]:
+        identity = identities[label]
+        if (identity.get("label") != label
+                or identity.get("name") != get_model(models, label)
+                or not isinstance(identity.get("digest"), str)
+                or not identity["digest"].strip()):
+            raise ValueError("Main model name/digest not ready: " + label)
+        locked_digests[label] = identity["digest"]
     schedule = pair_schedule(plan, tasks)
     return {
         "mode": "official_browsergym_main_confirmatory",
@@ -280,6 +291,7 @@ def create_manifest(main_id: str, plan: dict, tasks: list[dict],
         "approval_timestamp_utc": approval["approval_timestamp_utc"],
         "model_names": {label: get_model(models, label)
                         for label in plan["model_labels"]},
+        "model_checkpoint_digests": locked_digests,
         "shared_parameters": {
             "seed": plan["seed"], "max_steps": plan["max_steps"],
             "model_timeout": plan["model_timeout"],
@@ -322,6 +334,8 @@ def freeze_model_digest(directory: Path, manifest: dict, identity: dict) -> None
         raise RuntimeError("Main model name not identical to frozen configuration")
     if not isinstance(identity.get("digest"), str) or not identity["digest"]:
         raise RuntimeError("Main model has no installed digest")
+    if identity["digest"] != manifest["model_checkpoint_digests"].get(label):
+        raise RuntimeError("Main model digest differs from first-pair immutable manifest")
     entry = {"name": expected, "digest": identity["digest"]}
     if label in current and current[label] != entry:
         raise RuntimeError("Main model digest/name drift; start a new protocol")
@@ -881,9 +895,12 @@ def main(argv=None) -> int:
     # DO NOT create output/manifest before the pre-declared readiness gate.
     repo_sha = require_clean_repo()
     approval = verify_readiness(args.readiness_file, plan, repo_sha)
+    # A staged first run is allowed only AFTER all four distinct model
+    # checkpoints are installed. Their digests are locked in the manifest
+    # before executing even a single selected task/model pair.
     identities = {}
     errors = []
-    for label in labels:
+    for label in plan["model_labels"]:
         try:
             identities[label] = matched_dev.model_identity(label, args.ollama_url)
         except Exception as exc:
@@ -894,6 +911,7 @@ def main(argv=None) -> int:
         return 2
     manifest_expected = create_manifest(
         args.main_id, plan, tasks, models, repo_sha, sha, approval,
+        identities,
     )
     directory, manifest = open_main(args.main_id, manifest_expected)
     return execute_pairs(directory, manifest, args, identities)
