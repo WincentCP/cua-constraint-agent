@@ -1,6 +1,6 @@
 # Main Experiment v1 — preregistration and readiness-gated orchestration
 
-**Protocol frozen:** 2026-10-20. **Status: main code and design prepared, Main execution NOT authorized.** These instructions describe a planned study, not results. A previously inspected Pilot ZIP has unresolved provenance discrepancies. A clean CI run cannot repair those or certify a live Pilot.
+**Protocol frozen:** 2026-10-20. **Status: main code and design prepared, Main execution NOT authorized.** These instructions describe a planned study, not results. The researcher reports the live Pilot is completed and accepted. This repository cannot independently authenticate local Pilot execution from its CI; the recorded Pilot close-out evidence and any limitations still belong in the human readiness review.
 
 ## Research question and preregistered outcomes
 
@@ -46,28 +46,36 @@ The lock file prevents parallel writers. A crash may leave a lock and an unseale
 
 | Gate ID | Required human-verifiable live/source evidence |
 |---|---|
-| pilot_provenance_verified | Original, unmodified Pilot execution log/trace versus pinned startup/UI/evaluator, with the known mismatch documented and resolved, or a new authentic Pilot under a separate ID |
+| pilot_provenance_verified | Existing Pilot close-out evidence accepted by the researcher, original source references and a documented provenance/limitations note; this review is a human attestation, not a CI-generated claim of independently verified live execution |
 | official_evaluator_controls_passed | Real positive and negative official evaluator controls, with reset and isolation parity |
 | four_model_live_compatibility_passed | All four exact model digests and live model action/BID/BrowserGym compatibility beyond synthetic test cases |
 | cdea_mechanism_verified | Real same-observation eligible probe comparison and at least one CDEA-vs-Baseline policy-action divergence, with reviewed public trace |
 | all_main_tasks_suitability_screened | Official pinned Hydra IDs, evaluator applicability, public UI accessibility, and source-based suitability screening before Main outcomes |
 | statistical_protocol_preregistered | Signed review of the frozen task IDs, budgets, primary/secondary endpoints, invalid rules and inference limitations |
 
-If any check fails, **NO-GO**. A consistent-looking ZIP, fabricated or sanitized log, or successful offline test is not sufficient.
+If any check fails, **NO-GO**. A successful offline test or a summary alone cannot replace an honestly recorded human evidence decision.
 
-After a documented external audit, create a **local file outside the committed repo or under gitignored output/main** based on docs/MAIN_READINESS_TEMPLATE.json. Populate approved_by, offset-aware approved_utc, the exact final controller Git SHA, frozen task-order and upstream SHAs, and each approved check with an existing genuine evidence_file path. The runner logs SHA-256 for the approval and each evidence file but cannot automatically judge the evidence. The approval file must remain byte-identical across any same-ID resumption.
+After a documented review, use -InitReadiness to create a **pending** JSON file under gitignored output/main. It autofills only the final controller Git SHA and public freeze identifiers; **all six checks are still false**. Populate approved_by, UTC approved_utc, and each check with a truthful passed flag and the path to genuine existing evidence. Relative evidence_path values are interpreted relative to the readiness JSON file's directory, not the shell's working directory. The runner SHA-256-hashes the approval and referenced files but cannot judge their scientific authenticity. The approval file and referenced evidence must remain byte-identical across any same-ID resumption.
 
 ## Execution instructions for Windows PowerShell
 
 From the thesis repository (with pinned HOME/OpenApps, uv, local Ollama, BrowserGym/Chromium):
 
-Safe checks that **collect no Main research episodes**:
+Pre-Main checks that **collect no Main research episodes**:
 
     python -m unittest discover -s tests -v
     powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_main.ps1 -DryRun
     powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_main.ps1 -CheckModels
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_main.ps1 -AuditTasks
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_main.ps1 -InitReadiness
 
-DryRun validates official Hydra task registration when OpenApps is available and does not launch an app server or call Ollama. CheckModels probes local installed models using **synthetic JSON/BID tasks only**, not live BrowserGym or the official evaluator.
+DryRun checks 32 official Hydra keys and starts no model or server. CheckModels probes all four local models using **synthetic JSON/BID actions only** and saves diagnostic records under output/preflight/main_models/. AuditTasks starts one **isolated temporary OpenApps server**, checks HTTP entry points and official registration and verifies all 32 initial task evaluations are FALSE without taking any agent actions; its report is saved to output/preflight/main_suitability/. It does **not** prove real task solvability, model compatibility or CDEA divergence. InitReadiness creates output/main/readiness_v1.json with pending status and all evidence flags FALSE; it does not grant GO.
+
+After independent review of the genuine evidence files, complete the six-check readiness file manually, then verify it without collecting Main data:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_main.ps1 -CheckReadiness
+
+Only this command's success **plus separate independent evidence review** is enough to satisfy the declared documentation gate. The software verifies referenced file hashes and recorded flags; it cannot substantiate their truth.
 
 **Only when the six gates truly pass**, an explicit opt-in for one frozen Main pair (both methods) can be invoked:
 
