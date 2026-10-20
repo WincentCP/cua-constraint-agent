@@ -74,7 +74,7 @@ Source inspection confirmed the selected keys and their operation types on the p
 2. Perform one independent local official-Hydra registration, evaluator and accessible-UI inspection on representatives of *each* stratum without tuning the task roster based on scored outcomes. Any genuine unsatisfiable task requires a recorded protocol v2 revision **before** Main, not silent deletion after scoring.
 3. Verify all four exact Ollama model names/digests and live matched action contracts; confirm that Baseline/CDEA see the same initial app-state hash and evaluator inputs.
 4. Confirm **real comparable public information-probe opportunities and intervention divergence** on evidence tasks; zero mechanism engagement is a no-go for the proposed causal-effectiveness interpretation.
-5. Freeze and preregister Main controller commit, observation/action space, model digests, max steps, timeouts, repair rules, treatment, invalid-run denominators, statistical plan and task/model order **before the first Main pair**. No main orchestrator exists on the source branch yet.
+5. Freeze and preregister Main controller commit, observation/action space, model digests, max steps, timeouts, repair rules, treatment, invalid-run denominators, statistical plan and task/model order **before the first Main pair**. The Main runner is now implemented on this research branch (scripts/browsergym/main.py), but execution remains gated by docs/MAIN_PROTOCOL_V1.md; implementation does not constitute scientific authorization.
 
 Once Main starts, preserve unsuccessful and invalid observations, never change tasks or rerun only failures, and never pool Pilot development/simulated data into confirmatory outcomes.
 
