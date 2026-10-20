@@ -22,12 +22,12 @@ The confirmatory target and any exploratory p-value must not be changed after lo
 - Frozen task roster: config/main_taskset_v1.json. Ordered group/task SHA-256: 73d4a4a8e377422072c6ab27c066f87f8acbed7683ed50168c3407c861d61333.
 - Official OpenApps source: facebookresearch/OpenApps pinned at 6e6782794433c60468d65ac75bc3f03c56007f8c.
 - Distinct Pilot task IDs excluded. No wording-only variations counted as independent tasks.
-- Four model labels: qwen3.5-9b, ministral3-8b, granite4.1-8b and xlam2-8b. Resolve exact model tags and capture installed digests before any pair, checking them again before every arm.
+- Four model labels: qwen3.5-9b, ministral3-8b, granite4.1-8b and xlam2-8b. All four configured model tags MUST be installed and their exact digests pinned in the immutable Main manifest **before the first pair**, even when collecting only one model in a staged invocation. Recheck digests before each arm.
 - **32 tasks × 4 models × 2 methods = 128 pairs / 256 episodes.** All pairs are prescheduled by SHA-256 sorting on seed/task/model, independent of observed outcomes. The two method arms have a predetermined pair order.
 - Seed 233. **40 BrowserGym steps per method arm**, rather than Pilot's 20, due to 3–4-subtask Main workflows. Ollama time limit 240 s per call, temperature 0, think false, 640 predicted tokens, BrowserGym bid/nav action subsets, one shared same-observation action repair, no forced click retries.
 - Both arms share the same official evaluator, model checkpoint, initial application-state SHA, action/parser/guard code, observation budget and prompt schema. The sole treatment is Baseline's general progress-based ranking versus CDEA's constraint coverage and forward-cost ranking **over the same eligible model-supplied information probes**.
 - Fresh isolated OpenApps server and unique owned database per arm. Official evaluator rewards are never put into the agent prompt or used to choose actions.
-- The first approved Main run pins the clean thesis controller Git commit, official OpenApps SHA, entire immutable schedule, model-config SHA, plan SHA, taskset SHA, Pilot-exclusion-plan SHA, readiness approval/evidence hashes, shared budgets and statistical analysis. Per-model checkpoints are digest-locked on first use.
+- The first approved Main run pins the clean thesis controller Git commit, official OpenApps SHA, entire immutable schedule, model-config SHA, plan SHA, taskset SHA, Pilot-exclusion-plan SHA, readiness approval/evidence hashes, shared budgets and statistical analysis. All four checkpoint digests are frozen before the first pair, not on first use.
 - Changes to any fixed task, model, prompt/controller, budget or analysis protocol require a new study version and fresh ID, not a silent overwrite.
 
 ## Paired validity, missingness, and research integrity
