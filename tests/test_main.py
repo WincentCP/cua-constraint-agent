@@ -325,6 +325,22 @@ class MainContracts(unittest.TestCase):
         self.assertFalse(result["inference_released"])
         self.assertIsNone(result["primary"][
             "exact_mcnemar_p_two_sided_unadjusted_exploratory"])
+        # Even if no pair is marked not_started, unsealed/invalid-only work
+        # must not release a statistical result from an empty primary sample.
+        for view in mock_views:
+            view["status"] = "unsealed_pair"
+            view["valid"] = False
+            view["rows"] = []
+        blocked = experiment.analysis(mock_views, manifest)
+        self.assertFalse(blocked["inference_released"])
+        self.assertIsNone(blocked["primary"][
+            "exact_mcnemar_p_two_sided_unadjusted_exploratory"])
+        for view in mock_views:
+            view["status"] = "invalid_pair"
+        invalid_only = experiment.analysis(mock_views, manifest)
+        self.assertFalse(invalid_only["inference_released"])
+        self.assertIsNone(invalid_only["primary"][
+            "exact_mcnemar_p_two_sided_unadjusted_exploratory"])
 
     def test_dry_run_is_read_only_and_run_missing_gate_fails(self):
         self.assertEqual(experiment.main(["--dry-run"]), 0)
