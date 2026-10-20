@@ -19,6 +19,7 @@ import re
 import subprocess
 import sys
 from types import SimpleNamespace
+from uuid import uuid4
 
 import matched_dev
 import pilot
@@ -29,6 +30,7 @@ MAIN_PLAN = ROOT / "config" / "main_plan.json"
 TASKSET = ROOT / "config" / "main_taskset_v1.json"
 PILOT_PLAN = ROOT / "config" / "pilot_plan.json"
 OUTPUT_ROOT = ROOT / "output" / "main"
+MODEL_PREFLIGHT_ROOT = ROOT / "output" / "preflight" / "main_models"
 MAIN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")
 COHORTS = ("bank_information", "cross_app_workflow", "primitive_control", "ALL_TASKS")
 METHODS = ("Baseline", "Proposed")
@@ -828,21 +830,51 @@ def main(argv=None) -> int:
     labels = [args.model_label] if args.model_label else plan["model_labels"]
     if args.check_models:
         from model_compatibility import run_check
-        errors = []
+        errors, results = [], {}
         for label in labels:
             try:
                 record = run_check(label, args.ollama_url)
+                results[label] = record
                 if record["status"] != "action_contract_pass":
                     raise RuntimeError(record["status"])
                 print(f"MODEL ACTION-CONTRACT OK {label} "
                       f"digest={record['model_digest'][:16]} "
                       f"synthetic_probe={record['synthetic_probe_menu_demonstrated']}")
+                if not record.get("all_synthetic_actions_correct"):
+                    print("  WARNING: synthetic action missed its target; "
+                          "live task correctness NOT established.")
+                if not record.get("synthetic_probe_menu_demonstrated"):
+                    print("  WARNING: no two-probe synthetic menu; "
+                          "CDEA mechanism still needs real trace evidence.")
             except Exception as exc:
-                errors.append(f"{label}: {type(exc).__name__}: {exc}")
+                msg = f"{label}: {type(exc).__name__}: {exc}"
+                errors.append(msg)
+                results[label] = {**results.get(label, {}),
+                                  "preflight_error": msg}
+        record = {
+            "mode": "synthetic_non_study_main_model_action_contract",
+            "study_phase": "preflight_not_main",
+            "status": "blocked" if errors else "action_contract_pass",
+            "created_utc": datetime.now(timezone.utc).isoformat(),
+            "controller_git_commit": pilot.git_head(ROOT),
+            "task_order_sha256": plan["task_order_sha256"],
+            "requested_model_labels": labels,
+            "full_four_model_coverage": len(labels) == len(plan["model_labels"]),
+            "results": results, "errors": errors,
+            "live_browsergym_not_checked": True,
+            "scientific_readiness_not_granted": True,
+        }
+        MODEL_PREFLIGHT_ROOT.mkdir(parents=True, exist_ok=True)
+        artifact = MODEL_PREFLIGHT_ROOT / (uuid4().hex + ".json")
+        pilot.atomic_json(artifact, record)
+        print("Non-study model preflight evidence: " + str(artifact))
         if errors:
             for item in errors:
                 print("MAIN MODEL PREFLIGHT FAIL: " + item, file=sys.stderr)
             return 2
+        if len(labels) != 4:
+            print("WARNING: only a selected model checked; four-model "
+                  "readiness is NOT verified.")
         print("Only synthetic actions checked; no live BrowserGym episodes.")
         return 0
 
