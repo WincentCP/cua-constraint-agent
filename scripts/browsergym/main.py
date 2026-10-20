@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
 from math import comb, isfinite
@@ -203,8 +203,8 @@ def verify_readiness(path: Path, plan: dict, controller_sha: str) -> dict:
     if not isinstance(stamp, str):
         raise ValueError("Readiness approval needs an offset-aware UTC date")
     when = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
-    if when.tzinfo is None:
-        raise ValueError("Readiness approval timestamp needs an explicit offset")
+    if when.tzinfo is None or when.utcoffset() != timedelta(0):
+        raise ValueError("Readiness approval needs a UTC timestamp with +00:00 or Z")
     checks = obj.get("checks")
     if not isinstance(checks, dict) or set(checks) != set(plan["readiness_checks"]):
         raise ValueError("Readiness evidence checklist does not match frozen protocol")
@@ -216,7 +216,10 @@ def verify_readiness(path: Path, plan: dict, controller_sha: str) -> dict:
         location = row.get("evidence_path")
         if not isinstance(location, str) or not location.strip():
             raise ValueError("Readiness missing evidence for " + key)
-        source = Path(location).expanduser().resolve()
+        source = Path(location).expanduser()
+        if not source.is_absolute():
+            source = path.parent / source
+        source = source.resolve()
         if not source.is_file() or source == path:
             raise ValueError("Readiness evidence must be a separate existing file: " + key)
         evidence[key] = pilot.hash_file(source)
@@ -224,6 +227,32 @@ def verify_readiness(path: Path, plan: dict, controller_sha: str) -> dict:
             "readiness_evidence_sha256": evidence,
             "approval_timestamp_utc": stamp,
             "approved_by": obj["approved_by"].strip()}
+
+
+def initialize_readiness(path: Path, plan: dict, controller_sha: str) -> Path:
+    """Prepare a PENDING evidence checklist; NEVER grant approval automatically."""
+    path = path.expanduser().resolve()
+    template = pilot.load_object(ROOT / "docs" / "MAIN_READINESS_TEMPLATE.json")
+    if (template.get("protocol") != plan["readiness_protocol"]
+            or set(template.get("checks", {})) != set(plan["readiness_checks"])):
+        raise ValueError("Readiness template differs from frozen gate list")
+    if path.exists():
+        raise RuntimeError("Refusing to overwrite an existing readiness file: " + str(path))
+    template["controller_git_commit"] = controller_sha
+    template["task_order_sha256"] = plan["task_order_sha256"]
+    template["openapps_git_commit"] = plan["pinned_openapps_commit"]
+    # Never set status=approved or passed=true from code, Pilot artifacts or tests.
+    template["status"] = "pending"
+    template["approved_by"] = ""
+    template["approved_utc"] = ""
+    for item in template["checks"].values():
+        item["passed"] = False
+        item["evidence_path"] = ""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("x", encoding="utf-8") as handle:
+        json.dump(template, handle, indent=2, ensure_ascii=False)
+        handle.write("\n")
+    return path
 
 
 def create_manifest(main_id: str, plan: dict, tasks: list[dict],
@@ -715,6 +744,10 @@ def main(argv=None) -> int:
                       help="Static plan check, no browser, Ollama, or outputs")
     mode.add_argument("--check-models", action="store_true",
                       help="Four-model synthetic action-contract preflight (no browser)")
+    mode.add_argument("--init-readiness", action="store_true",
+                      help="Create a pending readiness JSON template; grants no approval")
+    mode.add_argument("--check-readiness", action="store_true",
+                      help="Verify human-approved readiness file and evidence hashes")
     mode.add_argument("--run", action="store_true",
                       help="Gate-checked execution; requires approved readiness file")
     parser.add_argument("--main-id")
@@ -728,9 +761,16 @@ def main(argv=None) -> int:
     if args.run:
         if not args.main_id or args.readiness_file is None or args.openapps_dir is None:
             parser.error("--run requires --main-id, --readiness-file, --openapps-dir")
-    if not args.run and (args.main_id or args.readiness_file
-                         or args.max_pairs is not None or args.stop_on_invalid):
-        parser.error("Main ID/readiness/max-pairs/stop-on-invalid only valid with --run")
+    if not args.run and (args.main_id or args.max_pairs is not None
+                         or args.stop_on_invalid):
+        parser.error("Main ID/max-pairs/stop-on-invalid only valid with --run")
+    if (args.readiness_file is not None
+            and not (args.run or args.init_readiness or args.check_readiness)):
+        parser.error("--readiness-file requires --run or a readiness mode")
+    if args.check_readiness and args.readiness_file is None:
+        parser.error("--check-readiness requires --readiness-file")
+    if args.model_label and not (args.check_models or args.run):
+        parser.error("--model-label is only for model preflight or --run")
     if args.model_label and args.model_label not in (
         "qwen3.5-9b", "ministral3-8b", "granite4.1-8b", "xlam2-8b"
     ):
@@ -763,6 +803,26 @@ def main(argv=None) -> int:
               f"{schedule[-1]['pair_id']}")
         print("Execution still BLOCKED absent approved readiness evidence.")
         print("No main output, OpenApps server, or Ollama inference created.")
+        return 0
+
+    if args.init_readiness:
+        repo_sha = require_clean_repo()
+        target = args.readiness_file or OUTPUT_ROOT / "readiness_v1.json"
+        file = initialize_readiness(target, plan, repo_sha)
+        print("PENDING MAIN READINESS FILE CREATED: " + str(file))
+        print("All six gate checks are FALSE; Main remains blocked.")
+        print("Fill only with genuine existing evidence files and a truthful "
+              "signed approval AFTER the checks actually pass.")
+        return 0
+    if args.check_readiness:
+        repo_sha = require_clean_repo()
+        approval = verify_readiness(args.readiness_file, plan, repo_sha)
+        print("ATTESTED MAIN READINESS APPROVED for controller=" + repo_sha)
+        print("Evidence files hashed: " + str(len(approval["readiness_evidence_sha256"])))
+        print("Approval SHA-256: " + approval["readiness_sha256"])
+        print("This verifies documented file identities and human check flags, "
+              "NOT the scientific authenticity of any supplied evidence.")
+        print("No Main episode or browser/model action was started.")
         return 0
 
     labels = [args.model_label] if args.model_label else plan["model_labels"]
