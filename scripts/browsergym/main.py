@@ -467,7 +467,10 @@ def analysis(views: list[dict], manifest: dict) -> dict:
     b_only = sum(b and not p for (b, p), _ in outcomes)
     both = sum(b and p for (b, p), _ in outcomes)
     neither = sum(not b and not p for (b, p), _ in outcomes)
-    finished = all(v["status"] != "not_started" for v in views)
+    # A crash-created folder without pair.json is NOT a completed attempt.
+    # Never release inference on an unsealed or merely planned schedule.
+    finished = all(v["status"] in ("paired_main_completed", "invalid_pair")
+                   for v in views)
     counts = Counter(v["status"] for v in views)
     breakdown = []
     for task_index in sorted({v["slot"]["task_index"] for v in primary_views}):
@@ -502,7 +505,8 @@ def analysis(views: list[dict], manifest: dict) -> dict:
             "baseline_only": b_only, "neither_success": neither,
             "paired_success_delta": (p_only - b_only) / len(valid) if valid else None,
             "exact_mcnemar_p_two_sided_unadjusted_exploratory":
-                exact_mcnemar_two_sided(p_only, b_only) if finished else None,
+                exact_mcnemar_two_sided(p_only, b_only)
+                if finished and valid else None,
             "interpretation": (
                 "Exploratory sensitivity only: five bank task IDs reuse "
                 "application/seed/templates and model responses are correlated. "
@@ -510,7 +514,7 @@ def analysis(views: list[dict], manifest: dict) -> dict:
             ),
             "by_task": breakdown,
         },
-        "inference_released": finished,
+        "inference_released": finished and bool(valid),
     }
 
 
