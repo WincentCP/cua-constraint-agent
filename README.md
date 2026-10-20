@@ -1,5 +1,31 @@
 # CUA Thesis: official BrowserGym + OpenApps
 
+## 2026-10-20 Main v1 implementation: frozen study plan, execution NO-GO
+
+Main code and the held-out roster are prepared on PR #8. This plan uses
+**32 official OpenApps task IDs x four Ollama models x Baseline/CDEA
+= 128 matched pairs / 256 planned episodes**. No Main study episodes have
+been run. The earlier Pilot ZIP provenance discrepancies are unresolved.
+
+- Frozen roster: config/main_taskset_v1.json and docs/MAIN_TASKSET_V1.md.
+- Preregistered hypotheses, primary bank cohort, budgets and validity:
+  config/main_plan.json and docs/MAIN_PROTOCOL_V1.md.
+- Readiness-gated runner: scripts/browsergym/main.py and run_main.ps1.
+- Human readiness attestation template: docs/MAIN_READINESS_TEMPLATE.json,
+  initially pending and all false. Real external evidence required.
+- Offline CI tests: tests/test_main.py and tests/test_main_taskset.py. Green
+  CI does NOT certify local Ollama/OpenApps execution or pilot authenticity.
+
+Safe Windows checks (NO Main data collection):
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_main.ps1 -DryRun
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_main.ps1 -CheckModels
+
+No Main -Run until six independent gates are honestly verified as detailed
+in docs/MAIN_PROTOCOL_V1.md. Do NOT resume an old Pilot ID using the newly
+changed controller commit: the Pilot manifest pins its original Git SHA.
+
+
 ## Exploratory pilot v1 runner (new; no pilot results yet)
 
 The study has now advanced from one-off matched DEVELOPMENT checks to
@@ -193,7 +219,7 @@ The former custom TypeScript runner (Baseline/CDEA), tests, documentation and Gi
 - **Models:** four planned local Ollama models in config/models.json.
 - **Treatment:** Baseline vs CDEA is implemented in a new matched *development* runner, with a shared policy API; live treatment separation on eligible information tasks is pending.
 - **Harness:** official OpenApps task registration with BrowserGym environment and official evaluator. The smoke implementation exercises this foundation on a single non-mutating browser action.
-- **Benchmark:** OpenApps apps/tasks including OpenBanking and Todo. Task suitability and a final set of 32 tasks still require screening.
+- **Benchmark:** OpenApps apps/tasks including OpenBanking and Todo. The 32 task IDs are now frozen; live task suitability and readiness checks remain pending.
 
 ## Windows smoke test
 
