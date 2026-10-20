@@ -12,13 +12,14 @@ runner and Windows wrapper exist with a mandatory separate external
 readiness approval file (docs/MAIN_READINESS_TEMPLATE.json) and offline CI
 contracts.
 
-**This is code/protocol readiness, NOT experiment-readiness.** The
-previously inspected ZIP's Pilot server-startup and Todo UI provenance
-conflicts are NOT resolved, no new authentic live Pilot was run here,
-four-model live compatibility is not verified, and the treatment mechanism
-has not been authenticated. The runner must remain blocked until the six
-specific manual-evidence gates in docs/MAIN_PROTOCOL_V1.md actually pass.
-Do not misstate green CI as a successful Main or Pilot.
+**This is code/protocol readiness, NOT an automatically certified live
+experiment.** The researcher reports that the live Pilot is complete and
+accepted. Previous ZIP audit caveats are historical limitations, not grounds
+for repeatedly restarting the discussion; the GitHub tests cannot
+independently prove live provenance. The Main runner therefore requires a
+truthful human readiness sign-off, plus local official task checks and
+four-model live compatibility evidence. No Main episode has been collected
+in this repo handoff. Green CI tests contracts only.
 
 
 ## Updated sequencing decision — October 19, 2026
