@@ -5,7 +5,9 @@
 Main code and the held-out roster are prepared on PR #8. This plan uses
 **32 official OpenApps task IDs x four Ollama models x Baseline/CDEA
 = 128 matched pairs / 256 planned episodes**. No Main study episodes have
-been run. The earlier Pilot ZIP provenance discrepancies are unresolved.
+been run. The researcher considers the live Pilot finished; local evidence
+acceptance still needs a truthful recorded readiness sign-off, as CI alone
+cannot verify live execution.
 
 - Frozen roster: config/main_taskset_v1.json and docs/MAIN_TASKSET_V1.md.
 - Preregistered hypotheses, primary bank cohort, budgets and validity:
@@ -16,14 +18,28 @@ been run. The earlier Pilot ZIP provenance discrepancies are unresolved.
 - Offline CI tests: tests/test_main.py and tests/test_main_taskset.py. Green
   CI does NOT certify local Ollama/OpenApps execution or pilot authenticity.
 
-Safe Windows checks (NO Main data collection):
+Windows preparation (NO Main experimental episodes collected):
 
     powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_main.ps1 -DryRun
     powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_main.ps1 -CheckModels
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_main.ps1 -AuditTasks
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_main.ps1 -InitReadiness
 
-No Main -Run until six independent gates are honestly verified as detailed
-in docs/MAIN_PROTOCOL_V1.md. Do NOT resume an old Pilot ID using the newly
-changed controller commit: the Pilot manifest pins its original Git SHA.
+After truthful, documented human review of all six evidence gates in
+output/main/readiness_v1.json, the researcher can check their sign-off with:
+
+    powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_main.ps1 -CheckReadiness
+
+CheckModels saves offline/synthetic model reports under
+output/preflight/main_models/. AuditTasks uses one isolated temporary
+OpenApps server to check official task registration, initial evaluator
+negatives, and read-only app routes; it saves a report under
+output/preflight/main_suitability/. Neither command is a Main episode or a
+substitute for live model/evaluator and CDEA mechanism evidence.
+
+Do NOT run Main before every required check genuinely passes. Do NOT
+resume an old Pilot ID using the newly changed controller commit: the
+Pilot manifest pins its original Git SHA.
 
 
 ## Exploratory pilot v1 runner (new; no pilot results yet)
