@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "protocol": "cdea_main_v1",
+  "status": "preregistered_execution_gated",
+  "taskset_file": "config/main_taskset_v1.json",
+  "taskset_protocol": "cdea_main_taskset_v1",
+  "task_order_sha256": "73d4a4a8e377422072c6ab27c066f87f8acbed7683ed50168c3407c861d61333",
+  "pinned_openapps_commit": "6e6782794433c60468d65ac75bc3f03c56007f8c",
+  "model_labels": [
+    "qwen3.5-9b",
+    "ministral3-8b",
+    "granite4.1-8b",
+    "xlam2-8b"
+  ],
+  "methods": [
+    "Baseline",
+    "Proposed"
+  ],
+  "seed": 233,
+  "max_steps": 40,
+  "model_timeout": 240,
+  "temperature": 0,
+  "num_predict": 640,
+  "think": false,
+  "action_subsets": [
+    "bid",
+    "nav"
+  ],
+  "bounded_shared_repairs": 1,
+  "click_force_retry": false,
+  "planned_tasks": 32,
+  "planned_matched_pairs": 128,
+  "planned_episodes": 256,
+  "schedule_policy": "sort all 32x4 task/model units by SHA256(seed|group/task|model); method order via matched_dev.pair_order",
+  "freeze_policy": "Before ANY Main pair, pin the controller Git SHA, main plan file SHA, taskset file SHA, model config SHA, readiness/evidence SHA, upstream Git SHA, and exact installed digest of ALL FOUR configured model checkpoints inside the immutable manifest; reject missing/drifted checkpoint and never retry or selectively replace an arm",
+  "paired_validity_rule": "Two completed valid official main episodes, equal initial SHA, expected task/group/phase/controller/model digest, distinct owned databases, frozen order and protocol, official reward consistent with success; otherwise exclude both arms from paired success denominator.",
+  "invalid_episode_rule": "Keep invalid or unsealed attempts as invalid with raw records; never impute fail or automatically rerun; preserve missing and infrastructure errors separately.",
+  "readiness_protocol": "cdea_main_readiness_v1",
+  "readiness_checks": [
+    "pilot_provenance_verified",
+    "official_evaluator_controls_passed",
+    "four_model_live_compatibility_passed",
+    "cdea_mechanism_verified",
+    "all_main_tasks_suitability_screened",
+    "statistical_protocol_preregistered"
+  ],
+  "analysis": {
+    "primary_cohort": "bank_information",
+    "primary_planned_pairs": 20,
+    "primary_estimand": "Proposed minus Baseline official task success fraction, among valid matched bank-information task-model pairs",
+    "primary_statistic": "(Proposed-only successes - Baseline-only successes) / valid paired bank task-model units",
+    "analysis_unit": "one paired task ID x model checkpoint; units share app/account/templates and are not fully independent",
+    "inference": "two-sided exact McNemar p is exploratory, unadjusted, and not cluster robust; with only five bank task IDs, do not claim conclusive superiority from p < 0.05 alone",
+    "primary_reporting": [
+      "valid, invalid and unstarted among 20 planned bank pairs",
+      "paired outcome table (both success; Proposed-only; Baseline-only; neither)",
+      "paired success-rate delta",
+      "exact two-sided McNemar exploratory sensitivity (only after full main schedule attempted)",
+      "breakdown by bank task ID and model",
+      "observed comparable public information-probe decisions and treatment action divergences"
+    ],
+    "secondary_cohorts": [
+      "ALL_TASKS",
+      "cross_app_workflow",
+      "primitive_control"
+    ],
+    "secondary_reporting": [
+      "pair coverage by model and cohort",
+      "paired success rates and delta",
+      "steps/time on valid successful episodes only",
+      "agent action-repair/invalid rates",
+      "probe opportunities, comparable decisions and policy divergences"
+    ],
+    "decision_rules": [
+      "Zero comparable probes/divergences means treatment not engaged; no CDEA mechanism-effect conclusion.",
+      "Missing or invalid pairs must never be counted as official failures or silently dropped from coverage.",
+      "Do not use main outcomes to alter task roster, model, budget, method or analyze only favorable subsets.",
+      "No unqualified population-level claims from repeated tasks/models on shared OpenApps seed state."
+    ],
+    "alpha_exploratory": 0.05,
+    "interim_inference": false
+  }
+}
