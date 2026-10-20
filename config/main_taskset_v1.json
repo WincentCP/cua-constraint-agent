@@ -1,0 +1,551 @@
+{
+  "schema_version": 1,
+  "protocol": "cdea_main_taskset_v1",
+  "status": "taskset_frozen_execution_not_authorized",
+  "frozen_on": "2026-10-20",
+  "execution_authorized": false,
+  "upstream_repository": "facebookresearch/OpenApps",
+  "openapps_git_commit": "6e6782794433c60468d65ac75bc3f03c56007f8c",
+  "source_files": {
+    "all_tasks": "config/tasks/original_tasks.yaml",
+    "longer_horizon": "config/tasks/longer_horizon.yaml",
+    "openbanking": "config/tasks/openbanking.yaml"
+  },
+  "pilot_protocol": "cdea_pilot_v1",
+  "pilot_exclusions": [
+    {
+      "task_group": "all_tasks",
+      "task": "add_call_mom_to_my_todo"
+    },
+    {
+      "task_group": "all_tasks",
+      "task": "mark_water_plants_as_done"
+    },
+    {
+      "task_group": "longer_horizon",
+      "task": "plan_elena_birthday_todo_message"
+    },
+    {
+      "task_group": "openbanking",
+      "task": "message_bob_the_savings_balance"
+    },
+    {
+      "task_group": "openbanking",
+      "task": "add_todo_for_the_card_minimum_payment"
+    },
+    {
+      "task_group": "openbanking",
+      "task": "add_todo_to_review_largest_card_charge"
+    }
+  ],
+  "model_labels": [
+    "qwen3.5-9b",
+    "ministral3-8b",
+    "granite4.1-8b",
+    "xlam2-8b"
+  ],
+  "methods": [
+    "Baseline",
+    "Proposed"
+  ],
+  "seed": 233,
+  "task_selection_policy": [
+    "Official pinned OpenApps task IDs only; resolve each against its original Hydra source file.",
+    "Exclude all six exact pilot task IDs; do not include goal-paraphrase task IDs.",
+    "Cover multiple app/action types; select distinct ordered operation multisets across the 18 longer-horizon tasks.",
+    "Prespecify five held-out OpenBanking read-before-act tasks; do not select by observed pilot outcomes.",
+    "Keep all frozen tasks in the main denominator; treat invalid episodes separately and never drop or rerun selectively.",
+    "Task IDs are a holdout, but shared seed data and app-level templates do not make all 32 statistically independent."
+  ],
+  "task_order_sha256": "73d4a4a8e377422072c6ab27c066f87f8acbed7683ed50168c3407c861d61333",
+  "planned_tasks": 32,
+  "planned_matched_pairs": 128,
+  "planned_episodes": 256,
+  "tasks": [
+    {
+      "main_index": 1,
+      "task_group": "all_tasks",
+      "task": "add_paper_reading_meeting_with_einstein",
+      "family": "calendar_event_multifield",
+      "stratum": "primitive_control",
+      "source_task_file": "config/tasks/original_tasks.yaml",
+      "source_type": "AddEventTask",
+      "operations": [
+        "AddEventTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Create a calendar event with several required fields and an invitee."
+    },
+    {
+      "main_index": 2,
+      "task_group": "all_tasks",
+      "task": "remove_wacv_abstract_deadline",
+      "family": "calendar_event_deletion",
+      "stratum": "primitive_control",
+      "source_task_file": "config/tasks/original_tasks.yaml",
+      "source_type": "RemoveEventTask",
+      "operations": [
+        "RemoveEventTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Find and remove a named pre-existing calendar event."
+    },
+    {
+      "main_index": 3,
+      "task_group": "all_tasks",
+      "task": "mark_visit_grandma_as_done",
+      "family": "todo_existing_mark_done",
+      "stratum": "primitive_control",
+      "source_task_file": "config/tasks/original_tasks.yaml",
+      "source_type": "MarkToDoDoneTask",
+      "operations": [
+        "MarkToDoDoneTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Find and complete a named seeded todo."
+    },
+    {
+      "main_index": 4,
+      "task_group": "all_tasks",
+      "task": "delete_call_aunt_lisa",
+      "family": "todo_existing_delete",
+      "stratum": "primitive_control",
+      "source_task_file": "config/tasks/original_tasks.yaml",
+      "source_type": "DeleteToDoTask",
+      "operations": [
+        "DeleteToDoTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Find and delete an existing seeded todo."
+    },
+    {
+      "main_index": 5,
+      "task_group": "all_tasks",
+      "task": "message_alice_about_badminton",
+      "family": "messenger_known_text_send",
+      "stratum": "primitive_control",
+      "source_task_file": "config/tasks/original_tasks.yaml",
+      "source_type": "SendMessageTask",
+      "operations": [
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Compose and send a specified message to a named contact."
+    },
+    {
+      "main_index": 6,
+      "task_group": "all_tasks",
+      "task": "save_eiffel_tower_to_my_favorite_places",
+      "family": "map_precise_landmark_save",
+      "stratum": "primitive_control",
+      "source_task_file": "config/tasks/original_tasks.yaml",
+      "source_type": "SavePlaceTask",
+      "operations": [
+        "SavePlaceTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Locate and save a landmark with a tight coordinate tolerance."
+    },
+    {
+      "main_index": 7,
+      "task_group": "all_tasks",
+      "task": "navigate_from_codeeditor_to_todo",
+      "family": "cross_app_navigation",
+      "stratum": "primitive_control",
+      "source_task_file": "config/tasks/original_tasks.yaml",
+      "source_type": "NavigateToAppTask",
+      "operations": [
+        "NavigateToAppTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Check direct navigation between application surfaces."
+    },
+    {
+      "main_index": 8,
+      "task_group": "all_tasks",
+      "task": "edit_script_add_header_comment",
+      "family": "codeeditor_existing_file_edit",
+      "stratum": "primitive_control",
+      "source_task_file": "config/tasks/original_tasks.yaml",
+      "source_type": "EditFileTask",
+      "operations": [
+        "EditFileTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Modify and save an existing code-editor file."
+    },
+    {
+      "main_index": 9,
+      "task_group": "all_tasks",
+      "task": "create_notes_file_in_code_editor",
+      "family": "codeeditor_new_file_create",
+      "stratum": "primitive_control",
+      "source_task_file": "config/tasks/original_tasks.yaml",
+      "source_type": "EditFileTask",
+      "operations": [
+        "EditFileTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Create and persist a new code-editor file."
+    },
+    {
+      "main_index": 10,
+      "task_group": "longer_horizon",
+      "task": "book_club_event_and_message_alice",
+      "family": "calendar_create_then_message",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "AddEventTask",
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Combine calendar creation with a messenger action."
+    },
+    {
+      "main_index": 11,
+      "task_group": "longer_horizon",
+      "task": "gym_todo_and_message_bob",
+      "family": "todo_create_then_message",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "AddToDoTask",
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Combine todo creation with messaging."
+    },
+    {
+      "main_index": 12,
+      "task_group": "longer_horizon",
+      "task": "mark_meditate_and_garden_event",
+      "family": "todo_mark_then_calendar_create",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "MarkToDoDoneTask",
+        "AddEventTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Complete an existing todo and create an event."
+    },
+    {
+      "main_index": 13,
+      "task_group": "longer_horizon",
+      "task": "remove_cpal_and_message_alice",
+      "family": "calendar_remove_then_message",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "RemoveEventTask",
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Remove an existing event and send a notification."
+    },
+    {
+      "main_index": 14,
+      "task_group": "longer_horizon",
+      "task": "mark_buy_groceries_and_message_bob",
+      "family": "todo_mark_then_message",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "MarkToDoDoneTask",
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Mark a seeded todo and send a related message."
+    },
+    {
+      "main_index": 15,
+      "task_group": "longer_horizon",
+      "task": "remove_times_square_and_add_todo",
+      "family": "map_remove_then_todo_create",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "RemoveLandmarkTask",
+        "AddToDoTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Delete a saved place and create a planning todo."
+    },
+    {
+      "main_index": 16,
+      "task_group": "longer_horizon",
+      "task": "delete_update_calendar_and_message_charlie",
+      "family": "todo_delete_then_message",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "DeleteToDoTask",
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Delete a seeded todo and notify a contact."
+    },
+    {
+      "main_index": 17,
+      "task_group": "longer_horizon",
+      "task": "remove_central_park_and_message_bob",
+      "family": "map_remove_then_message",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "RemoveLandmarkTask",
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Remove a saved place and notify a contact."
+    },
+    {
+      "main_index": 18,
+      "task_group": "longer_horizon",
+      "task": "conference_trip_setup",
+      "family": "calendar_todo_message_three_step",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "AddEventTask",
+        "AddToDoTask",
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Coordinate calendar, todo, and message creation."
+    },
+    {
+      "main_index": 19,
+      "task_group": "longer_horizon",
+      "task": "doctor_followup",
+      "family": "calendar_todo_mark_three_step",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "AddEventTask",
+        "MarkToDoDoneTask",
+        "AddToDoTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Coordinate calendar creation, todo completion, and todo creation."
+    },
+    {
+      "main_index": 20,
+      "task_group": "longer_horizon",
+      "task": "cleanup_and_new_plan",
+      "family": "todo_delete_calendar_message_three_step",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "DeleteToDoTask",
+        "AddEventTask",
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Delete a seeded todo, create an event, and send a message."
+    },
+    {
+      "main_index": 21,
+      "task_group": "longer_horizon",
+      "task": "cancel_and_reschedule_iclr",
+      "family": "calendar_remove_todo_message_three_step",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "RemoveEventTask",
+        "AddToDoTask",
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Remove a deadline, create a follow-up todo, and message a contact."
+    },
+    {
+      "main_index": 22,
+      "task_group": "longer_horizon",
+      "task": "remove_landmark_trip_replan",
+      "family": "map_remove_todo_calendar_three_step",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "RemoveLandmarkTask",
+        "AddToDoTask",
+        "AddEventTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Remove a landmark, create a todo, and schedule an event."
+    },
+    {
+      "main_index": 23,
+      "task_group": "longer_horizon",
+      "task": "delete_and_add_and_message",
+      "family": "todo_delete_create_message_three_step",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "DeleteToDoTask",
+        "AddToDoTask",
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Delete and add distinct todos before sending a message."
+    },
+    {
+      "main_index": 24,
+      "task_group": "longer_horizon",
+      "task": "garage_sale",
+      "family": "calendar_two_todos_mark_four_step",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "AddEventTask",
+        "AddToDoTask",
+        "AddToDoTask",
+        "MarkToDoDoneTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Create an event and two todos and complete an existing todo."
+    },
+    {
+      "main_index": 25,
+      "task_group": "longer_horizon",
+      "task": "deadline_swap",
+      "family": "calendar_remove_replace_todo_message_four_step",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "RemoveEventTask",
+        "AddEventTask",
+        "AddToDoTask",
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Replace a named deadline and coordinate todo and message changes."
+    },
+    {
+      "main_index": 26,
+      "task_group": "longer_horizon",
+      "task": "holiday_hosting",
+      "family": "calendar_two_todos_message_four_step",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "AddEventTask",
+        "AddToDoTask",
+        "AddToDoTask",
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Create an annotated event and two todos, then send a message."
+    },
+    {
+      "main_index": 27,
+      "task_group": "longer_horizon",
+      "task": "research_pivot",
+      "family": "calendar_two_removals_todo_message_four_step",
+      "stratum": "cross_app_workflow",
+      "source_task_file": "config/tasks/longer_horizon.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "RemoveEventTask",
+        "RemoveEventTask",
+        "AddToDoTask",
+        "SendMessageTask"
+      ],
+      "requires_unknown_bank_value": false,
+      "selection_reason": "Remove two distinct deadline events and create communication follow-ups."
+    },
+    {
+      "main_index": 28,
+      "task_group": "openbanking",
+      "task": "log_business_card_charges_as_todos",
+      "family": "bank_two_card_charges_to_todos",
+      "stratum": "bank_information",
+      "source_task_file": "config/tasks/openbanking.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "AddToDoTask",
+        "AddToDoTask"
+      ],
+      "requires_unknown_bank_value": true,
+      "selection_reason": "Read two qualifying bank-card transactions and make two todos."
+    },
+    {
+      "main_index": 29,
+      "task_group": "openbanking",
+      "task": "note_pending_transfer_in_calendar_and_todo",
+      "family": "bank_pending_transfer_to_calendar_todo",
+      "stratum": "bank_information",
+      "source_task_file": "config/tasks/openbanking.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "AddEventTask",
+        "AddToDoTask"
+      ],
+      "requires_unknown_bank_value": true,
+      "selection_reason": "Retrieve a pending transaction amount for a cross-app action."
+    },
+    {
+      "main_index": 30,
+      "task_group": "openbanking",
+      "task": "reconcile_the_largest_account",
+      "family": "bank_max_balance_account_to_message_todo",
+      "stratum": "bank_information",
+      "source_task_file": "config/tasks/openbanking.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "SendMessageTask",
+        "AddToDoTask"
+      ],
+      "requires_unknown_bank_value": true,
+      "selection_reason": "Compare account balances to identify an account for two actions."
+    },
+    {
+      "main_index": 31,
+      "task_group": "openbanking",
+      "task": "schedule_the_card_payment_due_date",
+      "family": "bank_due_date_to_calendar_todo",
+      "stratum": "bank_information",
+      "source_task_file": "config/tasks/openbanking.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "AddEventTask",
+        "AddToDoTask"
+      ],
+      "requires_unknown_bank_value": true,
+      "selection_reason": "Read the payment due date and apply it in another app."
+    },
+    {
+      "main_index": 32,
+      "task_group": "openbanking",
+      "task": "report_the_card_statement_balance_and_headroom",
+      "family": "bank_statement_headroom_to_message_todo",
+      "stratum": "bank_information",
+      "source_task_file": "config/tasks/openbanking.yaml",
+      "source_type": "CompositeTask",
+      "operations": [
+        "SendMessageTask",
+        "AddToDoTask"
+      ],
+      "requires_unknown_bank_value": true,
+      "selection_reason": "Disambiguate statement balance and available headroom before acting."
+    }
+  ]
+}
