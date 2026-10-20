@@ -1,5 +1,26 @@
 # Acceptance gates — live smoke verified 2026-10-18
 
+## October 20, 2026 — Main-v1 preregistration, still NO-GO
+
+The independent source-based roster of 32 official OpenApps task IDs is
+frozen on PR #8 (9 control / 18 longer-horizon / 5 OpenBanking, not all
+statistically independent families). config/main_plan.json and
+docs/MAIN_PROTOCOL_V1.md now preregister the 20-bank-pair primary
+success comparison, exact McNemar exploratory sensitivity, full 128-pair
+coverage, invalid rules, model settings, and task scheduling. A Main
+runner and Windows wrapper exist with a mandatory separate external
+readiness approval file (docs/MAIN_READINESS_TEMPLATE.json) and offline CI
+contracts.
+
+**This is code/protocol readiness, NOT experiment-readiness.** The
+previously inspected ZIP's Pilot server-startup and Todo UI provenance
+conflicts are NOT resolved, no new authentic live Pilot was run here,
+four-model live compatibility is not verified, and the treatment mechanism
+has not been authenticated. The runner must remain blocked until the six
+specific manual-evidence gates in docs/MAIN_PROTOCOL_V1.md actually pass.
+Do not misstate green CI as a successful Main or Pilot.
+
+
 ## Updated sequencing decision — October 19, 2026
 
 The former strict requirement to demonstrate CDEA action divergence BEFORE
