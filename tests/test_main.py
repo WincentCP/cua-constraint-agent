@@ -390,6 +390,47 @@ class MainContracts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "UTC"):
             experiment.verify_readiness(path, self.plan, "frozen-test-sha")
 
+    def test_four_model_action_contract_persists_preflight_only(self):
+        import model_compatibility
+        location = self.base / "main_models"
+        def fake_contract(label, _url):
+            return {
+                "status": "action_contract_pass",
+                "model_digest": "test-model-digest-" + label,
+                "all_synthetic_actions_correct": True,
+                "synthetic_probe_menu_demonstrated": False,
+                "cases": [],
+            }
+        with patch.object(experiment, "MODEL_PREFLIGHT_ROOT", location), \
+             patch.object(model_compatibility, "run_check",
+                          side_effect=fake_contract), \
+             patch.object(experiment.pilot, "git_head",
+                          return_value="test-fixture-commit"):
+            self.assertEqual(experiment.main(["--check-models"]), 0)
+        files = list(location.glob("*.json"))
+        self.assertEqual(len(files), 1)
+        record = experiment.pilot.load_object(files[0])
+        self.assertEqual(record["status"], "action_contract_pass")
+        self.assertTrue(record["full_four_model_coverage"])
+        self.assertEqual(len(record["results"]), 4)
+        self.assertTrue(record["scientific_readiness_not_granted"])
+        self.assertFalse((self.base / "output").exists())
+
+    def test_model_action_contract_failure_preserves_failure_evidence(self):
+        import model_compatibility
+        location = self.base / "failed_models"
+        with patch.object(experiment, "MODEL_PREFLIGHT_ROOT", location), \
+             patch.object(model_compatibility, "run_check",
+                          side_effect=RuntimeError("not installed")), \
+             patch.object(experiment.pilot, "git_head",
+                          return_value="test-fixture-commit"):
+            self.assertEqual(experiment.main(["--check-models"]), 2)
+        evidence = [experiment.pilot.load_object(path)
+                    for path in location.glob("*.json")]
+        self.assertEqual(len(evidence), 1)
+        self.assertEqual(evidence[0]["status"], "blocked")
+        self.assertEqual(len(evidence[0]["errors"]), 4)
+
     def test_dry_run_is_read_only_and_run_missing_gate_fails(self):
         self.assertEqual(experiment.main(["--dry-run"]), 0)
         self.assertFalse((self.base / "output").exists())
