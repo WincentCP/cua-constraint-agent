@@ -16,13 +16,15 @@ jobs:
         run: python -m compileall -q scripts/browsergym tests
       - name: Verify contract
         run: python -m unittest discover -s tests -v
-      - name: Parse pilot PowerShell wrapper
+      - name: Parse Pilot and Main PowerShell wrappers
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $parseErrors = $null
-          $tokens = $null
-          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path '.\scripts\browsergym\run_pilot.ps1').Path, [ref]$tokens, [ref]$parseErrors) | Out-Null
-          if ($parseErrors.Count -gt 0) {
-            throw (($parseErrors | ForEach-Object { $_.Message }) -join '; ')
+          foreach ($script in @('.\scripts\browsergym\run_pilot.ps1', '.\scripts\browsergym\run_main.ps1')) {
+            $parseErrors = $null
+            $tokens = $null
+            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors.Count -gt 0) {
+              throw ("$script parse error: " + (($parseErrors | ForEach-Object { $_.Message }) -join '; '))
+            }
           }
