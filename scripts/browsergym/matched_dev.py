@@ -109,15 +109,18 @@ def run_episode(root: Path, server, method: str, identity: dict,
     from open_apps.state import get_current_state
 
     phase = getattr(args, "study_phase", "development")
-    if phase not in ("development", "pilot"):
+    if phase not in ("development", "pilot", "main"):
         raise ValueError("Unknown study phase")
     destination.mkdir(parents=True, exist_ok=False)
     path = destination / "episode.json"
     record = {
         "mode": ("paired_pilot_exploratory" if phase == "pilot"
+                 else "paired_main_confirmatory" if phase == "main"
                  else "paired_development_only"),
         "study_phase": phase,
-        "pilot_id": getattr(args, "pilot_id", None), "task": args.task,
+        "pilot_id": getattr(args, "pilot_id", None) if phase == "pilot" else None,
+        "main_id": getattr(args, "main_id", None) if phase == "main" else None,
+        "task": args.task,
         "task_group": args.task_group, "method": method,
         "model": identity["name"], "model_digest": identity["digest"],
         "server": asdict(server), "upstream_commit": UPSTREAM_PIN,
@@ -522,6 +525,8 @@ def run_pair(args, report: dict) -> None:
     report["status"] = (
         "paired_pilot_completed"
         if getattr(args, "study_phase", "development") == "pilot"
+        else "paired_main_completed"
+        if getattr(args, "study_phase", "development") == "main"
         else "paired_development_completed"
     )
 
