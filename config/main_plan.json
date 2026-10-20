@@ -32,7 +32,7 @@
   "planned_matched_pairs": 128,
   "planned_episodes": 256,
   "schedule_policy": "sort all 32x4 task/model units by SHA256(seed|group/task|model); method order via matched_dev.pair_order",
-  "freeze_policy": "controller Git SHA, main plan file SHA, taskset file SHA, model config SHA, readiness SHA, upstream Git SHA and per-label model digests locked; no silent retry or selective replacement",
+  "freeze_policy": "Before ANY Main pair, pin the controller Git SHA, main plan file SHA, taskset file SHA, model config SHA, readiness/evidence SHA, upstream Git SHA, and exact installed digest of ALL FOUR configured model checkpoints inside the immutable manifest; reject missing/drifted checkpoint and never retry or selectively replace an arm",
   "paired_validity_rule": "Two completed valid official main episodes, equal initial SHA, expected task/group/phase/controller/model digest, distinct owned databases, frozen order and protocol, official reward consistent with success; otherwise exclude both arms from paired success denominator.",
   "invalid_episode_rule": "Keep invalid or unsealed attempts as invalid with raw records; never impute fail or automatically rerun; preserve missing and infrastructure errors separately.",
   "readiness_protocol": "cdea_main_readiness_v1",
