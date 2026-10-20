@@ -342,6 +342,54 @@ class MainContracts(unittest.TestCase):
         self.assertIsNone(invalid_only["primary"][
             "exact_mcnemar_p_two_sided_unadjusted_exploratory"])
 
+    def test_readiness_initialization_is_pending_and_never_overwrites(self):
+        path = self.base / "pending_readiness.json"
+        with patch.object(experiment, "require_clean_repo", return_value="fixed-git-sha"):
+            self.assertEqual(experiment.main([
+                "--init-readiness", "--readiness-file", str(path),
+            ]), 0)
+        item = experiment.pilot.load_object(path)
+        self.assertEqual(item["status"], "pending")
+        self.assertEqual(item["controller_git_commit"], "fixed-git-sha")
+        self.assertTrue(all(
+            check["passed"] is False and check["evidence_path"] == ""
+            for check in item["checks"].values()
+        ))
+        with self.assertRaisesRegex(RuntimeError, "overwrite"):
+            experiment.initialize_readiness(path, self.plan, "fixed-git-sha")
+        with self.assertRaises(ValueError):
+            experiment.verify_readiness(path, self.plan, "fixed-git-sha")
+        self.assertFalse((self.base / "output").exists())
+
+    def test_relative_readiness_evidence_and_non_utc_timestamp(self):
+        path = self.base / "readiness" / "readiness_v1.json"
+        path.parent.mkdir()
+        evidence = path.parent / "evidence.txt"
+        evidence.write_text("OFFLINE TEST EVIDENCE; NOT LIVE\n", encoding="utf-8")
+        item = experiment.pilot.load_object(
+            experiment.ROOT / "docs" / "MAIN_READINESS_TEMPLATE.json"
+        )
+        item.update(status="approved", approved_by="test-fixture",
+                    approved_utc="2026-10-20T09:00:00Z",
+                    controller_git_commit="frozen-test-sha")
+        for name in item["checks"]:
+            item["checks"][name] = {"passed": True,
+                                    "evidence_path": "evidence.txt"}
+        experiment.pilot.atomic_json(path, item)
+        result = experiment.verify_readiness(path, self.plan, "frozen-test-sha")
+        self.assertEqual(
+            set(result["readiness_evidence_sha256"]), set(item["checks"])
+        )
+        with patch.object(experiment, "require_clean_repo",
+                          return_value="frozen-test-sha"):
+            self.assertEqual(experiment.main([
+                "--check-readiness", "--readiness-file", str(path),
+            ]), 0)
+        item["approved_utc"] = "2026-10-20T16:00:00+07:00"
+        experiment.pilot.atomic_json(path, item)
+        with self.assertRaisesRegex(ValueError, "UTC"):
+            experiment.verify_readiness(path, self.plan, "frozen-test-sha")
+
     def test_dry_run_is_read_only_and_run_missing_gate_fails(self):
         self.assertEqual(experiment.main(["--dry-run"]), 0)
         self.assertFalse((self.base / "output").exists())
