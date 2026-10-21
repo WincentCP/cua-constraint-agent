@@ -1,4 +1,4 @@
-name: BrowserGym prototype static tests
+name: CUA Contract Tests
 on: [push, pull_request]
 jobs:
   contract:
@@ -12,9 +12,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Compile smoke
+      - name: Compile agent and test sources
         run: python -m compileall -q scripts/browsergym tests
-      - name: Verify contract
+      - name: Run offline contract tests
         run: python -m unittest discover -s tests -v
       - name: Parse Pilot and Main PowerShell wrappers
         if: runner.os == 'Windows'
