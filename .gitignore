@@ -1,10 +1,29 @@
+# Local credentials and configuration
 .env
 .env.*
 !.env.example
+
+# Python and test/build caches
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.coverage
+coverage.xml
+htmlcov/
+
+# Generated runtime and research output (preserve originals outside Git)
 output/
 log_outputs/
+
+# Local environments and editor/OS metadata
 .venv/
 node_modules/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
