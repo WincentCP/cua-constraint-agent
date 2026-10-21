@@ -60,14 +60,15 @@ For more detail see **[Main results](docs/MAIN_RESULTS_V1.md)** and the frozen [
 | `docs/MAIN_PROTOCOL_V1.md` | Preregistered research design and analysis limitations |
 | `docs/MAIN_RESULTS_V1.md` | Recorded outcomes and paired statistics |
 | `docs/DATA_PROVENANCE.md` | Archive identity, researcher-reported audit status, verification scope |
-| `docs/DEVELOPMENT_HISTORY.md` | Prior implementation, development and troubleshooting notes |
+| `docs/README.md` | Documentation index and research source-of-truth guide |
+| `docs/REPRODUCIBILITY.md` | Environment requirements and reproducibility guide |
 | `tests/` | Offline code and protocol-contract tests |
 
 Raw experiment results are retained separately as `main_observation_v1(5).zip`. They are **not** automatically generated or authenticated by GitHub Actions. The original archive SHA-256, output file inventory, and provenance review scope are recorded in [Data provenance](docs/DATA_PROVENANCE.md).
 
 ## Running and inspecting the experiment
 
-The original setup used Windows PowerShell, local Ollama, and the pinned OpenApps/BrowserGym environment, including BrowserGym core 0.13.4. Install/check the required four Ollama checkpoints and verify the frozen task roster before an experiment; exact image/model digests and study hashes are documented in the original main archive.
+The original setup used Windows PowerShell, local Ollama, and the pinned OpenApps/BrowserGym environment, including BrowserGym core 0.13.4. See the [reproducibility guide](docs/REPRODUCIBILITY.md) for environment prerequisites, the exact model tags, and archive verification. Exact installed model digests and study hashes are retained in the original Main archive.
 
 For code and registration preflight (these commands are *not* experimental episodes):
 
