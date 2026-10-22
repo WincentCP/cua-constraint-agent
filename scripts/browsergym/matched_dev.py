@@ -46,8 +46,9 @@ def pair_order(task: str, model_label: str, seed: int) -> list[str]:
     return list(METHODS if digest[0] % 2 == 0 else reversed(METHODS))
 
 
-def model_identity(label: str, ollama_url: str, client=request_json) -> dict:
-    configured = json.loads(MODELS_FILE.read_text(encoding="utf-8"))
+def model_identity(label: str, ollama_url: str, client=request_json, *,
+                   models_file: Path = MODELS_FILE) -> dict:
+    configured = json.loads(Path(models_file).read_text(encoding="utf-8"))
     name = get_model(configured, label)
     origin = validate_ollama_url(ollama_url)
     installed = find_installed_model(client(origin + "/api/tags", timeout=15), name)
@@ -109,13 +110,14 @@ def run_episode(root: Path, server, method: str, identity: dict,
     from open_apps.state import get_current_state
 
     phase = getattr(args, "study_phase", "development")
-    if phase not in ("development", "pilot", "main"):
+    if phase not in ("development", "pilot", "main", "scale"):
         raise ValueError("Unknown study phase")
     destination.mkdir(parents=True, exist_ok=False)
     path = destination / "episode.json"
     record = {
         "mode": ("paired_pilot_exploratory" if phase == "pilot"
                  else "paired_main_confirmatory" if phase == "main"
+                 else "paired_scale_exploratory" if phase == "scale"
                  else "paired_development_only"),
         "study_phase": phase,
         "pilot_id": getattr(args, "pilot_id", None) if phase == "pilot" else None,
@@ -138,6 +140,9 @@ def run_episode(root: Path, server, method: str, identity: dict,
         "validation_includes_shared_safety_guards": True,
         "trace": [], "probe_opportunities": 0, "policy_overrides": 0,
     }
+    if phase == "scale":
+        record["scale_id"] = args.scale_id
+        record["num_ctx"] = args.num_ctx
     started = time.monotonic()
     env = None
     try:
@@ -192,6 +197,8 @@ def run_episode(root: Path, server, method: str, identity: dict,
                 "think": False, "format": "json",
                 "options": {"temperature": TEMPERATURE, "num_predict": NUM_PREDICT},
             }
+            if phase == "scale":
+                request["options"]["num_ctx"] = args.num_ctx
             invalid_attempts = []
             model_telemetry = []
             attempted_error = None
@@ -458,7 +465,11 @@ def comparable_decisions(episodes: dict) -> dict:
 
 def run_pair(args, report: dict) -> None:
     root = Path(args.openapps_dir).expanduser().resolve()
-    identity = model_identity(args.model_label, args.ollama_url)
+    extra_registry = getattr(args, "models_file", None)
+    identity = (model_identity(args.model_label, args.ollama_url,
+                               models_file=Path(extra_registry))
+                if extra_registry is not None
+                else model_identity(args.model_label, args.ollama_url))
     report["model_identity"] = identity
     report["order"] = pair_order(args.task, args.model_label, args.seed)
     report["planned_methods"] = list(METHODS)
@@ -471,6 +482,9 @@ def run_pair(args, report: dict) -> None:
         "num_predict": NUM_PREDICT, "think": False,
         "action_subsets": list(ACTION_SUBSETS),
     }
+    if getattr(args, "study_phase", "development") == "scale":
+        report["parameters"]["num_ctx"] = args.num_ctx
+        report["parameters"]["scale_id"] = args.scale_id
     first_hash = None
     directories = set()
     base = Path(report["artifact_dir"])
@@ -527,6 +541,8 @@ def run_pair(args, report: dict) -> None:
         if getattr(args, "study_phase", "development") == "pilot"
         else "paired_main_completed"
         if getattr(args, "study_phase", "development") == "main"
+        else "paired_scale_completed"
+        if getattr(args, "study_phase", "development") == "scale"
         else "paired_development_completed"
     )
 
