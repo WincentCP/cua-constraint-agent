@@ -70,11 +70,14 @@ CASES = (
 
 
 def run_check(label: str, origin: str, *, client=request_json,
-              timeout: int = 180) -> dict:
+              timeout: int = 180, models_file: Path = MODELS_FILE,
+              num_ctx: int | None = None) -> dict:
     if not 30 <= timeout <= 600:
         raise ValueError("Model timeout must be between 30 and 600 seconds")
     url = validate_ollama_url(origin)
-    configured = json.loads(MODELS_FILE.read_text(encoding="utf-8"))
+    if num_ctx is not None and not 2048 <= num_ctx <= 131072:
+        raise ValueError("num_ctx must be 2048..131072")
+    configured = json.loads(Path(models_file).read_text(encoding="utf-8"))
     model = get_model(configured, label)
     status = find_installed_model(client(url + "/api/tags", timeout=15), model)
     digest = status.get("digest")
@@ -114,6 +117,8 @@ def run_check(label: str, origin: str, *, client=request_json,
                             else messages + [repair_message(last_error, bids)],
                 "options": {"temperature": 0, "num_predict": NUM_PREDICT},
             }
+            if num_ctx is not None:
+                request["options"]["num_ctx"] = num_ctx
             reply = client(url + "/api/chat", data=request, timeout=timeout)
             entry["model_calls"] += 1
             result["model_requests"] += 1
@@ -178,6 +183,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--model-label", default="qwen3.5-9b")
     p.add_argument("--ollama-url", default="http://127.0.0.1:11434")
     p.add_argument("--model-timeout", type=int, default=180)
+    p.add_argument("--models-file", type=Path, default=MODELS_FILE)
+    p.add_argument("--num-ctx", type=int)
     args = p.parse_args(argv)
     base = ROOT / "output" / "ollama" / "action_contract"
     base.mkdir(parents=True, exist_ok=True)
@@ -186,7 +193,8 @@ def main(argv: list[str] | None = None) -> int:
               "status": "invalid_preflight", "label": args.model_label}
     try:
         record = run_check(args.model_label, args.ollama_url,
-                           timeout=args.model_timeout)
+                           timeout=args.model_timeout,
+                           models_file=args.models_file, num_ctx=args.num_ctx)
     except (Exception,) as exc:
         # Diagnostic-only tool: all failures are explicitly reported and
         # never treated as task results. Avoid outputting raw model JSON.
