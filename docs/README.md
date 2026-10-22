@@ -1,25 +1,16 @@
 # Research Documentation
 
-This folder contains the current research reference documents for the **Constraint-Driven Evidence Acquisition (CDEA)** study. Start with the root [README](../README.md) for the overall question, setup, and headline results.
+**Study:** Baseline vs Proposed (Constraint-Driven Evidence Acquisition/CDEA) on OpenApps via BrowserGym.  
+**Main:** 32 tasks × 4 LLMs × 2 methods = **128 matched pairs / 256 episodes**.
 
-## Main experiment
-
-| Document | Purpose |
+| Document | Contents |
 |---|---|
-| [Main results](MAIN_RESULTS_V1.md) | Observed completion rates, paired outcomes, exploratory statistical analysis, and mechanism diagnostics |
-| [Main protocol](MAIN_PROTOCOL_V1.md) | **Frozen, pre-experiment** study design, sampling, analysis plan, integrity gates, and limitations |
-| [Main task set](MAIN_TASKSET_V1.md) | Selection rationale and definitions of all 32 official OpenApps tasks |
-| [Data provenance](DATA_PROVENANCE.md) | Archive identity, SHA-256 fingerprint, recorded researcher review, and scope of verification |
-| [Reproducibility](REPRODUCIBILITY.md) | Environment setup, checkpoints, validation commands, and result-artifact locations |
-| [Readiness template](MAIN_READINESS_TEMPLATE.json) | Original pre-run template; its pending values are intentional and **not** the signed record in the archived experiment |
+| [Task set](MAIN_TASKSET_V1.md) | All 32 official task IDs, categories and purpose |
+| [Main results](MAIN_RESULTS_V1.md) | Completion rates, paired statistics and mechanism diagnostics |
+| [Main protocol](MAIN_PROTOCOL_V1.md) | Frozen design, validity rules, readiness gates and analysis plan |
+| [Data provenance](DATA_PROVENANCE.md) | Original archive fingerprint, recorded live-review status and verification scope |
+| [Reproducibility](REPRODUCIBILITY.md) | Environment, checks and archived outputs |
+| [Pilot protocol](PILOT_PROTOCOL.md) | Separate, exploratory six-task Pilot design |
+| [Readiness template](MAIN_READINESS_TEMPLATE.json) | Pre-execution blank template; not the signed archive record |
 
-## Earlier research stage
-
-- [Pilot protocol](PILOT_PROTOCOL.md) — frozen design and criteria for the earlier exploratory pilot.
-
-## Source-of-truth conventions
-
-- The frozen implementation is identified by controller commit `ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1`; later documentation-only commits do not alter that study controller.
-- The Main result dataset is preserved separately as `main_observation_v1(5).zip`. Its identity and hash are listed in [Data provenance](DATA_PROVENANCE.md).
-- The Main protocol was authored before collection and intentionally describes *pre-experiment* conditions. Later results belong in [Main results](MAIN_RESULTS_V1.md), **not** in a rewritten preregistration.
-- Historical development notes have been removed from the current documentation tree to keep the repository focused. Their revisions remain recoverable through ordinary Git history.
+**Main archive:** `main_observation_v1(5).zip` (preserved separately). **Recorded live-provenance review:** researcher-reported **PASS**; see [Data provenance](DATA_PROVENANCE.md). Frozen protocols document pre-execution conditions; later results and approvals are reported separately.
