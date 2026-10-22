@@ -62,11 +62,13 @@ For more detail see **[Main results](docs/MAIN_RESULTS_V1.md)** and the frozen [
 | [Main results](docs/MAIN_RESULTS_V1.md) | Success rates, paired statistics and mechanism diagnostics |
 | [Data provenance](docs/DATA_PROVENANCE.md) | Archive SHA-256, researcher-reported live-review PASS and verification scope |
 | [Reproducibility](docs/REPRODUCIBILITY.md) | Runtime, preflight checks and archived outputs |
+| [Pilot results (archive)](docs/archive/PILOT_RESULTS_V1.md) | Pilot success, matched outcomes, mechanism diagnostics and archive fingerprint |
 | [Pilot protocol (archive)](docs/archive/PILOT_PROTOCOL.md) | Preserved six-task exploratory Pilot design |
 | [Readiness template](docs/MAIN_READINESS_TEMPLATE.json) | Original pending pre-run template; not the signed archive record |
 | `tests/` | Offline code and protocol-contract tests |
 
 The frozen protocols describe pre-execution conditions. Results and subsequent researcher approval are recorded separately in the linked results and provenance documents.
+
 Raw experiment results are retained separately as `main_observation_v1(5).zip`. They are **not** automatically generated or authenticated by GitHub Actions. The original archive SHA-256, output file inventory, and provenance review scope are recorded in [Data provenance](docs/DATA_PROVENANCE.md).
 
 ## Running and inspecting the experiment
