@@ -47,23 +47,26 @@ Episode-level diagnostics identify **48 pairs** with comparable information-prob
 
 For more detail see **[Main results](docs/MAIN_RESULTS_V1.md)** and the frozen [Main protocol](docs/MAIN_PROTOCOL_V1.md).
 
-## Repository guide
+## Repository and documentation guide
 
-| Location | Purpose |
+| File | Purpose |
 |---|---|
 | `scripts/browsergym/main.py` | Frozen Main experiment orchestration and analysis |
 | `scripts/browsergym/run_main.ps1` | Windows experiment and preflight commands |
-| `scripts/browsergym/matched_dev.py` | Shared matched Baseline/Proposed controller |
+| `scripts/browsergym/matched_dev.py` | Matched Baseline/Proposed controller |
 | `config/main_plan.json` | Frozen parameters, validity rules and analysis plan |
-| `config/main_taskset_v1.json` | 32-task frozen selection |
+| `config/main_taskset_v1.json` | Frozen 32-task selection |
 | `config/models.json` | Model configurations |
-| `docs/MAIN_PROTOCOL_V1.md` | Preregistered research design and analysis limitations |
-| `docs/MAIN_RESULTS_V1.md` | Recorded outcomes and paired statistics |
-| `docs/DATA_PROVENANCE.md` | Archive identity, researcher-reported audit status, verification scope |
-| `docs/README.md` | Documentation index and research source-of-truth guide |
-| `docs/REPRODUCIBILITY.md` | Environment requirements and reproducibility guide |
+| [Main task set](docs/MAIN_TASKSET_V1.md) | Official OpenApps task IDs and categories |
+| [Main protocol](docs/MAIN_PROTOCOL_V1.md) | Frozen design, validity and readiness gates |
+| [Main results](docs/MAIN_RESULTS_V1.md) | Success rates, paired statistics and mechanism diagnostics |
+| [Data provenance](docs/DATA_PROVENANCE.md) | Archive SHA-256, researcher-reported live-review PASS and verification scope |
+| [Reproducibility](docs/REPRODUCIBILITY.md) | Runtime, preflight checks and archived outputs |
+| [Pilot protocol (archive)](docs/archive/PILOT_PROTOCOL.md) | Preserved six-task exploratory Pilot design |
+| [Readiness template](docs/MAIN_READINESS_TEMPLATE.json) | Original pending pre-run template; not the signed archive record |
 | `tests/` | Offline code and protocol-contract tests |
 
+The frozen protocols describe pre-execution conditions. Results and subsequent researcher approval are recorded separately in the linked results and provenance documents.
 Raw experiment results are retained separately as `main_observation_v1(5).zip`. They are **not** automatically generated or authenticated by GitHub Actions. The original archive SHA-256, output file inventory, and provenance review scope are recorded in [Data provenance](docs/DATA_PROVENANCE.md).
 
 ## Running and inspecting the experiment

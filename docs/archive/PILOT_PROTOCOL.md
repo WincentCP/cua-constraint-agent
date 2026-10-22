@@ -13,7 +13,7 @@
 | 5 | `openbanking/add_todo_for_the_card_minimum_payment` | Retrieve payment value, then create to-do |
 | 6 | `openbanking/add_todo_to_review_largest_card_charge` | Find a charge, then create to-do |
 
-Official tasks and fixed selection: [`config/pilot_plan.json`](../config/pilot_plan.json). These six exact IDs are excluded from the frozen [Main task set](MAIN_TASKSET_V1.md).
+Official tasks and fixed selection: [`config/pilot_plan.json`](../../config/pilot_plan.json). These six exact IDs are excluded from the frozen [Main task set](../MAIN_TASKSET_V1.md).
 
 ## Fixed experiment design
 
@@ -67,4 +67,4 @@ output/pilot/pilot_v1/
 - **Always report:** 24 planned, valid/invalid/not-started counts; by-model and overall Baseline/Proposed success; probe opportunities, comparable decisions and action divergence.
 - `results.csv` separates `official_success_raw` from `paired_analysis_success`; use the latter for paired estimates. No automatic invalid-pair retries or post-outcome task selection.
 
-GitHub CI checks code contracts, **not** local OpenApps/Ollama/Chromium task execution. The researcher-reported completion status of the earlier Pilot is distinct from CI status; [Main readiness/provenance](DATA_PROVENANCE.md) documents the subsequent Main approval review.
+GitHub CI checks code contracts, **not** local OpenApps/Ollama/Chromium task execution. The researcher-reported completion status of the earlier Pilot is distinct from CI status; [Main readiness/provenance](../DATA_PROVENANCE.md) documents the subsequent Main approval review.
