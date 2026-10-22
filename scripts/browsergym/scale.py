@@ -186,6 +186,57 @@ def inspect(folder,slot,locked):
                      "error":ep.get("error","") or (report.get("error","") if report else "")})
     return {"slot":slot,"status":status,"valid":valid,"rows":rows,"comparison":comparison}
 
+def size_interactions(views, models):
+    """Compare sizes only on the SAME task IDs valid for both checkpoints.
+
+    The unit is a family x task; incomplete units remain in the coverage counts
+    but never enter the interaction numerator or denominator.
+    """
+    comparisons = []
+    for family in sorted({m["family"] for m in models}):
+        size_views = {
+            size: {
+                (v["slot"]["task_group"], v["slot"]["task"]): v
+                for v in views if (v["slot"]["family"] == family
+                                   and v["slot"]["size"] == size)
+            } for size in ("small", "large")
+        }
+        per_size = {}
+        for size, values in size_views.items():
+            valid = [v for v in values.values() if v["valid"]]
+            delta = (sum(int(v["rows"][1]["paired_analysis_success"])
+                         - int(v["rows"][0]["paired_analysis_success"])
+                         for v in valid) / len(valid) if valid else None)
+            per_size[size] = {
+                "valid_pairs": len(valid), "planned_pairs": len(values),
+                "cdea_delta": delta,
+            }
+        common = sorted(set(size_views["small"]) & set(size_views["large"]))
+        common = [task for task in common
+                  if size_views["small"][task]["valid"]
+                  and size_views["large"][task]["valid"]]
+        matched_deltas = {}
+        for size in ("small", "large"):
+            matched_deltas[size] = (
+                sum(int(size_views[size][task]["rows"][1]["paired_analysis_success"])
+                    - int(size_views[size][task]["rows"][0]["paired_analysis_success"])
+                    for task in common) / len(common) if common else None
+            )
+        comparisons.append({
+            "family": family, **per_size,
+            "common_valid_tasks": len(common),
+            "matched_small_cdea_delta": matched_deltas["small"],
+            "matched_large_cdea_delta": matched_deltas["large"],
+            "interaction_small_minus_large": (
+                matched_deltas["small"] - matched_deltas["large"]
+                if common else None
+            ),
+            "fully_observed": len(common) == 32,
+            "backbone_confound": family == "xlam2",
+        })
+    return comparisons
+
+
 def report_outputs(folder,manifest_obj):
     views=[inspect(folder,slot,{"name":manifest_obj["model_names"][slot["model_label"]],
                                   "digest":manifest_obj["model_checkpoint_digests"][slot["model_label"]]})
@@ -220,22 +271,7 @@ def report_outputs(folder,manifest_obj):
                                   "successes":wins,"success_rate":wins/len(valid) if valid else "",
                                   "comparable_probe_decisions":sum(v["comparison"].get("comparable_probe_decisions",0) for v in valid),
                                   "policy_action_divergences":sum(v["comparison"].get("policy_action_divergences",0) for v in valid)})
-    interactions=[]
-    for family in sorted({m["family"] for m in manifest_obj["models"]}):
-        unit={}
-        for size in ("small","large"):
-            records=[v for v in views if v["slot"]["family"]==family and v["slot"]["size"]==size]
-            valid=[v for v in records if v["valid"]]
-            delta=(sum(int(v["rows"][1]["paired_analysis_success"])-int(v["rows"][0]["paired_analysis_success"])
-                       for v in valid)/len(valid) if valid else None)
-            unit[size]={"valid_pairs":len(valid),"planned_pairs":len(records),"cdea_delta":delta}
-        interactions.append({"family":family,**unit,
-                             "interaction_small_minus_large":
-                             unit["small"]["cdea_delta"]-unit["large"]["cdea_delta"]
-                             if unit["small"]["valid_pairs"]==32 and unit["large"]["valid_pairs"]==32
-                             else None,
-                             "fully_observed":all(unit[s]["valid_pairs"]==32 for s in ("small","large")),
-                             "backbone_confound":family=="xlam2"})
+    interactions = size_interactions(views, manifest_obj["models"])
     analysis={"protocol":"cdea_scale_v1","scale_id":folder.name,"planned_pairs":len(views),
               "valid_pairs":sum(v["valid"] for v in views),
               "invalid_pairs":sum(v["status"]!="not_started" and not v["valid"] for v in views),
@@ -243,7 +279,7 @@ def report_outputs(folder,manifest_obj):
               "status_counts":dict(Counter(v["status"] for v in views)),
               "interactions":interactions,
               "complete":all(v["status"] in ("paired_scale_completed","invalid_pair") for v in views),
-              "note":"Exploratory descriptive contrasts. Interaction withheld unless both family-size cells have 32 valid task pairs. xLAM backbone confound."}
+              "note":"Exploratory descriptive contrasts. Interactions use only common valid task IDs across small/large sizes; coverage counts report all. xLAM backbone confound."}
     pilot.atomic_csv(folder/"results.csv",RESULT_FIELDS,results)
     pilot.atomic_csv(folder/"pairs.csv",PAIR_FIELDS,pairs)
     pilot.atomic_csv(folder/"summary.csv",SUMMARY_FIELDS,summaries)

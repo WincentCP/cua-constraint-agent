@@ -36,6 +36,31 @@ class ScaleContracts(unittest.TestCase):
         bad_models=copy.deepcopy(self.models);bad_models[0]["size"]="large"
         with self.assertRaises(ValueError): scale.validate(self.plan,bad_models,self.roster)
 
+    def test_size_interaction_uses_same_task_intersection(self):
+        small = next(m for m in self.models if m["family"] == "granite4.1" and m["size"] == "small")
+        large = next(m for m in self.models if m["family"] == "granite4.1" and m["size"] == "large")
+        def view(model, task, baseline, proposed, valid=True):
+            return {"slot":{"family":model["family"],"size":model["size"],
+                            "task_group":"openbanking","task":task},
+                    "valid":valid,
+                    "rows":[{"paired_analysis_success":baseline},
+                            {"paired_analysis_success":proposed}]}
+        sample = [
+            view(small, "bank_a", False, True),
+            view(large, "bank_a", True, True),
+            view(small, "bank_b", False, False),
+            view(large, "bank_b", False, True, valid=False),
+        ]
+        item = next(x for x in scale.size_interactions(sample, self.models)
+                    if x["family"] == "granite4.1")
+        self.assertEqual(item["small"]["valid_pairs"], 2)
+        self.assertEqual(item["large"]["valid_pairs"], 1)
+        self.assertEqual(item["common_valid_tasks"], 1)
+        self.assertEqual(item["matched_small_cdea_delta"], 1.0)
+        self.assertEqual(item["matched_large_cdea_delta"], 0.0)
+        self.assertEqual(item["interaction_small_minus_large"], 1.0)
+        self.assertFalse(item["fully_observed"])
+
     def test_digest_and_model_registry(self):
         entries=[{"name":m["name"],"digest":"sha256:"+m["label"]} for m in self.models]
         client=lambda url,timeout:{"models":entries}
