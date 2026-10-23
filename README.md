@@ -97,6 +97,19 @@ The researcher **reports that the live-execution provenance review passed** the 
 - Exact McNemar is reported as an *exploratory*, unadjusted sensitivity analysis, not cluster-robust population inference.
 - Observed policy divergence needs trace review before attributing a success to the proposed mechanism.
 
+## Scale archive integrity and provenance
+
+For the independent model-size follow-up (32 tasks, eight checkpoints, 256 pairs / 512 episodes), run the read-only auditor:
+
+```powershell
+python .\scripts\browsergym\audit_scale_archive.py ".\scale_observation_v1.zip" --report .\scale_validation_report.json
+python .\scripts\browsergym\audit_scale_archive.py ".\scale_observation_v1.zip" --require-runtime-contract
+```
+
+The first command validates numerical consistency and reports missing runtime evidence without changing episode results. The second additionally fails unless archived model digests, server launch metadata, database snapshots, and logs meet the stricter evidence contract. An offline archive check cannot independently certify that historic OpenApps and Ollama processes ran. In particular, a health-check run of a staging service does not authenticate historical experiment episodes. Obtain actual model digests from the Ollama registry, server PIDs from processes launched by the official runner, and database paths from its per-arm isolated instances; never replace absent evidence with invented values. Keep invalid and unstarted pairs visible.
+
+See [Scale Study protocol](docs/SCALE_PROTOCOL_V1.md) for new runs. This check leaves the frozen Main study unchanged.
+
 ## Acknowledgments
 
 The benchmark uses [OpenApps](https://github.com/facebookresearch/OpenApps) and [BrowserGym](https://github.com/ServiceNow/BrowserGym); model inference uses Ollama. The upstream sources and their respective licenses remain those of their maintainers.
