@@ -131,9 +131,19 @@ def audit(source):
         for p in pairs:
             pid = p.get("pair_id")
             v = as_bool(p.get("paired_valid"))
-            counts["valid_pairs" if v else "invalid_pairs"] += 1
-            if v is None:
-                discrepancies.append("invalid_paired_valid_value")
+            status = p.get("pair_status")
+            if status == "not_started":
+                counts["not_started_pairs"] += 1
+                if v is not False:
+                    discrepancies.append("not_started_marked_valid")
+            elif v is True:
+                counts["valid_pairs"] += 1
+                if status != "paired_scale_completed":
+                    discrepancies.append("valid_pair_status_mismatch")
+            else:
+                counts["invalid_pairs"] += 1
+                if v is None:
+                    discrepancies.append("invalid_paired_valid_value")
             for method, column in (("Baseline", "baseline_success"),
                                    ("Proposed", "proposed_success")):
                 row = result_by_key.get((pid, method))
@@ -149,14 +159,13 @@ def audit(source):
                                     ("proposed_success", "proposed_successes")):
                     if as_bool(p.get(col)):
                         counts[metric] += 1
-        if counts["valid_pairs"] + counts["invalid_pairs"] != PAIRS:
+        if (counts["valid_pairs"] + counts["invalid_pairs"]
+                + counts["not_started_pairs"] != PAIRS):
             discrepancies.append("invalid_pair_denominator")
-        for k in ("valid_pairs", "invalid_pairs", "baseline_successes", "proposed_successes"):
+        for k in ("valid_pairs", "invalid_pairs", "not_started_pairs",
+                  "baseline_successes", "proposed_successes"):
             if analysis.get(k) != counts[k]:
                 discrepancies.append("analysis_" + k)
-        if analysis.get("not_started_pairs") != 0 or any(
-                p.get("pair_status") == "not_started" for p in pairs):
-            discrepancies.append("unexpected_unstarted_pairs")
         discrepancies = sorted(set(discrepancies))
 
         manifest_fields = ("created_utc", "controller_git_commit", "plan_sha256",
