@@ -110,6 +110,20 @@ The first command validates numerical consistency and reports missing runtime ev
 
 See [Scale Study protocol](docs/SCALE_PROTOCOL_V1.md) for new runs. This check leaves the frozen Main study unchanged.
 
+## Thesis release review (2026-10-24)
+
+For the independent eight-checkpoint Scale follow-up, see [descriptive archived results](docs/SCALE_RESULTS_V1.md), [source and provenance findings](docs/SCALE_ARCHIVE_AUDIT_V1.md), and [thesis code-freeze decisions](docs/THESIS_RELEASE_V1.md).
+
+The supplied `scale_reference_v2(1).zip` passes internal ZIP and numerical reconciliation but **fails compatibility with its claimed frozen controller and OpenApps sources**, including source-config Git blobs, public constraint IDs, database schema, and logged routes. The archived percentages are descriptive claims, **not authenticated live official rewards**. The supplied original Main archive was not independently re-audited for this release.
+
+Run the read-only source contract check:
+
+```powershell
+python .\scripts\browsergym\audit_scale_compatibility.py '.\scale_reference_v2(1).zip' --report .\scale_source_audit.json --require-compatible
+```
+
+It is expected to exit with code 3 for the supplied ZIP. Passing offline source checks would still not establish host-level live-execution provenance. Never modify historical records to make them pass an auditor.
+
 ## Acknowledgments
 
 The benchmark uses [OpenApps](https://github.com/facebookresearch/OpenApps) and [BrowserGym](https://github.com/ServiceNow/BrowserGym); model inference uses Ollama. The upstream sources and their respective licenses remain those of their maintainers.
