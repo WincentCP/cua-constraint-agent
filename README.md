@@ -25,18 +25,23 @@ Cohorts: 5 bank-information tasks (primary for Main), 18 cross-app workflows, 9 
 
 These rates summarize the supplied experiment archives. Source records and evidence limitations are documented separately; the notebook concentrates on reproducible paired-outcome statistics.
 
-## Compact analysis notebook
+## Research analysis notebook
 
-Open **[notebooks/cdea_main_scale_compact.ipynb](notebooks/cdea_main_scale_compact.ipynb)** in Jupyter or Google Colab. Upload the Main ZIP, the Scale ZIP, or both. If auto-discovery finds multiple archives of the same protocol, set `MAIN_ZIP` or `SCALE_ZIP` in the first code cell.
+Open **[notebooks/cdea_main_scale_compact.ipynb](notebooks/cdea_main_scale_compact.ipynb)** in Jupyter or Google Colab. Upload the previously supplied Main ZIP, the Scale ZIP, or both without extracting them. Automatic discovery uses `manifest.json`; explicitly set `MAIN_ZIP` or `SCALE_ZIP` if several archives share a protocol.
 
-The notebook uses **11 cells** (5 code + 6 headings) and covers:
-1. Study identity, matched-pair denominators, and endpoint consistency.
-2. Main and Scale paired outcomes, discordant pairs, success-rate differences, exact McNemar, and task-level uncertainty.
-3. Main checkpoint/task breakdowns; Scale's eight checkpoints, within-family size comparisons on common tasks, and category-specific effects.
-4. Probe decisions, action divergences versus matched outcomes, trace evidence, resource usage and failure reasons.
-5. Three figures and up to 15 populated CSV tables exported to `analysis_outputs_compact/` (13 tables when only the Scale archive is supplied).
+The notebook has **17 cells** (9 code and 8 Markdown), grouped into **seven analysis sections**:
 
-The notebook requires Python 3, `pandas`, `numpy`, `matplotlib`, and `scipy`; dependencies are preinstalled in standard Colab runtimes. A missing Main ZIP is allowed: Scale analysis runs independently.
+1. Dataset coverage, valid matched pairs, consistency checks, and statistical methods.
+2. Main experiment: primary bank-information outcome, task/model breakdown, and McNemar.
+3. Scale experiment: all eight checkpoints, small and large groups, family-level outcomes.
+4. Treatment-effect interaction across sizes, task categories, and a sensitivity analysis excluding xLAM's different backbone.
+5. CDEA mechanism: comparable probes, policy divergence, tentative evidence, and stored traces.
+6. Within-pair efficiency, success-conditioned resource use, and unsuccessful episode reasons.
+7. Results synthesis and reproducible ZIP export.
+
+With both archives loaded, analysis exports **nine independently rendered PNG figures** (one analysis question per image) and **20 populated CSV tables**, plus source fingerprints. Scale-only execution yields five PNGs / 14 CSVs; Main-only execution yields four PNGs / 13 CSVs.
+
+Dependencies: Python 3, `pandas`, `numpy`, `matplotlib`, `scipy`, all present in standard Google Colab runtimes. Main and Scale outcomes are always analyzed separately and are never treated as independent replicates.
 
 ## Repository map
 
