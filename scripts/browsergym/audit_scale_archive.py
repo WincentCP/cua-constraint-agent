@@ -108,7 +108,14 @@ def audit(source):
         if (len(scheduled), len(pairs), len(results), len(summaries)) != (
                 PAIRS, PAIRS, EPISODES, SUMMARIES):
             discrepancies.append("required_row_counts")
-        if manifest.get("planned_matched_pairs") != PAIRS or manifest.get("planned_episodes") != EPISODES:
+        # The official Scale runner serializes planned_pairs, while older
+        # read-only archives may contain planned_matched_pairs. Never accept
+        # disagreeing values when both are present.
+        planned = manifest.get("planned_pairs", manifest.get("planned_matched_pairs"))
+        if (planned != PAIRS or manifest.get("planned_episodes") != EPISODES
+                or ("planned_pairs" in manifest
+                    and "planned_matched_pairs" in manifest
+                    and manifest["planned_pairs"] != manifest["planned_matched_pairs"])):
             discrepancies.append("manifest_planned_counts")
         if any(not isinstance(p.get("pair_id"), str) or not re.fullmatch(r"pair_[0-9]{3}", p["pair_id"]) for p in pairs):
             discrepancies.append("invalid_pair_id")
