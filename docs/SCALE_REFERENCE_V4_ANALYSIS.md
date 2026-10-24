@@ -1,5 +1,7 @@
 # Scale v1 — model-size follow-up analysis
 
+> **Historical original-Scale report.** The currently selected thesis model-size analysis uses **Main Large + Scale Small only**. The 128 Scale Large pairs described in this original full-Scale report are **not** used in the [derived size comparison](MAIN_SMALL_EXTENSION_ANALYSIS.md), and the original Scale archive remains unmodified.
+
 Exploratory **Baseline vs CDEA** analysis from `scale_reference_v4.zip`: 32 fixed OpenApps tasks, eight checkpoint labels (3B–9B), 256 matched pairs, and 512 episode records.
 
 ## Main results
