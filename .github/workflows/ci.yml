@@ -1,4 +1,4 @@
-name: CUA Contract Tests
+name: CUA Contracts and Small Extension
 on: [push, pull_request]
 jobs:
   contract:
@@ -16,11 +16,13 @@ jobs:
         run: python -m compileall -q scripts/browsergym tests
       - name: Run offline contract tests
         run: python -m unittest discover -s tests -v
-      - name: Parse Pilot, Main and Scale PowerShell wrappers
+      - name: Check four-checkpoint extension schedule
+        run: python scripts/browsergym/small_extension.py --dry-run
+      - name: Parse active Pilot, Main and Small Extension PowerShell wrappers
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          foreach ($script in @('.\scripts\browsergym\run_pilot.ps1', '.\scripts\browsergym\run_main.ps1', '.\scripts\browsergym\run_scale.ps1', '.\scripts\browsergym\audit_scale_live.ps1')) {
+          foreach ($script in @('.\scripts\browsergym\run_pilot.ps1', '.\scripts\browsergym\run_main.ps1', '.\scripts\browsergym\run_small_extension.ps1')) {
             $parseErrors = $null
             $tokens = $null
             [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path, [ref]$tokens, [ref]$parseErrors) | Out-Null
