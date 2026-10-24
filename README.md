@@ -34,7 +34,7 @@ The notebook uses **11 cells** (5 code + 6 headings) and covers:
 2. Main and Scale paired outcomes, discordant pairs, success-rate differences, exact McNemar, and task-level uncertainty.
 3. Main checkpoint/task breakdowns; Scale's eight checkpoints, within-family size comparisons on common tasks, and category-specific effects.
 4. Probe decisions, action divergences versus matched outcomes, trace evidence, resource usage and failure reasons.
-5. Three figures and 15 CSV tables exported to `analysis_outputs_compact/`.
+5. Three figures and up to 15 populated CSV tables exported to `analysis_outputs_compact/` (13 tables when only the Scale archive is supplied).
 
 The notebook requires Python 3, `pandas`, `numpy`, `matplotlib`, and `scipy`; dependencies are preinstalled in standard Colab runtimes. A missing Main ZIP is allowed: Scale analysis runs independently.
 
