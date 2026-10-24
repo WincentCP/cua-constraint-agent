@@ -20,7 +20,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          foreach ($script in @('.\scripts\browsergym\run_pilot.ps1', '.\scripts\browsergym\run_main.ps1', '.\scripts\browsergym\run_scale.ps1')) {
+          foreach ($script in @('.\scripts\browsergym\run_pilot.ps1', '.\scripts\browsergym\run_main.ps1', '.\scripts\browsergym\run_scale.ps1', '.\scripts\browsergym\audit_scale_live.ps1')) {
             $parseErrors = $null
             $tokens = $null
             [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $script).Path, [ref]$tokens, [ref]$parseErrors) | Out-Null
