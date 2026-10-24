@@ -110,6 +110,19 @@ The first command validates numerical consistency and reports missing runtime ev
 
 See [Scale Study protocol](docs/SCALE_PROTOCOL_V1.md) for new runs. This check leaves the frozen Main study unchanged.
 
+## Run a new official Scale study
+
+For a new 32-task / eight-checkpoint Scale execution, follow the [live Scale runbook](docs/LIVE_SCALE_RUNBOOK.md). The runner now captures original OpenApps subprocess lifecycle information, official BrowserGym accessibility observations (with SHA-256 digests), isolated databases, and matching per-arm evaluator results.
+
+~~~powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_scale.ps1 -DryRun
+powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_scale.ps1 -CheckModels
+powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_scale.ps1 -Run -ScaleId scale_live_20261024_v1 -MaxPairs 1 -StopOnInvalid
+powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\audit_scale_live.ps1 -ScaleId scale_live_20261024_v1
+~~~
+
+A new study ID is required. The local audit validates source identity, runtime artifacts, original AXTree checksums and result consistency. It does not independently attest episodes that have not been executed.
+
 ## Acknowledgments
 
 The benchmark uses [OpenApps](https://github.com/facebookresearch/OpenApps) and [BrowserGym](https://github.com/ServiceNow/BrowserGym); model inference uses Ollama. The upstream sources and their respective licenses remain those of their maintainers.
