@@ -29,7 +29,7 @@ Rates are computed over the valid-pair denominator. A *percentage-point differen
 
 ## Reproduce outcome analysis
 
-Open [**Compact Main + Scale notebook**](../notebooks/cdea_main_scale_compact.ipynb) in Google Colab or Jupyter. Place a Main or Scale ZIP beside it, or set `MAIN_ZIP` and `SCALE_ZIP` in its first code cell. The notebook automatically detects manifest protocols, checks paired denominators and results consistency, and calculates success rates, exploratory McNemar, task-resampled sensitivity intervals, within-family size comparisons, and descriptive efficiency/probe indicators. It exports three figures and 15 tables to `analysis_outputs_compact/`.
+Open [**Compact Main + Scale notebook**](../notebooks/cdea_main_scale_compact.ipynb) in Google Colab or Jupyter. Place a Main or Scale ZIP beside it, or set `MAIN_ZIP` and `SCALE_ZIP` in its first code cell. The notebook automatically detects manifest protocols, checks paired denominators and results consistency, and calculates success rates, exploratory McNemar, task-resampled sensitivity intervals, within-family size comparisons, and descriptive efficiency/probe indicators. It exports three figures and up to 15 populated CSV tables to `analysis_outputs_compact/` (13 when only the Scale ZIP is loaded).
 
 The Main and Scale studies are analyzed separately; **do not combine their overlapping task/model observations as independent experimental replicates**.
 
