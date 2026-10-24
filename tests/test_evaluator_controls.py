@@ -105,11 +105,14 @@ class TestIsolation(unittest.TestCase):
                 returncode = None
                 def poll(self):
                     return None
-            with (patch.object(isolation, "check_pinned_openapps"),
+            process = Process()
+            with (patch.object(isolation, "check_pinned_openapps",
+                               return_value=isolation.UPSTREAM_PIN),
                   patch.object(isolation, "pick_job_id", return_value=133),
                   patch.object(isolation, "require_ownership", return_value=True),
-                  patch.object(isolation.subprocess, "Popen", return_value=Process()) as spawn,
-                  patch.object(isolation, "stop_owned_process") as stop):
+                  patch.object(isolation.subprocess, "Popen", return_value=process) as spawn,
+                  patch.object(isolation, "stop_owned_process",
+                               side_effect=lambda p: setattr(p, "returncode", -15)) as stop):
                 with isolation.isolated_openapps(root, run_dir) as server:
                     self.assertEqual(server.url, "http://127.0.0.1:18301")
                     self.assertIn("episode", server.database_dir)
@@ -119,7 +122,12 @@ class TestIsolation(unittest.TestCase):
                 self.assertIn("headless=True", args)
                 self.assertIn("+job_id=133", args)
                 self.assertTrue(any(part.startswith("databases_dir=") for part in args))
-                stop.assert_called_once()
+                stop.assert_called_once_with(process)
+                recorded = json.loads((run_dir / "launcher.json").read_text())
+                self.assertEqual(recorded["pid"], process.pid)
+                self.assertEqual(recorded["openapps_commit"], isolation.UPSTREAM_PIN)
+                self.assertEqual(recorded["returncode"], -15)
+                self.assertTrue(recorded["ownership_confirmed"])
                 with self.assertRaisesRegex(RuntimeError, "Refusing to reuse"):
                     with isolation.isolated_openapps(root, run_dir):
                         pass
