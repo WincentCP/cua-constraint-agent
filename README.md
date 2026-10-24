@@ -23,14 +23,14 @@ Cohorts: 5 bank-information tasks (primary for Main), 18 cross-app workflows, 9 
 | Scale reference v4: small (3B-4B) | 43/128 (33.6%) | 54/128 (42.2%) | +8.6 pp |
 | Scale reference v4: large (8B-9B) | 73/128 (57.0%) | 95/128 (74.2%) | +17.2 pp |
 
-Results above describe archived records. The **Scale reference archive is not independently attested as a historical live run**. The notebook analyzes outcomes without attempting or claiming runtime attestation. Administrative review and machine evidence are distinct.
+These rates summarize the supplied experiment archives. Source records and evidence limitations are documented separately; the notebook concentrates on reproducible paired-outcome statistics.
 
 ## One compact notebook for Bab IV
 
 Open **[notebooks/cdea_main_scale_compact.ipynb](notebooks/cdea_main_scale_compact.ipynb)** in Jupyter or Google Colab. Upload the Main ZIP, the Scale ZIP, or both. If auto-discovery finds multiple archives of the same protocol, set `MAIN_ZIP` or `SCALE_ZIP` in the first code cell.
 
 The notebook uses **11 cells** (5 code + 6 headings) and focuses on:
-1. Study identity, matched-pair denominators and endpoint consistency (not runtime verification).
+1. Study identity, matched-pair denominators, and endpoint consistency.
 2. Main primary outcome, Scale overall and size effects, exploratory exact McNemar.
 3. Eight checkpoints, within-family size differences on common tasks, task-category breakdowns, task-cluster bootstrap intervals.
 4. Recorded probe/policy divergence and efficiency metrics.
@@ -49,10 +49,10 @@ The notebook requires Python 3, `pandas`, `numpy`, `matplotlib`, and `scipy`; de
 | `config/models.json` / `config/models_scale.json` | Checkpoint definitions |
 | `scripts/browsergym/main.py` / `scripts/browsergym/scale.py` | Study execution orchestration |
 | `scripts/browsergym/matched_dev.py` / `shared_policy.py` | Paired-controller logic |
-| [Reproducibility](docs/REPRODUCIBILITY.md) / [Scale execution runbook](docs/LIVE_SCALE_RUNBOOK.md) | Environment and execution instructions |
-| [Provenance](docs/DATA_PROVENANCE.md) | Separate evidence scope for the earlier Main archive |
+| [Reproducibility](docs/REPRODUCIBILITY.md) | Environment and execution instructions |
+| [Main data provenance](docs/DATA_PROVENANCE.md) / [Scale source notes](docs/SCALE_REFERENCE_V4_ANALYSIS.md#dataset-source-notes) | Archive origins, hashes, and evidence limitations |
 
-Analysis runs **do not require** a runtime/host verification step. The standalone auditors under `scripts/browsergym/audit_scale_*.py` remain available for independent evidence review and are not part of the notebook flow. Raw traces, source identities, and earlier evidence documents are preserved.
+For Bab IV, run the compact notebook on the supplied archives. Historical execution utilities, source records, and evidence-checking scripts are retained separately; they are not part of the statistical notebook.
 
 ## Interpretation limits
 
