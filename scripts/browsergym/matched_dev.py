@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import asdict
+from datetime import datetime, timezone
 from hashlib import sha256
 import json
 import os
@@ -126,6 +127,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
         "task_group": args.task_group, "method": method,
         "model": identity["name"], "model_digest": identity["digest"],
         "server": asdict(server), "upstream_commit": UPSTREAM_PIN,
+        "started_at_utc": datetime.now(timezone.utc).isoformat(),
         "seed": args.seed, "max_steps": args.max_steps, "num_predict": NUM_PREDICT,
         "temperature": TEMPERATURE, "think": False, "action_subsets": list(ACTION_SUBSETS),
         "browsergym_core_version": None,
@@ -176,12 +178,17 @@ def run_episode(root: Path, server, method: str, identity: dict,
         record["public_constraints"] = constraints
         record["model_prompt_policy"] = "shared_identical_for_both_methods"
         history = []
+        observations_dir = destination / "observations"
+        observations_dir.mkdir(parents=True, exist_ok=True)
         previous_state = get_current_state(server.url)
         reward = None
         end_reason = "action_budget_exhausted"
 
         for step in range(args.max_steps):
             tree = extract_axtree_text(obs)
+            tree_path = observations_dir / f"step_{step + 1:03d}_before.axtree.txt"
+            # Write exact bytes to preserve the recorded SHA-256 on Windows.
+            tree_path.write_bytes(tree.encode("utf-8"))
             from qwen_dev import permitted_bids
             bids = permitted_bids(obs, tree)
             if not bids:
@@ -307,6 +314,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
                     "axtree_characters": len(tree),
                     "axtree_truncated_for_model": len(tree) > 16000,
                     "observation_sha256": sha256(tree.encode()).hexdigest(),
+                    "observation_artifact": tree_path.relative_to(destination).as_posix(),
                 }
                 if end_reason == "safety_guard_blocked":
                     rejected["guard_blocked"] = last["error"][len(guard_prefix):]
@@ -316,6 +324,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
             record["policy_overrides"] += int(decision["policy_overrode_primary"])
             entry = {
                 "step": step + 1, "observation_sha256": sha256(tree.encode()).hexdigest(),
+                "observation_artifact": tree_path.relative_to(destination).as_posix(),
                 "action": action, "model_seconds": model_seconds_for_step,
                 "url_before": str(obs.get("url", "")),
                 "axtree_characters": len(tree),
@@ -344,6 +353,10 @@ def run_episode(root: Path, server, method: str, identity: dict,
             entry["url_after"] = str(obs.get("url", ""))
             entry["url_changed"] = entry["url_after"] != entry["url_before"]
             next_tree = extract_axtree_text(obs)
+            next_path = observations_dir / f"step_{step + 1:03d}_after.axtree.txt"
+            next_path.write_bytes(next_tree.encode("utf-8"))
+            entry["next_observation_artifact"] = next_path.relative_to(destination).as_posix()
+            entry["next_observation_sha256"] = sha256(next_tree.encode("utf-8")).hexdigest()
             entry["axtree_changed"] = (
                 sha256(next_tree.encode("utf-8")).hexdigest()
                 != entry["observation_sha256"]
@@ -424,6 +437,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
         except Exception:
             record["final_sha256"] = None
         record["total_seconds"] = round(time.monotonic() - started, 3)
+        record["finished_at_utc"] = datetime.now(timezone.utc).isoformat()
         path.write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n",
                         encoding="utf-8")
         print(f"{method}: {record['status']} reward={record['official_reward']} "
