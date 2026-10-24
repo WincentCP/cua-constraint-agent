@@ -25,16 +25,16 @@ Cohorts: 5 bank-information tasks (primary for Main), 18 cross-app workflows, 9 
 
 These rates summarize the supplied experiment archives. Source records and evidence limitations are documented separately; the notebook concentrates on reproducible paired-outcome statistics.
 
-## One compact notebook for Bab IV
+## Compact analysis notebook
 
 Open **[notebooks/cdea_main_scale_compact.ipynb](notebooks/cdea_main_scale_compact.ipynb)** in Jupyter or Google Colab. Upload the Main ZIP, the Scale ZIP, or both. If auto-discovery finds multiple archives of the same protocol, set `MAIN_ZIP` or `SCALE_ZIP` in the first code cell.
 
-The notebook uses **11 cells** (5 code + 6 headings) and focuses on:
+The notebook uses **11 cells** (5 code + 6 headings) and covers:
 1. Study identity, matched-pair denominators, and endpoint consistency.
-2. Main primary outcome, Scale overall and size effects, exploratory exact McNemar.
-3. Eight checkpoints, within-family size differences on common tasks, task-category breakdowns, task-cluster bootstrap intervals.
-4. Recorded probe/policy divergence and efficiency metrics.
-5. Two figures and seven CSV tables exported to `analysis_outputs_compact/`.
+2. Main and Scale paired outcomes, discordant pairs, success-rate differences, exact McNemar, and task-level uncertainty.
+3. Main checkpoint/task breakdowns; Scale's eight checkpoints, within-family size comparisons on common tasks, and category-specific effects.
+4. Probe decisions, action divergences versus matched outcomes, trace evidence, resource usage and failure reasons.
+5. Three figures and 15 CSV tables exported to `analysis_outputs_compact/`.
 
 The notebook requires Python 3, `pandas`, `numpy`, `matplotlib`, and `scipy`; dependencies are preinstalled in standard Colab runtimes. A missing Main ZIP is allowed: Scale analysis runs independently.
 
@@ -52,7 +52,7 @@ The notebook requires Python 3, `pandas`, `numpy`, `matplotlib`, and `scipy`; de
 | [Reproducibility](docs/REPRODUCIBILITY.md) | Environment and execution instructions |
 | [Main data provenance](docs/DATA_PROVENANCE.md) / [Scale source notes](docs/SCALE_REFERENCE_V4_ANALYSIS.md#dataset-source-notes) | Archive origins, hashes, and evidence limitations |
 
-For Bab IV, run the compact notebook on the supplied archives. Historical execution utilities, source records, and evidence-checking scripts are retained separately; they are not part of the statistical notebook.
+To reproduce the results, run the compact notebook on the supplied archives. Historical execution utilities, source records, and evidence-checking scripts are retained separately; they are not part of the statistical notebook.
 
 ## Interpretation limits
 
