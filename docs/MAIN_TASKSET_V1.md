@@ -3,7 +3,7 @@
 **Official source:** [OpenApps task definitions (pinned commit)](https://github.com/facebookresearch/OpenApps/tree/6e6782794433c60468d65ac75bc3f03c56007f8c/config/tasks)
 **Frozen selection:** [main_taskset_v1.json](../config/main_taskset_v1.json) · 2026-10-20 · task-order SHA-256 `73d4a4a8e377422072c6ab27c066f87f8acbed7683ed50168c3407c861d61333`
 **Evaluation design:** 32 tasks × 4 LLMs × 2 methods (Baseline / Proposed–CDEA) = **128 matched pairs / 256 episodes**.
-**Results and audit:** [Main results](MAIN_RESULTS_V1.md) · [Data provenance](DATA_PROVENANCE.md) (researcher-reported live-provenance review: **PASS**).
+**Study outputs:** [Main results](MAIN_RESULTS_V1.md) · [Data source record](DATA_PROVENANCE.md).
 
 ## Primitive control — 9 tasks
 
