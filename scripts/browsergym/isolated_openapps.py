@@ -11,6 +11,8 @@ import ast
 from html import unescape
 import json
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from hashlib import sha256
 import os
 import re
 from pathlib import Path
@@ -47,6 +49,19 @@ def check_pinned_openapps(root: Path) -> str:
     if actual != UPSTREAM_PIN:
         raise RuntimeError(f"OpenApps pin mismatch: {actual} != {UPSTREAM_PIN}")
     return actual
+
+
+def utc_now() -> str:
+    """Capture a timezone-aware timestamp from the running host."""
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_launch_record(path: Path, record: dict) -> None:
+    """Persist observed process metadata, including interrupted launches."""
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n",
+                         encoding="utf-8")
+    temporary.replace(path)
 
 
 def _port_available(port: int) -> bool:
@@ -184,7 +199,7 @@ def stop_owned_process(process: subprocess.Popen) -> None:
 def isolated_openapps(root: Path, run_dir: Path, *, startup_seconds: int = 120):
     """Launch and destroy one private OpenApps server; fail closed on reuse."""
     root = root.expanduser().resolve()
-    check_pinned_openapps(root)
+    upstream_commit = check_pinned_openapps(root)
     run_dir = run_dir.expanduser().resolve()
     database_dir = run_dir / "databases"
     logs_dir = run_dir / "logs"
@@ -207,12 +222,30 @@ def isolated_openapps(root: Path, run_dir: Path, *, startup_seconds: int = 120):
         f"+job_id={job_id}",
     ]
     flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+    launch_record_path = run_dir / "launcher.json"
+    launch_record = {
+        "schema_version": 1,
+        "launched_at_utc": utc_now(),
+        "openapps_commit": upstream_commit,
+        "launcher_sha256": sha256((root / "launch.py").read_bytes()).hexdigest(),
+        "python_executable": sys.executable,
+        "command": command,
+        "cwd": str(root),
+        "server_url": url,
+        "job_id": job_id,
+        "database_dir": str(database_dir),
+        "logs_dir": str(logs_dir),
+        "server_log": str(logfile),
+        "ownership_confirmed": False,
+    }
     with logfile.open("w", encoding="utf-8") as stream:
         process = subprocess.Popen(
             command, cwd=str(root), env=env, stdout=stream,
             stderr=subprocess.STDOUT, creationflags=flags,
             start_new_session=(os.name != "nt"),
         )
+        launch_record["pid"] = process.pid
+        write_launch_record(launch_record_path, launch_record)
         try:
             deadline = time.monotonic() + startup_seconds
             while time.monotonic() < deadline:
@@ -221,6 +254,9 @@ def isolated_openapps(root: Path, run_dir: Path, *, startup_seconds: int = 120):
                         f"OpenApps server exited (code {process.returncode}); inspect {logfile}"
                     )
                 if require_ownership(url, database_dir):
+                    launch_record["ownership_confirmed"] = True
+                    launch_record["ready_at_utc"] = utc_now()
+                    write_launch_record(launch_record_path, launch_record)
                     break
                 time.sleep(0.5)
             else:
@@ -232,3 +268,6 @@ def isolated_openapps(root: Path, run_dir: Path, *, startup_seconds: int = 120):
             )
         finally:
             stop_owned_process(process)
+            launch_record["stopped_at_utc"] = utc_now()
+            launch_record["returncode"] = process.returncode
+            write_launch_record(launch_record_path, launch_record)
