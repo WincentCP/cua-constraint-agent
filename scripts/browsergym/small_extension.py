@@ -229,7 +229,7 @@ def report_outputs(folder,manifest_obj):
               "not_started_pairs":sum(v["status"]=="not_started" for v in views),
               "status_counts":dict(Counter(v["status"] for v in views)),
               "complete":all(v["status"] in ("paired_scale_completed","invalid_pair") for v in views),
-              "note":"Small checkpoints only. Main Large is supplied separately to the analysis notebook; no Large checkpoint is scheduled or inferred here."
+              "note":"Small checkpoints only. Main Large is supplied separately to the analysis notebook; no Large checkpoint is scheduled or inferred here."}
     pilot.atomic_csv(folder/"results.csv",RESULT_FIELDS,results)
     pilot.atomic_csv(folder/"pairs.csv",PAIR_FIELDS,pairs)
     pilot.atomic_csv(folder/"summary.csv",SUMMARY_FIELDS,summaries)
