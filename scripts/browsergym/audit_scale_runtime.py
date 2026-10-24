@@ -73,14 +73,23 @@ def git_head(repo):
                           capture_output=True, check=True, text=True).stdout.strip()
 
 
+def worktree_clean(repo):
+    return subprocess.run(
+        ["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"],
+        capture_output=True, check=True, text=True,
+    ).stdout.strip() == ""
+
+
 def source_checks(manifest, repo_root, openapps_root):
     checks = {}
     for field, relative in FILES.items():
         path = repo_root / relative
         checks[field] = path.is_file() and sha256(path.read_bytes()).hexdigest() == manifest.get(field)
     checks["controller_git_commit"] = git_head(repo_root) == manifest.get("controller_git_commit")
+    checks["controller_worktree_clean"] = worktree_clean(repo_root)
     if openapps_root is not None:
         checks["openapps_git_commit"] = git_head(openapps_root) == manifest.get("openapps_git_commit")
+        checks["openapps_worktree_clean"] = worktree_clean(openapps_root)
         launcher = openapps_root / "launch.py"
         checks["openapps_launch.py_exists"] = launcher.is_file()
     else:
@@ -129,7 +138,7 @@ def audit(source, *, repo_root=ROOT, openapps_root=None):
                     or indexed.get("digest") != digest
                     or indexed.get("name") != (manifest.get("model_names") or {}).get(label)):
                 flag("checkpoint_registry_mismatch", label)
-        if any(value is False for value in source_status.values()):
+        if not all(value is True for value in source_status.values()):
             flag("frozen_source_mismatch", "git/config")
 
         valid_count = 0
