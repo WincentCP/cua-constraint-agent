@@ -29,7 +29,7 @@ Rates are computed over the valid-pair denominator. A *percentage-point differen
 
 ## Reproduce outcome analysis
 
-Open [**Compact Main + Scale notebook**](../notebooks/cdea_main_scale_compact.ipynb) in Google Colab or Jupyter. Place a Main or Scale ZIP beside it, or set `MAIN_ZIP` and `SCALE_ZIP` in its first code cell. The notebook automatically detects manifest protocols, checks paired denominators and results consistency, and calculates success rates, exploratory McNemar, task-resampled sensitivity intervals, within-family size comparisons, and descriptive efficiency/probe indicators. It exports two figures and seven tables to `analysis_outputs_compact/`.
+Open [**Compact Main + Scale notebook**](../notebooks/cdea_main_scale_compact.ipynb) in Google Colab or Jupyter. Place a Main or Scale ZIP beside it, or set `MAIN_ZIP` and `SCALE_ZIP` in its first code cell. The notebook automatically detects manifest protocols, checks paired denominators and results consistency, and calculates success rates, exploratory McNemar, task-resampled sensitivity intervals, within-family size comparisons, and descriptive efficiency/probe indicators. It exports three figures and up to 15 populated CSV tables to `analysis_outputs_compact/` (13 when only the Scale ZIP is loaded).
 
 The Main and Scale studies are analyzed separately; **do not combine their overlapping task/model observations as independent experimental replicates**.
 
@@ -40,4 +40,4 @@ The Main and Scale studies are analyzed separately; **do not combine their overl
 - Recorded upstream OpenApps commit: `6e6782794433c60468d65ac75bc3f03c56007f8c`
 - The archive's `provenance/validation_report.json` includes a validation claim alongside **zero observed launcher records and zero verified Ollama digest sets**. Launcher records lack observed server PIDs, and some episode timestamps extend beyond the archive review date. These are unresolved source-evidence limitations, not inputs to the success-rate calculations. The original historical execution cannot be independently established from this archive alone.
 
-The original ZIP and preserved execution utilities remain unchanged. For the thesis, report these calculations as **outcomes recorded in the supplied reference archive**, with the source notes above available separately from Bab IV's statistical workflow.
+The original ZIP and preserved execution utilities remain unchanged. For the thesis, report these calculations as **outcomes recorded in the supplied reference archive**, with the source notes above retained separately from the statistical workflow.
