@@ -21,6 +21,7 @@
   "model_timeout": 240,
   "temperature": 0,
   "num_predict": 640,
+  "num_ctx": 4096,
   "think": false,
   "action_subsets": [
     "bid",

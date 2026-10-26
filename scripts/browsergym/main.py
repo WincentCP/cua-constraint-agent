@@ -82,6 +82,7 @@ def validate_plan(plan: dict, roster: dict, models: list) -> list[dict]:
         "seed": 233, "max_steps": 40, "model_timeout": 240,
         "temperature": matched_dev.TEMPERATURE,
         "num_predict": matched_dev.NUM_PREDICT,
+        "num_ctx": 4096,
         "think": False, "action_subsets": list(matched_dev.ACTION_SUBSETS),
         "bounded_shared_repairs": 1, "click_force_retry": False,
         "planned_tasks": 32, "planned_matched_pairs": 128,
@@ -296,7 +297,8 @@ def create_manifest(main_id: str, plan: dict, tasks: list[dict],
             "seed": plan["seed"], "max_steps": plan["max_steps"],
             "model_timeout": plan["model_timeout"],
             "temperature": plan["temperature"],
-            "num_predict": plan["num_predict"], "think": False,
+            "num_predict": plan["num_predict"],
+            "num_ctx": plan["num_ctx"], "think": False,
             "action_subsets": plan["action_subsets"],
             "bid_click_timeout_ms": matched_dev.DEV_CLICK_TIMEOUT_MS,
             "bounded_shared_repairs": 1, "click_force_retry": False,
@@ -410,6 +412,7 @@ def inspect_slot(directory: Path, slot: dict, manifest: dict,
             and ep.get("max_steps") == settings["max_steps"]
             and ep.get("temperature") == settings["temperature"]
             and ep.get("num_predict") == settings["num_predict"]
+            and ep.get("num_ctx") == settings["num_ctx"]
             and ep.get("think") is False
             and ep.get("action_subsets") == settings["action_subsets"]
             and ep.get("click_force_retry") is False
@@ -705,6 +708,7 @@ def execute_pairs(directory: Path, manifest: dict, args,
                 task_group=slot["task_group"], seed=manifest["shared_parameters"]["seed"],
                 max_steps=manifest["shared_parameters"]["max_steps"],
                 model_timeout=manifest["shared_parameters"]["model_timeout"],
+                num_ctx=manifest["shared_parameters"]["num_ctx"],
                 ollama_url=args.ollama_url, study_phase="main",
                 main_id=directory.name, pilot_id=None,
             )
@@ -847,7 +851,8 @@ def main(argv=None) -> int:
         errors, results = [], {}
         for label in labels:
             try:
-                record = run_check(label, args.ollama_url)
+                record = run_check(label, args.ollama_url,
+                                   num_ctx=plan["num_ctx"])
                 results[label] = record
                 if record["status"] != "action_contract_pass":
                     raise RuntimeError(record["status"])

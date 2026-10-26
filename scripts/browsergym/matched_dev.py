@@ -142,9 +142,10 @@ def run_episode(root: Path, server, method: str, identity: dict,
         "validation_includes_shared_safety_guards": True,
         "trace": [], "probe_opportunities": 0, "policy_overrides": 0,
     }
+    if phase in ("main", "scale"):
+        record["num_ctx"] = args.num_ctx
     if phase == "scale":
         record["scale_id"] = args.scale_id
-        record["num_ctx"] = args.num_ctx
     started = time.monotonic()
     env = None
     try:
@@ -204,7 +205,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
                 "think": False, "format": "json",
                 "options": {"temperature": TEMPERATURE, "num_predict": NUM_PREDICT},
             }
-            if phase == "scale":
+            if phase in ("main", "scale"):
                 request["options"]["num_ctx"] = args.num_ctx
             invalid_attempts = []
             model_telemetry = []
@@ -496,8 +497,9 @@ def run_pair(args, report: dict) -> None:
         "num_predict": NUM_PREDICT, "think": False,
         "action_subsets": list(ACTION_SUBSETS),
     }
-    if getattr(args, "study_phase", "development") == "scale":
+    if getattr(args, "study_phase", "development") in ("main", "scale"):
         report["parameters"]["num_ctx"] = args.num_ctx
+    if getattr(args, "study_phase", "development") == "scale":
         report["parameters"]["scale_id"] = args.scale_id
     first_hash = None
     directories = set()
