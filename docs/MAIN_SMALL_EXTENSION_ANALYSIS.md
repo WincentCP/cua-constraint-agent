@@ -2,12 +2,12 @@
 
 ## Methodology and exact source selection
 
-The canonical analysis selects **four Large (8B–9B) model checkpoint outcomes from frozen Main** and **four Small (3B–4B) model checkpoint outcomes from the extension**. The current supplied input is historical `scale_reference_v4.zip` filtered to Small. New Small-only archives use protocol `cdea_small_extension_v1` and can be loaded without filtering Large. No episode outcome is rewritten or imputed.
+The canonical analysis selects **four Large (8B–9B) model checkpoint outcomes from frozen Main** and **four Small (3B–4B) model checkpoint outcomes from the extension**. The current supplied input is historical `scale_reference.zip` filtered to Small. New Small-only archives use protocol `cdea_small_extension_v1` and can be loaded without filtering Large. No episode outcome is rewritten or imputed.
 
 | Analyzed group | Original archive | Models | Valid paired task-model units | Episodes |
 |---|---|---:|---:|---:|
-| Main Large | `main_observation_v1(5).zip` | 4 | 128 | 256 |
-| Scale Small | `scale_reference_v4.zip`, filter `size == "small"` | 4 | 128 | 256 |
+| Main Large | `main_observation.zip` | 4 | 128 | 256 |
+| Scale Small | `scale_reference.zip`, filter `size == "small"` | 4 | 128 | 256 |
 | **Derived comparison** | **Main Large + Scale Small** | **8** | **256** | **512** |
 
 Both groups use the same 32 OpenApps task IDs. The **historical** Scale archive also contains 128 Large pairs; those are **excluded**, with their original records retained unchanged in the source ZIP. See the [legacy Scale v1 report](../legacy/full_scale_v1/docs/SCALE_REFERENCE_V4_ANALYSIS.md) for source-history context. The existing Main Large outcomes appear in both the original Main descriptive analysis and the derived size comparison; they must not be counted as independent replicated runs.
@@ -39,6 +39,10 @@ Both record upstream OpenApps revision `6e6782794433c60468d65ac75bc3f03c56007f8c
 
 ## Run reproducibly
 
-Use [notebooks/cdea_main_scale_compact.ipynb](../notebooks/cdea_main_scale_compact.ipynb) with the frozen Main ZIP and **either** the original eight-checkpoint Scale ZIP (filtered to Small) **or** a new Small-only extension ZIP. The notebook performs manifest/protocol and paired-outcome consistency checks, accepts both Small protocols, selects only `size=small`, and adds explicit source columns before analyzing. It exports nine independent PNG charts, 22 CSV reports, and `sources_and_methods.json` recording source hashes, selected counts and the exclusion rule. The original ZIP archives are never mutated.
+Use [notebooks/cdea_main_scale_compact.ipynb](../notebooks/cdea_bab_iv.ipynb) with the frozen Main ZIP and **either** the original eight-checkpoint Scale ZIP (filtered to Small) **or** a new Small-only extension ZIP. The notebook performs manifest/protocol and paired-outcome consistency checks, accepts both Small protocols, selects only `size=small`, and adds explicit source columns before analyzing. It exports nine independent PNG charts, 22 CSV reports, and `sources_and_methods.json` recording source hashes, selected counts and the exclusion rule. The original ZIP archives are never mutated.
 
 The numerical data are outcomes **recorded in the provided reference archives**. The runner for new Small-only schedules is documented in [Small Extension protocol](SMALL_EXTENSION_PROTOCOL.md). Numerical consistency checks are part of the notebook; historical execution records are kept separate.
+
+## Current notebook and input aliases
+
+The thesis-oriented notebook is [`cdea_bab_iv.ipynb`](../notebooks/cdea_bab_iv.ipynb). It accepts `main_observation.zip` and `scale_reference.zip` (same content/hashes as the original archives above). It also accepts Small-only `cdea_small_extension_v1`. It exports 9 separately colored charts, 6 Bab IV main tables and 23 detailed CSVs. See [output mapping](BAB_IV_OUTPUTS.md) and [reproducibility](REPRODUCIBILITY.md). The previous compact notebook remains unchanged as a prior reference.

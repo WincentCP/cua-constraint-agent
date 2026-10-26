@@ -25,3 +25,7 @@
 **PASS is the researcher's recorded live-evidence review, not an independent host-level attestation.** Archive checks support integrity and traceability; this documentation update did not independently confirm original-host execution or replay every episode.
 
 Preserve the original archive unchanged. For review, provide its fingerprint, `manifest.json`, readiness evidence and paired traces alongside the [Main results](MAIN_RESULTS_V1.md) and [frozen protocol](MAIN_PROTOCOL_V1.md).
+
+## Notebook input alias
+
+The study source can also be supplied to the current notebook under the name `main_observation.zip`. Its SHA-256 remains `74f48100b4dc6ae074573596dc87beed18770d4c3740f2c01f5efcd57a2d885c`. Renaming is not a new experiment and does not alter recorded source history.
