@@ -7,16 +7,16 @@
 
 Nama file tersebut adalah alias input; identitas dan hash dari arsip asli tetap berlaku. Hasil Large berasal dari Main dan tidak dihitung dua kali.
 
-## Menjalankan notebook asli
+## Menjalankan notebook utama
 
 ```powershell
 python -m pip install -r requirements-analysis.txt
 python scripts/analysis/audit_archives.py --main main_observation.zip --small scale_reference.zip --output archive_audit.json
 ```
 
-Buka [`notebooks/main_analysis.ipynb`](../notebooks/main_analysis.ipynb) di Jupyter atau Colab, unggah kedua ZIP (atau `Dataset_CDEA.zip`), kemudian **Run All**. Notebook tidak memodifikasi ZIP sumber.
+Buka [`notebooks/main_analysis.ipynb`](../notebooks/main_analysis.ipynb) di Jupyter atau Google Colab. Unggah `Dataset_CDEA.zip` atau kedua arsip sumber `main_observation.zip` dan `scale_reference.zip`, kemudian pilih **Run All**. Notebook tidak memodifikasi ZIP sumber.
 
-Keluaran: 6 tabel utama, 9 gambar berwarna, 23 CSV analisis rinci, serta ringkasan statistik dan pemetaan gambar/tabel. Nama output mengikuti notebook asli.
+Keluaran: 6 tabel utama, 9 gambar berwarna, 20 CSV analisis rinci, serta ringkasan statistik. Tidak ada berkas `pemetaan_bab_iv.json`. Nama output mengikuti notebook asli.
 
 ## Pengujian kode
 
@@ -25,7 +25,7 @@ python -m unittest discover -s tests -v
 python scripts/analysis/verify_notebook.py
 ```
 
-Uji integrasi menjalankan notebook dengan fixture. Auditor arsip dapat memeriksa format `cdea_small_extension_v1` secara terpisah. **Notebook asli hanya menerima** `cdea_scale_v1` sebagai sumber Small; hasil Small-only baru tidak otomatis dapat dibuka dalam notebook yang sama.
+Uji integrasi menjalankan notebook dengan fixture. Auditor arsip dapat memeriksa format `cdea_small_extension_v1` secara terpisah. **Notebook utama hanya menerima** `cdea_scale_v1` sebagai sumber Small; hasil Small-only baru tidak otomatis dapat dibuka dalam notebook yang sama.
 
 ## Hasil referensi
 
