@@ -25,7 +25,7 @@ Runner Small-only terbaru menghasilkan protokol `cdea_small_extension_v1`. Audit
 
 Hasil pasangan gabungan: keduanya berhasil **105**, hanya Proposed berhasil **46**, hanya Baseline berhasil **11**, dan keduanya gagal **94** (total **256**).
 
-Selisih manfaat Small dikurangi Large adalah **−10,16 poin persentase**, dengan interval sensitivitas *task bootstrap* **[−21,09; +0,78]**. Ketika keluarga xLAM dikecualikan, selisihnya **−9,38** dengan interval **[−25,00; +4,17]**. Keduanya mencakup nol sehingga belum mendukung kesimpulan konklusif tentang pengaruh ukuran model. Uji *exact McNemar* bersifat eksploratori, tanpa penyesuaian per tugas maupun untuk pengujian berganda.
+Manfaat CDEA pada Small lebih rendah sebesar **10,16 poin persentase** dibandingkan Large dalam data yang dianalisis. Perbandingan ini bersifat eksploratori; uji *exact McNemar* tidak disesuaikan untuk pengujian berganda maupun pengelompokan berdasarkan tugas.
 
 ## Perbandingan konfigurasi sumber
 
@@ -39,8 +39,8 @@ Selisih manfaat Small dikurangi Large adalah **−10,16 poin persentase**, denga
 | num_predict | 640 | 640 |
 | num_ctx | Tidak dicantumkan dalam parameter bersama | 8192 |
 
-Revisi pengendali berbeda, informasi konfigurasi Main tidak sepenuhnya identik, dan varian xLAM memiliki perbedaan arsitektur. Karena itu, hasil ukuran model tidak dapat dikaitkan secara kausal hanya dengan jumlah parameter. Perbedaan tindakan tidak otomatis membuktikan keberhasilan memperoleh informasi.
+Revisi pengendali berbeda, informasi konfigurasi Main tidak sepenuhnya identik, . Karena itu, hasil ukuran model tidak dapat dikaitkan secara kausal hanya dengan jumlah parameter. Perbedaan tindakan tidak otomatis membuktikan keberhasilan memperoleh informasi.
 
 ## Menjalankan analisis
 
-Ikuti [panduan reproduksi](REPRODUCIBILITY.md) menggunakan kedua ZIP di atas. Notebook menghasilkan **6 tabel utama, 9 grafik, 23 CSV rinci**, dan metadata sumber. Hasil tersebut merupakan perhitungan ulang dari arsip yang diberikan, bukan eksekusi baru atau verifikasi independen atas asal runtime.
+Ikuti [panduan reproduksi](REPRODUCIBILITY.md) menggunakan kedua ZIP di atas. Notebook menghasilkan **6 tabel utama, 9 grafik, 20 CSV rinci**, dan metadata sumber. Hasil tersebut merupakan perhitungan ulang dari arsip yang diberikan, bukan eksekusi baru atau verifikasi independen atas asal runtime.
