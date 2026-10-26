@@ -1,4 +1,4 @@
-# CDEA — Computer-Using Agent Research
+# CDEA — Computer-Use Agent Research
 
 Constraint-Driven Evidence Acquisition (CDEA) ranks model-proposed information probes by coverage of unknown constraints and estimated forward cost. The comparison is **Baseline vs Proposed (CDEA)** on OpenApps tasks through BrowserGym. No model weights are trained.
 
@@ -8,8 +8,8 @@ Constraint-Driven Evidence Acquisition (CDEA) ranks model-proposed information p
 
 | Cohort | Input | OpenApps tasks | Checkpoints | Matched pairs | Episodes |
 |---|---|---:|---:|---:|---:|
-| Main Large (8B–9B) | `main_observation_v1(5).zip` | 32 | 4 | 128 | 256 |
-| Extension Small (3B–4B) | Small-only results from `scale_reference_v4.zip` | 32 | 4 | 128 | 256 |
+| Main Large (8B–9B) | `main_observation.zip` | 32 | 4 | 128 | 256 |
+| Extension Small (3B–4B) | Small-only results from `scale_reference.zip` | 32 | 4 | 128 | 256 |
 | **Size comparison** | **Main Large + Extension Small** | **32 unique IDs** | **8** | **256** | **512** |
 
 **Recorded descriptive outcomes**
@@ -27,15 +27,21 @@ The source runs used **different controller revisions**, and the Main manifest d
 
 ## Run the research notebook
 
-Open [notebooks/cdea_main_scale_compact.ipynb](notebooks/cdea_main_scale_compact.ipynb) in Jupyter/Colab, upload the original Main ZIP and the original Scale ZIP **without extracting them**, then run all cells.
+Open [notebooks/cdea_bab_iv.ipynb](notebooks/cdea_bab_iv.ipynb), upload `main_observation.zip` and `scale_reference.zip` (or `Dataset_CDEA.zip`), then **Run All**.
 
-- The notebook accepts **`cdea_main_v1` for Large** and **`cdea_scale_v1` for Small** (filters historical Scale to `size=small`).
-- For future four-checkpoint extensions, it also accepts **`cdea_small_extension_v1`** (already contains only Small).
-- An ambiguous folder with two eligible Small archives requires setting `SCALE_ZIP` explicitly in the first code cell; `MAIN_ZIP` can likewise be set explicitly.
-- It checks pair/episode agreement, tracks the originating archive, prevents duplicate task–model combinations, and **never substitutes historical Scale Large**.
-- When both original ZIPs are available, it produces 9 independent single-panel PNG figures and 22 CSV reports; the original ZIPs are not mutated.
+- The notebook selects four Large checkpoints **only from Main** (`cdea_main_v1`) and four Small checkpoints from the historical Scale (`cdea_scale_v1`) or a new Small-only archive (`cdea_small_extension_v1`).
+- The historical Scale's 128 Large pairs are excluded. Output includes **6 main CSV tables, 9 ordered color figures, 23 detailed CSV reports**, plus summary and source SHA-256 metadata.
+- Output figure and table labels follow Bab IV of the thesis: see [Bab IV output mapping](docs/BAB_IV_OUTPUTS.md). The previous [compact notebook](notebooks/cdea_main_scale_compact.ipynb) is kept for reproducibility of prior analyses.
+- Source archives are read-only. Their stable input names are aliases for the original reference archives documented by hash.
 
-See [the selected source analysis](docs/MAIN_SMALL_EXTENSION_ANALYSIS.md) and [reproducibility guide](docs/REPRODUCIBILITY.md).
+Install analysis dependencies with `python -m pip install -r requirements-analysis.txt`. To check source consistency independently of the notebook:
+
+```powershell
+python scripts/analysis/audit_archives.py --main main_observation.zip --small scale_reference.zip --output archive_audit.json
+python scripts/analysis/verify_notebook.py
+```
+
+The second command executes synthetic **test fixtures only**, not the research datasets. See [reproducibility](docs/REPRODUCIBILITY.md) and [Bab III wording sync](docs/THESIS_SYNC.md).
 
 ## New Small-only experiment (optional)
 
@@ -56,7 +62,8 @@ The script writes to `output/small_extension/<ExtensionId>/` and uses [`config/s
 
 | Location | Purpose |
 |---|---|
-| `notebooks/cdea_main_scale_compact.ipynb` | Main Large + Small Extension research analysis |
+| `notebooks/cdea_bab_iv.ipynb` | Current Bab IV notebook; 6 tables / 9 graphs in thesis order |
+| `notebooks/cdea_main_scale_compact.ipynb` | Frozen earlier compact analysis (retained) |
 | `config/main_plan.json`, `config/models.json` | Frozen four-checkpoint Main protocol |
 | `config/small_extension_plan.json`, `config/models_small_extension.json` | New four-Small-checkpoint runner configuration |
 | `config/main_taskset_v1.json` | Shared 32 OpenApps task IDs |

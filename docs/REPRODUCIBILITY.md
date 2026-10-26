@@ -1,50 +1,45 @@
-# Reproducing CDEA Main + Small Extension Analysis
+# Reproducing the CDEA Bab IV Analysis
 
-This guide reproduces **the numerical analysis from user-supplied archives**. The selected Large checkpoint observations belong to frozen Main. The selected Small checkpoint observations belong to the Small extension (historical Scale source filtered to Small, or new Small-only source). A numerical notebook run is not an execution of new browser episodes.
+## Inputs
 
-## Input archives and source assignment
+- `main_observation.zip`: Main Large, protocol `cdea_main_v1`, 128 scheduled paired runs.
+- `scale_reference.zip`: historical protocol `cdea_scale_v1` (256 pairs), **select only 128 Small pairs**.
+- A new Small-only `cdea_small_extension_v1` archive (128 pairs) can replace the historical Scale input.
 
-| Model-size cohort | Current reference ZIP | Included pairs | Model parameters |
-|---|---|---:|---|
-| Large | `main_observation_v1(5).zip` | 128 | Four 8B–9B checkpoints |
-| Small | `scale_reference_v4.zip`, `size == 'small'` | 128 | Four 3B–4B checkpoints |
+These input names are shorter aliases of the archived reference ZIPs. Check SHA-256 in [data provenance](DATA_PROVENANCE.md) and [source analysis](MAIN_SMALL_EXTENSION_ANALYSIS.md). The Main Large group is never counted twice.
 
-The historical Scale ZIP also includes 128 Large pairs. **They are never selected** in the active comparison, and no duplicate copy of Main Large is introduced. The originals are not modified. Check source SHA-256 and cohort counts before interpreting results; source records and limitations are documented in [the canonical analysis](MAIN_SMALL_EXTENSION_ANALYSIS.md).
+## Setup and Run All
 
-## Re-run notebook analysis (Jupyter or Google Colab)
+```powershell
+python -m pip install -r requirements-analysis.txt
+python scripts/analysis/audit_archives.py --main main_observation.zip --small scale_reference.zip --output archive_audit.json
+```
 
-1. Open [the notebook](../notebooks/cdea_main_scale_compact.ipynb).
-2. Upload the two original ZIPs **without unzipping**.
-3. Run all cells. If multiple eligible ZIPs are present, set `MAIN_ZIP` and `SCALE_ZIP` explicitly at the top.
-4. Check cohort mapping, planned/valid/invalid status, and source-controller configurations in the first section.
-5. Find separately rendered figures in `cdea_analysis_outputs/figures/`, tables in `cdea_analysis_outputs/tables/`, and the source summary in `sources_and_methods.json`.
+Open [Bab IV notebook](../notebooks/cdea_bab_iv.ipynb) in Jupyter or Colab, place the two source ZIPs beside it (or upload `Dataset_CDEA.zip`), and use **Run All**. The notebook reads source archives without changing them.
 
-Expected recorded outcomes with the specified reference archives:
+Expected output directory `hasil_analisis_cdea/`:
+- `figures/Gambar_4_1.png` through `Gambar_4_9.png`;
+- `tables/Tabel_4_1.csv` through `Tabel_4_6.csv`;
+- `detailed_analysis/` (23 CSV reports), `summary/` (statistics and source mapping).
+- `Hasil_Analisis_CDEA_Bab_IV_Terurut.zip` packages the output.
 
-| Group | Baseline | Proposed/CDEA | Delta |
-|---|---:|---:|---:|
-| Main Large | 73/128 | 97/128 | +18.75 pp |
-| Historical Scale Small | 43/128 | 54/128 | +8.59 pp |
-| Derived size comparison | 116/256 | 151/256 | +13.67 pp |
+See [mapping](BAB_IV_OUTPUTS.md). The older compact notebook is kept unchanged for reproducing its prior output.
 
-The notebook also accepts `cdea_small_extension_v1` Small-only ZIPs from the **new** runner, but those must be treated as their own source archive; the values above are not predetermined results of new runs.
-
-## Validate current source code and Small-only schedule
-
-For the repository contract tests, Python 3.11 is sufficient:
+## Verification
 
 ```powershell
 python -m unittest discover -s tests -v
-python scripts/browsergym/small_extension.py --dry-run
-powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_small_extension.ps1 -DryRun
+python scripts/analysis/verify_notebook.py
 ```
 
-The dry run must schedule **128 pairs / 256 episode slots across four Small checkpoints**. The registry is `config/models_small_extension.json`; no 8B–9B checkpoint is in the active extension. The frozen Main study configuration remains in `config/main_plan.json` and `config/models.json`.
+The integration script builds test-only fixture archives and verifies **both** Small input protocols, export order and source exclusions. CI performs offline checks; it does not run BrowserGym/OpenApps research episodes.
 
-For genuinely new Small-only experiments with OpenApps/BrowserGym/Ollama installed, see [the active protocol and runner instructions](SMALL_EXTENSION_PROTOCOL.md). The frozen Main original protocol and source records remain available under [Main protocol](MAIN_PROTOCOL_V1.md) and [data source](DATA_PROVENANCE.md).
+## Recorded numerical reference
 
-## Inference and interpretation
+| Group | Baseline | Proposed | Absolute gap |
+|---|---:|---:|---:|
+| Main Large | 73/128 (57.03%) | 97/128 (75.78%) | +18.75 percentage points |
+| Small from historical Scale | 43/128 (33.59%) | 54/128 (42.19%) | +8.59 percentage points |
+| Main bank-information | 10/20 (50.00%) | 18/20 (90.00%) | +40.00 percentage points |
 
-The task IDs repeat across checkpoint families, so exact McNemar p-values are exploratory and unadjusted; bootstrap ranges are task-resampled sensitivity intervals. The Main and Small reference data use different controller commits; Main shared-parameter metadata is not identical to Scale. xLAM's smaller and larger checkpoints have different backbones. Accordingly, **the size-interaction result is exploratory, not a causal estimate solely attributable to parameter count**.
-
-Policy-action divergence alone does not confirm correct evidence acquisition. Preserve recorded mechanism limitations and distinguish observed outcomes from assumptions about their cause.
+Different recorded controller commits, reused task IDs and the xLAM backbone contrast limit interpretation of size effects. McNemar p-values are exploratory and not task-cluster robust. A difference in selected actions is not itself proof of correct information acquisition. Numerical consistency checks and CI do not independently certify historical runtime provenance.
