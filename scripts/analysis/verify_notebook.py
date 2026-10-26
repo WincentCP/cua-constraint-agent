@@ -91,7 +91,11 @@ def verify(protocol):
         assert [p.name for p in tables] == expected_tables
         assert not list((outputs / 'summary').glob('*pemetaan*.json'))
         assert (outputs / 'summary' / 'ringkasan_statistik.csv').is_file()
-        assert len(list((outputs / 'detailed_analysis').glob('*.csv'))) >= 20
+        # The fixture has no episode JSON traces or selected probe examples.
+        # The notebook intentionally skips its optional 17_probe_examples.csv.
+        detailed = list((outputs / 'detailed_analysis').glob('*.csv'))
+        assert len(detailed) == 19
+        assert not (outputs / 'detailed_analysis' / '17_probe_examples.csv').exists()
         print(f'PASS {protocol}: 6 tabel, 9 gambar, 128 pasangan Small')
 
 

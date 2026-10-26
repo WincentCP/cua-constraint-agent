@@ -19,8 +19,8 @@ class AnalysisNotebookContracts(unittest.TestCase):
                               if c['cell_type'] == 'markdown')
 
     def test_source_notebook_is_complete(self):
-        self.assertEqual(len(self.notebook['cells']), 49)
-        self.assertEqual(sum(c['cell_type'] == 'code' for c in self.notebook['cells']), 25)
+        self.assertEqual(len(self.notebook['cells']), 48)
+        self.assertEqual(sum(c['cell_type'] == 'code' for c in self.notebook['cells']), 24)
         for cell in self.notebook['cells']:
             if cell['cell_type'] == 'code':
                 ast.parse(''.join(cell['source']))

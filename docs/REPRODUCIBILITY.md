@@ -16,7 +16,7 @@ python scripts/analysis/audit_archives.py --main main_observation.zip --small sc
 
 Buka [`notebooks/main_analysis.ipynb`](../notebooks/main_analysis.ipynb) di Jupyter atau Google Colab. Unggah `Dataset_CDEA.zip` atau kedua arsip sumber `main_observation.zip` dan `scale_reference.zip`, kemudian pilih **Run All**. Notebook tidak memodifikasi ZIP sumber.
 
-Keluaran: 6 tabel utama, 9 gambar berwarna, 20 CSV analisis rinci, serta ringkasan statistik. Tidak ada berkas `pemetaan_bab_iv.json`. Nama output mengikuti notebook asli.
+Keluaran: 6 tabel utama, 9 gambar berwarna, hingga 20 CSV analisis rinci, serta ringkasan statistik. File `17_probe_examples.csv` hanya dibuat bila tersedia contoh probe di trace; fixture CI tanpa trace menghasilkan 19 CSV rinci. Tidak ada berkas `pemetaan_bab_iv.json`. Nama output mengikuti notebook asli.
 
 ## Pengujian kode
 

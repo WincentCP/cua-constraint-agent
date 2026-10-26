@@ -24,6 +24,8 @@
 
 **PASS is the researcher's recorded live-evidence review, not an independent host-level attestation.** Archive checks support integrity and traceability; this documentation update did not independently confirm original-host execution or replay every episode.
 
+**Historical `num_ctx` caveat (2026-10-27):** The recorded Main manifest and all 256 Main episode JSONs lack an explicit `num_ctx`; the archived context-window value cannot be established from those fields. A later runner commit sets Main `num_ctx=8192`, matching Scale, for **future executions only**. The Scale historical manifest and its 512 episodes explicitly record `8192`. Never backfill the historical Main archive or describe the runtime context as verified without original request-side evidence.
+
 Preserve the original archive unchanged. For review, provide its fingerprint, `manifest.json`, readiness evidence and paired traces alongside the [Main results](MAIN_RESULTS_V1.md) and [frozen protocol](MAIN_PROTOCOL_V1.md).
 
 ## Notebook input alias

@@ -39,7 +39,7 @@ Manfaat CDEA pada Small lebih rendah sebesar **10,16 poin persentase** dibanding
 | num_predict | 640 | 640 |
 | num_ctx | Tidak dicantumkan dalam parameter bersama | 8192 |
 
-Revisi pengendali berbeda, informasi konfigurasi Main tidak sepenuhnya identik, . Karena itu, hasil ukuran model tidak dapat dikaitkan secara kausal hanya dengan jumlah parameter. Perbedaan tindakan tidak otomatis membuktikan keberhasilan memperoleh informasi.
+Revisi pengendali berbeda, dan informasi konfigurasi Main historis tidak sepenuhnya tercatat. Karena itu, hasil ukuran model tidak dapat dikaitkan secara kausal hanya dengan jumlah parameter. Perbedaan tindakan tidak otomatis membuktikan keberhasilan memperoleh informasi.
 
 ## Menjalankan analisis
 
