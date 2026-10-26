@@ -32,7 +32,7 @@ The five bank task IDs repeat across four models on shared seeded application da
 | Actions and repairs | BrowserGym BID/navigation subset; shared parser/guards; one same-observation action repair; no forced click retry |
 | Isolation | Fresh owned OpenApps server and separate database per arm |
 
-Baseline and Proposed use the same official evaluator, model digest, public goal/observation, initial app-state hash, action set, prompt schema and budgets. Both rank the **same eligible model-generated information probes**; only the ranking policy differs. The official reward is never included in agent prompts. All four model checkpoint digests and the controller, plan, taskset, seed, order and approvals are locked before the first Main pair; digests are rechecked before each arm. Distinct Pilot IDs and mere wording variations are excluded. Changing frozen settings requires **a new study version/ID**.
+Baseline and Proposed use the same official evaluator, model digest, public goal/observation, initial app-state hash, action set, prompt schema and budgets. Both rank the **same eligible model-generated information probes**; only the ranking policy differs. The official reward is never included in agent prompts. All four model model variants digests and the controller, plan, taskset, seed, order and approvals are locked before the first Main pair; digests are rechecked before each arm. Distinct Pilot IDs and mere wording variations are excluded. Changing frozen settings requires **a new study version/ID**.
 
 ## Pair validity and reporting
 

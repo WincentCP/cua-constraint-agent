@@ -1,4 +1,4 @@
-"""Uji integrasi notebook Bab IV menggunakan fixture, bukan hasil eksperimen."""
+"""Uji integrasi notebook asli memakai data fixture, tanpa episode penelitian."""
 import csv
 import io
 import json
@@ -11,7 +11,7 @@ from nbconvert.preprocessors import ExecutePreprocessor
 from audit_archives import audit
 
 ROOT = Path(__file__).resolve().parents[2]
-NOTEBOOK = ROOT / 'notebooks/cdea_bab_iv.ipynb'
+NOTEBOOK = ROOT / 'notebooks/main_analysis.ipynb'
 GROUPS = [('bank_information', 5), ('cross_app_workflow', 18), ('primitive_control', 9)]
 FAMILIES = ('qwen3.5', 'ministral3', 'granite4.1', 'xlam2')
 
@@ -89,13 +89,27 @@ def verify(protocol):
         expected_tables = [f'Tabel_4_{i}.csv' for i in range(1, 7)]
         assert [p.name for p in figures] == expected_figures
         assert [p.name for p in tables] == expected_tables
-        mapping = json.loads((outputs / 'summary/pemetaan_bab_iv.json').read_text())
+        mapping_files = list((outputs / 'summary').glob('*pemetaan*.json'))
+        assert len(mapping_files) == 1
+        mapping = json.loads(mapping_files[0].read_text())
         assert mapping['input_arsip']['Scale Small']['protocol'] == protocol
         assert mapping['scale_large_tidak_dipakai'] == (128 if protocol == 'cdea_scale_v1' else 0)
         assert len(list((outputs / 'detailed_analysis').glob('*.csv'))) >= 20
         print(f'PASS {protocol}: 6 tabel, 9 gambar, 128 pasangan Small')
 
 
+def verify_small_only_archive():
+    # Audit arsip Small-only tanpa memaksa notebook asli membacanya.
+    with TemporaryDirectory(prefix='cdea_small_audit_fixture_') as directory:
+        work = Path(directory)
+        make_archive(work / 'main_observation.zip', 'cdea_main_v1', include_large=False)
+        make_archive(work / 'scale_reference.zip', 'cdea_small_extension_v1', include_large=False)
+        report = audit(work / 'main_observation.zip', work / 'scale_reference.zip')
+        assert report['small']['selected_pairs'] == 128
+        assert report['small']['excluded_large_pairs'] == 0
+        print('PASS cdea_small_extension_v1: audit schema Small-only')
+
+
 if __name__ == '__main__':
-    for source_protocol in ('cdea_scale_v1', 'cdea_small_extension_v1'):
-        verify(source_protocol)
+    verify('cdea_scale_v1')
+    verify_small_only_archive()
