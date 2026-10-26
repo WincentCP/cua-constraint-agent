@@ -11,7 +11,7 @@ Constraint-Driven Evidence Acquisition (CDEA) memprioritaskan tindakan pencarian
 | **3. Lingkungan & pemeriksaan** | [`isolated_openapps.py`](scripts/browsergym/isolated_openapps.py), [`evaluator_controls.py`](scripts/browsergym/evaluator_controls.py) | Isolasi episode dan kontrol evaluator |
 | **4. Analisis & verifikasi** | [`main_analysis.ipynb`](notebooks/main_analysis.ipynb), [`scripts/analysis/`](scripts/analysis/) | Statistik, grafik, pemeriksaan hasil |
 
-**[Buka panduan file dan urutan membaca kode](docs/CODE_MAP.md).**
+**Mulai di sini:** [Notebook Bab IV](notebooks/main_analysis.ipynb) · [Cara menjalankan analisis](docs/REPRODUCIBILITY.md) · [Peta kode](docs/CODE_MAP.md) · [Daftar tugas](config/main_taskset_v1.json).
 
 ## Rancangan dan sumber hasil
 
@@ -33,9 +33,9 @@ Angka tersebut berasal dari arsip referensi, bukan eksekusi baru.
 
 ## Notebook analisis
 
-Notebook utama adalah **[`notebooks/main_analysis.ipynb`](notebooks/main_analysis.ipynb)**, salinan identik dari file analisis yang disediakan peneliti. Tidak ada versi notebook lain dalam folder aktif.
+Notebook utama adalah **[`notebooks/main_analysis.ipynb`](notebooks/main_analysis.ipynb)**, diselaraskan dari notebook Bab IV terbaru yang diberikan peneliti. Hanya satu notebook analisis utama ditempatkan pada folder aktif.
 
-Notebook ini menggunakan protokol `cdea_main_v1` dan `cdea_scale_v1`. Unggah `main_observation.zip` dan `scale_reference.zip` tanpa mengekstrak, lalu jalankan **Run All** di Jupyter atau Google Colab. Keluaran mencakup 6 tabel utama, 9 grafik berwarna, dan 23 tabel rinci.
+Notebook ini menggunakan protokol `cdea_main_v1` dan `cdea_scale_v1`. Unggah `Dataset_CDEA.zip` (atau dua arsip `main_observation.zip` dan `scale_reference.zip`), lalu jalankan **Run All** di Jupyter atau Google Colab. Keluaran mencakup 6 tabel utama, 9 grafik berwarna, dan 20 tabel rinci.
 
 ```powershell
 python -m pip install -r requirements-analysis.txt
@@ -57,6 +57,6 @@ Pengujian baru membutuhkan instalasi OpenApps, BrowserGym, Ollama, dan model ter
 
 ## Batasan interpretasi
 
-Sumber Main dan Scale menggunakan revisi pengendali berbeda. Tugas berulang antarvarian model dan keluarga xLAM memiliki perbedaan arsitektur. Karena itu, perbandingan ukuran model bersifat eksploratori; perubahan tindakan saja tidak membuktikan pencarian informasi yang benar. Pemeriksaan format arsip maupun CI tidak merupakan bukti independen bahwa episode historis dijalankan secara langsung.
+Sumber Main dan Scale menggunakan revisi pengendali berbeda, sehingga perbandingan ukuran model bersifat eksploratori. Perbedaan tindakan saja tidak membuktikan keberhasilan akuisisi informasi. Pemeriksaan format arsip maupun CI tidak merupakan bukti independen bahwa episode historis dijalankan secara langsung.
 
 Rujukan: [Protokol Main](docs/MAIN_PROTOCOL_V1.md) · [Protokol Small](docs/SMALL_EXTENSION_PROTOCOL.md) · [Asal data](docs/DATA_PROVENANCE.md) · [Analisis sumber](docs/MAIN_SMALL_EXTENSION_ANALYSIS.md).
