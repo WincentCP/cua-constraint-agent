@@ -29,7 +29,7 @@ Perbandingan ukuran model menggunakan hasil Large dari Main satu kali; rekaman L
 | Main — semua tugas | 73/128 (57,03%) | 97/128 (75,78%) | +18,75 poin persentase |
 | Small — semua tugas | 43/128 (33,59%) | 54/128 (42,19%) | +8,59 poin persentase |
 
-Angka tersebut berasal dari arsip referensi, bukan eksekusi baru. Untuk **eksekusi Main yang baru**, `num_ctx=4096` ditetapkan secara eksplisit melalui [`config/main_plan.json`](config/main_plan.json); runner Small-only tetap `8192`. Koreksi ini tidak mengubah atau membuktikan pengaturan pada arsip historis.
+Angka tersebut berasal dari arsip referensi, bukan eksekusi baru. Untuk **eksekusi baru**, Main Large dan runner Small-only sama-sama menggunakan `num_ctx=8192`; nilai Main ditetapkan secara eksplisit melalui [`config/main_plan.json`](config/main_plan.json). Perubahan ini tidak mengubah atau membuktikan pengaturan pada arsip historis.
 
 ## Notebook analisis
 

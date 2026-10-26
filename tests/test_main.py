@@ -141,7 +141,7 @@ class MainContracts(unittest.TestCase):
     def test_modified_plan_budget_roster_and_model_rejected(self):
         for key, value in [
             ("max_steps", 20), ("model_timeout", 60), ("seed", 4),
-            ("num_predict", 999), ("num_ctx", 8192),
+            ("num_predict", 999), ("num_ctx", 4096),
             ("planned_matched_pairs", 127),
             ("model_labels", self.plan["model_labels"][:3]),
             ("status", "approved"), ("task_order_sha256", "bad"),
@@ -161,8 +161,8 @@ class MainContracts(unittest.TestCase):
             experiment.validate_plan(self.plan, changed2, self.models)
 
     def test_main_context_window_frozen_in_plan_and_manifest(self):
-        self.assertEqual(self.plan["num_ctx"], 4096)
-        self.assertEqual(self.manifest()["shared_parameters"]["num_ctx"], 4096)
+        self.assertEqual(self.plan["num_ctx"], 8192)
+        self.assertEqual(self.manifest()["shared_parameters"]["num_ctx"], 8192)
 
     def test_all_four_checkpoint_digests_locked_before_main_begins(self):
         reduced = {self.identity["label"]: self.identity}
@@ -284,7 +284,7 @@ class MainContracts(unittest.TestCase):
             ("study_phase", "pilot"),
             ("mode", "paired_pilot_exploratory"),
             ("max_steps", 20),
-            ("num_ctx", 8192),
+            ("num_ctx", 4096),
             ("valid", False),
             ("upstream_commit", "untrusted"),
         ]:
@@ -429,7 +429,7 @@ class MainContracts(unittest.TestCase):
         import model_compatibility
         location = self.base / "main_models"
         def fake_contract(label, _url, *, num_ctx=None):
-            self.assertEqual(num_ctx, 4096)
+            self.assertEqual(num_ctx, 8192)
             return {
                 "status": "action_contract_pass",
                 "model_digest": "test-model-digest-" + label,

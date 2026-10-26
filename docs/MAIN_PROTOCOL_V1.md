@@ -28,13 +28,13 @@ The five bank task IDs repeat across four models on shared seeded application da
 | Model labels | `qwen3.5-9b`, `ministral3-8b`, `granite4.1-8b`, `xlam2-8b` |
 | Design size | **32 tasks × 4 models × 2 methods = 128 pairs / 256 episodes** |
 | Order | Fixed SHA-256-derived ordering of seed/task/model; predefined method-arm order |
-| Agent configuration | Seed 233; **40 BrowserGym actions/arm**; Ollama 240 s/call, temperature 0, think false, 640 output tokens; `num_ctx=4096` for new Main executions |
+| Agent configuration | Seed 233; **40 BrowserGym actions/arm**; Ollama 240 s/call, temperature 0, think false, 640 output tokens; `num_ctx=8192` for new Main executions |
 | Actions and repairs | BrowserGym BID/navigation subset; shared parser/guards; one same-observation action repair; no forced click retry |
 | Isolation | Fresh owned OpenApps server and separate database per arm |
 
 Baseline and Proposed use the same official evaluator, model digest, public goal/observation, initial app-state hash, action set, prompt schema and budgets. Both rank the **same eligible model-generated information probes**; only the ranking policy differs. The official reward is never included in agent prompts. All four model model variants digests and the controller, plan, taskset, seed, order and approvals are locked before the first Main pair; digests are rechecked before each arm. Distinct Pilot IDs and mere wording variations are excluded. Changing frozen settings requires **a new study version/ID**.
 
-**2026-10-27 runner correction:** the current Main code now passes `num_ctx=4096` explicitly to Ollama for both methods, saves it in the manifest/episode metadata, and rejects mismatched episode settings. This does **not** establish which context window was used in already-recorded Main archives; verify historical values from original requests/logs. Existing frozen Main artifacts are not modified, and revised execution needs a fresh study ID/version.
+**2026-10-27 context-window update:** the current Main code now passes `num_ctx=8192` explicitly to Ollama for both methods, matching the Small extension setting. It saves the value in the manifest/episode metadata and rejects mismatched episode settings. This does **not** establish which context window was used in already-recorded Main archives; verify historical values from original requests/logs. Existing frozen Main artifacts are not modified, and revised execution needs a fresh study ID/version.
 
 ## Pair validity and reporting
 

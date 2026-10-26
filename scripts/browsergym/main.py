@@ -82,7 +82,7 @@ def validate_plan(plan: dict, roster: dict, models: list) -> list[dict]:
         "seed": 233, "max_steps": 40, "model_timeout": 240,
         "temperature": matched_dev.TEMPERATURE,
         "num_predict": matched_dev.NUM_PREDICT,
-        "num_ctx": 4096,
+        "num_ctx": 8192,
         "think": False, "action_subsets": list(matched_dev.ACTION_SUBSETS),
         "bounded_shared_repairs": 1, "click_force_retry": False,
         "planned_tasks": 32, "planned_matched_pairs": 128,
