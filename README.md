@@ -58,23 +58,18 @@ powershell -ExecutionPolicy Bypass -File .\scripts\browsergym\run_small_extensio
 
 The script writes to `output/small_extension/<ExtensionId>/` and uses [`config/small_extension_plan.json`](config/small_extension_plan.json) and [`config/models_small_extension.json`](config/models_small_extension.json). The [Small Extension protocol](docs/SMALL_EXTENSION_PROTOCOL.md) describes its method and outputs. **This command does not retroactively create or verify the reference archive episodes.**
 
-## Active repository map
+## Peta kode utama
 
-| Location | Purpose |
-|---|---|
-| `notebooks/cdea_bab_iv.ipynb` | Current Bab IV notebook; 6 tables / 9 graphs in thesis order |
-| `notebooks/cdea_main_scale_compact.ipynb` | Frozen earlier compact analysis (retained) |
-| `config/main_plan.json`, `config/models.json` | Frozen four-checkpoint Main protocol |
-| `config/small_extension_plan.json`, `config/models_small_extension.json` | New four-Small-checkpoint runner configuration |
-| `config/main_taskset_v1.json` | Shared 32 OpenApps task IDs |
-| `scripts/browsergym/main.py` | Frozen Main experiment orchestration |
-| `scripts/browsergym/small_extension.py` | Small-only experiment runner |
-| `scripts/browsergym/run_small_extension.ps1` | Windows runner wrapper |
-| `scripts/browsergym/shared_policy.py`, `matched_dev.py` | Baseline/CDEA action policy and paired runner |
-| `docs/MAIN_SMALL_EXTENSION_ANALYSIS.md` | Selected data, effect sizes, sensitivity and limitations |
-| `docs/MAIN_RESULTS_V1.md`, `docs/MAIN_PROTOCOL_V1.md` | Original Main results and frozen original protocol |
-| `docs/DATA_PROVENANCE.md` | Existing source identity and scope of recorded evidence |
-| `legacy/full_scale_v1/` | Archived eight-checkpoint Scale design and historical optional tools (not active) |
+Untuk membaca kode tanpa tersesat, gunakan **[Peta Kode CDEA](docs/CODE_MAP.md)**. File dikelompokkan berdasarkan fungsi, tanpa memindahkan file implementasi yang menjadi acuan eksperimen.
+
+| Kelompok | Mulai dari | Kegunaan |
+|---|---|---|
+| **1. Penyiapan & eksperimen** | [`main.py`](scripts/browsergym/main.py), [`small_extension.py`](scripts/browsergym/small_extension.py), [`config/`](config/) | Menetapkan tugas, model, dan jadwal *paired runs* |
+| **2. Agen & CDEA** | [`matched_dev.py`](scripts/browsergym/matched_dev.py), [`shared_policy.py`](scripts/browsergym/shared_policy.py) | Mengelola episode dan memilih tindakan *Baseline*/*Proposed* |
+| **3. Lingkungan & pemeriksaan** | [`isolated_openapps.py`](scripts/browsergym/isolated_openapps.py), [`evaluator_controls.py`](scripts/browsergym/evaluator_controls.py) | Isolasi lingkungan dan uji kontrol evaluator |
+| **4. Analisis & verifikasi** | [`cdea_bab_iv.ipynb`](notebooks/cdea_bab_iv.ipynb), [`scripts/analysis/`](scripts/analysis/) | Mengolah hasil menjadi tabel, grafik, dan pemeriksaan arsip |
+
+**Alur ringkas:** Konfigurasi → *Experiment Controller* → *Agent Controller* → kebijakan CDEA → BrowserGym/OpenApps → hasil episode → notebook Bab IV.
 
 ## Reporting rules
 
