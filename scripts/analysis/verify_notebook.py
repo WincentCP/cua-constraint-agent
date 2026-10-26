@@ -89,11 +89,8 @@ def verify(protocol):
         expected_tables = [f'Tabel_4_{i}.csv' for i in range(1, 7)]
         assert [p.name for p in figures] == expected_figures
         assert [p.name for p in tables] == expected_tables
-        mapping_files = list((outputs / 'summary').glob('*pemetaan*.json'))
-        assert len(mapping_files) == 1
-        mapping = json.loads(mapping_files[0].read_text())
-        assert mapping['input_arsip']['Scale Small']['protocol'] == protocol
-        assert mapping['scale_large_tidak_dipakai'] == (128 if protocol == 'cdea_scale_v1' else 0)
+        assert not list((outputs / 'summary').glob('*pemetaan*.json'))
+        assert (outputs / 'summary' / 'ringkasan_statistik.csv').is_file()
         assert len(list((outputs / 'detailed_analysis').glob('*.csv'))) >= 20
         print(f'PASS {protocol}: 6 tabel, 9 gambar, 128 pasangan Small')
 
