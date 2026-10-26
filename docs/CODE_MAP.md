@@ -1,69 +1,63 @@
-# Peta Kode CDEA — Mulai dari Sini
+# Peta Kode CDEA
 
-Dokumen ini mengelompokkan **file penting** menurut alur penelitian. Lokasi file tidak dipindahkan agar impor, pengujian, dokumentasi, dan identitas kode eksperimen tetap konsisten.
+Panduan singkat untuk menemukan kode penting. Lokasi implementasi tidak dipindahkan agar impor, pengujian, dan jejak eksperimen tetap konsisten.
 
-## 1. Penyiapan & Experiment Controller
+## 1. Persiapan & Experiment Controller
 
-| File | Fungsi |
+| Lokasi | Fungsi |
 |---|---|
-| [`config/main_plan.json`](../config/main_plan.json) | Parameter dan protokol Main Study |
+| [`config/main_plan.json`](../config/main_plan.json) | Parameter Main Study |
 | [`config/main_taskset_v1.json`](../config/main_taskset_v1.json) | Daftar 32 tugas OpenApps |
-| [`config/models.json`](../config/models.json) | Empat checkpoint Large |
-| [`config/small_extension_plan.json`](../config/small_extension_plan.json) dan [`models_small_extension.json`](../config/models_small_extension.json) | Konfigurasi 4 checkpoint Small |
-| **[`scripts/browsergym/main.py`](../scripts/browsergym/main.py)** | Menjadwalkan dan mencatat *paired runs* Main |
-| [`scripts/browsergym/small_extension.py`](../scripts/browsergym/small_extension.py) | Pengujian Small-only |
+| [`config/models.json`](../config/models.json) | Empat varian model Large |
+| [`config/small_extension_plan.json`](../config/small_extension_plan.json) dan [`config/models_small_extension.json`](../config/models_small_extension.json) | Empat varian model Small |
+| **[`scripts/browsergym/main.py`](../scripts/browsergym/main.py)** | Jadwal dan hasil pengujian Main |
+| [`scripts/browsergym/small_extension.py`](../scripts/browsergym/small_extension.py) | Runner pengujian Small |
 
-**Intinya:** 1 *paired run* = 1 tugas × 1 checkpoint yang mencakup episode *Baseline* dan *Proposed*.
+Satu *paired run* menggunakan tugas dan varian model yang sama untuk episode Baseline serta Proposed.
 
-## 2. Agent Controller & Metode CDEA
+## 2. Agent Controller & CDEA
 
-| File | Fungsi |
+| Lokasi | Fungsi |
 |---|---|
-| **[`scripts/browsergym/matched_dev.py`](../scripts/browsergym/matched_dev.py)** | Menjalankan interaksi agen dengan model dan lingkungan |
-| **[`scripts/browsergym/shared_policy.py`](../scripts/browsergym/shared_policy.py)** | Logika pemilihan tindakan *Baseline* dan *Proposed* |
-| [`scripts/browsergym/ollama_preflight.py`](../scripts/browsergym/ollama_preflight.py) | Memeriksa identitas dan ketersediaan checkpoint |
+| **[`scripts/browsergym/matched_dev.py`](../scripts/browsergym/matched_dev.py)** | Mengelola siklus pengamatan, permintaan model, dan tindakan |
+| **[`scripts/browsergym/shared_policy.py`](../scripts/browsergym/shared_policy.py)** | Memilih tindakan sesuai strategi Baseline atau Proposed |
+| [`scripts/browsergym/ollama_preflight.py`](../scripts/browsergym/ollama_preflight.py) | Memeriksa model Ollama sebelum eksekusi |
 
-**Intinya:** pada kesempatan pencarian yang memenuhi syarat, *Baseline* memprioritaskan *progress score*, sedangkan *Proposed* mengutamakan *constraint coverage*, lalu *forward cost*.
+Baseline memprioritaskan *progress score*; Proposed memprioritaskan *constraint coverage*, kemudian *forward cost* saat tersedia kandidat pencarian yang dapat dibandingkan.
 
-## 3. Lingkungan & Pemeriksaan Episode
+## 3. Lingkungan & Pemeriksaan
 
-| File | Fungsi |
+| Lokasi | Fungsi |
 |---|---|
-| **[`scripts/browsergym/isolated_openapps.py`](../scripts/browsergym/isolated_openapps.py)** | Mengelola server dan basis data terpisah untuk episode |
-| [`scripts/browsergym/evaluator_controls.py`](../scripts/browsergym/evaluator_controls.py) | Uji kontrol terhadap evaluator resmi, bukan pengganti evaluator BrowserGym |
-| [`scripts/browsergym/inspect_pair.py`](../scripts/browsergym/inspect_pair.py) | Memeriksa rekaman dan diagnostik sebuah pasangan |
+| **[`scripts/browsergym/isolated_openapps.py`](../scripts/browsergym/isolated_openapps.py)** | Lingkungan OpenApps terpisah untuk setiap episode |
+| [`scripts/browsergym/evaluator_controls.py`](../scripts/browsergym/evaluator_controls.py) | Pemeriksaan kontrol evaluator |
+| [`scripts/browsergym/inspect_pair.py`](../scripts/browsergym/inspect_pair.py) | Diagnostik hasil dan tindakan pasangan |
 
-**Intinya:** tindakan dijalankan melalui BrowserGym pada OpenApps. Hasil dan status episode disimpan untuk pemeriksaan pasangan.
+## 4. Analisis & Verifikasi
 
-## 4. Analisis & Verifikasi Bab IV
-
-| File | Fungsi |
+| Lokasi | Fungsi |
 |---|---|
-| **[`notebooks/cdea_bab_iv.ipynb`](../notebooks/cdea_bab_iv.ipynb)** | Statistik, 6 tabel, dan 9 gambar Bab IV |
-| [`scripts/analysis/audit_archives.py`](../scripts/analysis/audit_archives.py) | Memeriksa identitas serta konsistensi arsip |
-| [`scripts/analysis/verify_notebook.py`](../scripts/analysis/verify_notebook.py) | Menguji notebook pada fixture 2 protokol Small |
-| [`docs/BAB_IV_OUTPUTS.md`](BAB_IV_OUTPUTS.md) | Pemetaan tabel dan gambar terhadap subbab skripsi |
+| **[`notebooks/main_analysis.ipynb`](../notebooks/main_analysis.ipynb)** | Analisis data, 6 tabel, dan 9 grafik |
+| [`scripts/analysis/audit_archives.py`](../scripts/analysis/audit_archives.py) | Audit konsistensi arsip Main dan Small |
+| [`scripts/analysis/verify_notebook.py`](../scripts/analysis/verify_notebook.py) | Uji notebook menggunakan fixture |
+| [`docs/REPRODUCIBILITY.md`](REPRODUCIBILITY.md) | Cara menjalankan pemeriksaan |
 
-**Intinya:** notebook membaca `main_observation.zip` dan `scale_reference.zip` (atau arsip Small-only yang sesuai); ia tidak menjalankan ulang episode.
-
-## Urutan membaca untuk menjelaskan kode ke dosen
+### Urutan membaca
 
 ```text
-1. main.py                 Jadwal dan pengendalian eksperimen
-2. matched_dev.py          Siklus interaksi Agent Controller
-3. shared_policy.py        Perbedaan inti Baseline vs Proposed
-4. isolated_openapps.py    Lingkungan episode terisolasi
-5. small_extension.py      Pengujian 4 checkpoint Small
-6. cdea_bab_iv.ipynb       Statistik, tabel, dan grafik Bab IV
+main.py
+  ↓
+matched_dev.py
+  ↓
+shared_policy.py
+  ↓
+isolated_openapps.py
+  ↓
+small_extension.py
+  ↓
+main_analysis.ipynb
 ```
 
-**3 file yang perlu paling dikuasai:** `shared_policy.py`, `matched_dev.py`, dan `main.py`.
+Prioritaskan **`shared_policy.py`**, **`matched_dev.py`**, dan **`main.py`** untuk menjelaskan kontribusi penelitian.
 
-## File pendukung lainnya
-
-- `tests/`: pengujian kontrak dan perilaku kode, bukan episode riset.
-- `docs/`: protokol, sumber data, reproducibility, dan hubungan dengan skripsi.
-- `legacy/full_scale_v1/`: rancangan Scale historis, bukan runner utama saat ini.
-- `scripts/browsergym/run_main.ps1` dan `run_small_extension.ps1`: titik masuk eksekusi melalui PowerShell.
-
-Lihat [README utama](../README.md) untuk perintah penggunaan dan [panduan reproduksi](REPRODUCIBILITY.md) untuk menjalankan analisis.
+File `tests/` berisi pengujian otomatis, `docs/` menyimpan protokol dan keterlacakan, sedangkan `legacy/` memuat materi historis yang bukan bagian runner aktif.
