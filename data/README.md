@@ -8,7 +8,7 @@ Untuk melengkapi repo, unggah paket `Dataset_CDEA.zip` yang diberikan bersama ha
 bcaf5d8aa0d0a7d3774430e00eea3f9abccd466f5f9d12de49d8e8367f52449c  Dataset_CDEA.zip
 ```
 
-**Isi ZIP** (nama sesuai Lampiran F pada skripsi):
+**Tabel ringkas di repo saat ini:** [Hasil 8 model](derived/lampiran_D_per_model_8.csv) dan [Hasil 32 tugas](derived/lampiran_E_per_task_32.csv). Keduanya merupakan turunan ringkas dari arsip, bukan pengganti trace dan dataset lengkap.\n\n**Isi ZIP** (nama sesuai Lampiran F pada skripsi):
 
 | Berkas | Isi |
 |---|---|
