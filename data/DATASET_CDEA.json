@@ -1,0 +1,42 @@
+{
+  "paket": "Dataset CDEA",
+  "package_filename": "Dataset_CDEA.zip",
+  "package_sha256": "bcaf5d8aa0d0a7d3774430e00eea3f9abccd466f5f9d12de49d8e8367f52449c",
+  "size_bytes": 11599297,
+  "repository_path_expected": "data/Dataset_CDEA.zip",
+  "repository_zip_uploaded": false,
+  "notebook": "Notebook_CDEA.ipynb",
+  "sources": [
+    {
+      "file": "main_observation.zip",
+      "sha256": "74f48100b4dc6ae074573596dc87beed18770d4c3740f2c01f5efcd57a2d885c",
+      "protocol": "cdea_main_v1",
+      "root": "main_observation_v1/",
+      "pairs": 128,
+      "episodes": 256,
+      "selected_large_pairs": 128
+    },
+    {
+      "file": "scale_reference.zip",
+      "sha256": "052ecf15e2466109175153022baa7a1007a8a88c7358307823f85c3947b38f96",
+      "protocol": "cdea_scale_v1",
+      "root": "scale_reference_v4/",
+      "pairs": 256,
+      "episodes": 512,
+      "selected_small_pairs": 128
+    }
+  ],
+  "analysis_selection": {
+    "large": "Main",
+    "small": "Scale historical size=small",
+    "unique_tasks": 32,
+    "selected_pairs": 256,
+    "selected_episodes": 512,
+    "excluded_historical_scale_large_pairs": 128
+  },
+  "historical_num_ctx": {
+    "main_large": "not recorded",
+    "scale_small": 8192
+  },
+  "verification_scope": "ZIP integrity, identifiers and analytical denominators; not independent proof of historical live execution"
+}

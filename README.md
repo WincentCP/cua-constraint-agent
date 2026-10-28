@@ -31,6 +31,12 @@ Perbandingan ukuran model menggunakan hasil Large dari Main satu kali; rekaman L
 
 Angka tersebut berasal dari arsip referensi, bukan eksekusi baru. Untuk **eksekusi baru**, Main Large dan runner Small-only sama-sama menggunakan `num_ctx=8192`; nilai Main ditetapkan secara eksplisit melalui [`config/main_plan.json`](config/main_plan.json). Perubahan ini tidak mengubah atau membuktikan pengaturan pada arsip historis.
 
+## Data dan lampiran digital
+
+Nama paket pendukung sesuai Lampiran F adalah **`Dataset_CDEA.zip`** (15 berkas: dua arsip sumber, notebook salinan, CSV hasil terpilih, metadata, dan audit). Paket ini disiapkan terpisah dan **belum diunggah ke repository**; ikuti [panduan unggah dan verifikasi checksum](data/README.md) untuk menjadikannya tersedia pada `data/Dataset_CDEA.zip`. [Pemetaan nama berkas skripsi](docs/THESIS_ARTIFACTS.md).
+
+Notebook dalam paket dan [notebook utama repo](notebooks/main_analysis.ipynb) dapat menghitung ulang hasil dari dua arsip sumber. Arsip Main dan Scale tidak diedit, serta arsip Scale Large tidak dihitung sebagai pasangan tambahan.
+
 ## Notebook analisis
 
 Notebook utama adalah **[`notebooks/main_analysis.ipynb`](notebooks/main_analysis.ipynb)**, diselaraskan dari notebook Bab IV terbaru yang diberikan peneliti. Hanya satu notebook analisis utama ditempatkan pada folder aktif.
