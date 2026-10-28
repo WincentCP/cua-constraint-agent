@@ -37,9 +37,9 @@ Manfaat CDEA pada Small lebih rendah sebesar **10,16 poin persentase** dibanding
 | Max actions | 40 | 40 |
 | Temperature | 0 | 0 |
 | num_predict | 640 | 640 |
-| num_ctx | Tidak dicantumkan dalam parameter bersama | 8192 |
+| num_ctx | **8192** (konfirmasi peneliti 2026-10-28; tidak tercatat dalam manifest/episode asli) | **8192** (tercatat dalam arsip historis) |
 
-Revisi pengendali berbeda, dan informasi konfigurasi Main historis tidak sepenuhnya tercatat. Karena itu, hasil ukuran model tidak dapat dikaitkan secara kausal hanya dengan jumlah parameter. Perbedaan tindakan tidak otomatis membuktikan keberhasilan memperoleh informasi.
+Revisi pengendali berbeda, dan nilai `num_ctx` Main merupakan konfirmasi peneliti setelah eksperimen, bukan metadata asli yang dapat diaudit langsung dari request runtime. Karena itu, hasil ukuran model tidak dapat dikaitkan secara kausal hanya dengan jumlah parameter. Perbedaan tindakan tidak otomatis membuktikan keberhasilan memperoleh informasi.
 
 ## Menjalankan analisis
 

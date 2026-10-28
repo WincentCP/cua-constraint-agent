@@ -29,11 +29,11 @@ Perbandingan ukuran model menggunakan hasil Large dari Main satu kali; rekaman L
 | Main — semua tugas | 73/128 (57,03%) | 97/128 (75,78%) | +18,75 poin persentase |
 | Small — semua tugas | 43/128 (33,59%) | 54/128 (42,19%) | +8,59 poin persentase |
 
-Angka tersebut berasal dari arsip referensi, bukan eksekusi baru. Untuk **eksekusi baru**, Main Large dan runner Small-only sama-sama menggunakan `num_ctx=8192`; nilai Main ditetapkan secara eksplisit melalui [`config/main_plan.json`](config/main_plan.json). Perubahan ini tidak mengubah atau membuktikan pengaturan pada arsip historis.
+Angka tersebut berasal dari arsip referensi, bukan eksekusi baru. **Peneliti mengonfirmasi nilai `num_ctx=8192` pada Main historis (2026-10-28).** Manifest dan episode Main asli tidak mencatat parameter ini; karena itu konfirmasi disimpan sebagai [metadata terpisah](data/NUM_CTX_MAIN_CONFIRMATION.json) dan manifest salinan beranotasi di `Dataset_CDEA.zip`. Nilai Small 8192 tercatat dalam sumber aslinya. Runner untuk **eksekusi baru** juga menggunakan `num_ctx=8192` secara eksplisit. Pengaturan baru tidak dijadikan bukti historis.
 
 ## Data dan lampiran digital
 
-Nama paket pendukung sesuai Lampiran F adalah **`Dataset_CDEA.zip`** (15 berkas: dua arsip sumber, notebook salinan, CSV hasil terpilih, metadata, dan audit). Paket ini disiapkan terpisah dan **belum diunggah ke repository**; ikuti [panduan unggah dan verifikasi checksum](data/README.md) untuk menjadikannya tersedia pada `data/Dataset_CDEA.zip`. [Pemetaan nama berkas skripsi](docs/THESIS_ARTIFACTS.md).
+Nama paket pendukung sesuai Lampiran F adalah **`Dataset_CDEA.zip`** (17 berkas: dua arsip sumber, notebook salinan, CSV hasil terpilih, metadata, dan audit). Paket ini disiapkan terpisah dan **belum diunggah ke repository**; ikuti [panduan unggah dan verifikasi checksum](data/README.md) untuk menjadikannya tersedia pada `data/Dataset_CDEA.zip`. [Pemetaan nama berkas skripsi](docs/THESIS_ARTIFACTS.md).
 
 Notebook dalam paket dan [notebook utama repo](notebooks/main_analysis.ipynb) dapat menghitung ulang hasil dari dua arsip sumber. Arsip Main dan Scale tidak diedit, serta arsip Scale Large tidak dihitung sebagai pasangan tambahan.
 

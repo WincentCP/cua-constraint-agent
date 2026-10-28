@@ -15,15 +15,16 @@ Dokumentasi ini menghubungkan berkas penelitian dengan nama yang dipakai di skri
 | Arsip Main historis | `main_observation.zip` di dalam paket | Di paket digital |
 | Arsip Scale historis | `scale_reference.zip` di dalam paket | Di paket digital |
 | CSV per pasangan / episode / model / tugas | `derived/*.csv` di dalam paket | Di paket digital |
+| `num_ctx` Main (konfirmasi peneliti) | `NUM_CTX_MAIN_CONFIRMATION.json` dan `manifest_main_researcher_amended.json` | Di paket digital; salinan ringkas konfirmasi di repo pada `data/NUM_CTX_MAIN_CONFIRMATION.json` |
 | Audit dan daftar checksum | `AUDIT_REPORT.json`, `LAMPIRAN_ANALISIS.json`, `SHA256SUMS.txt` | Di paket digital |
 
-Paket digital berisi **15 file**, bernama `Dataset_CDEA.zip`. Cara unggah dan checksum: [data/README.md](../data/README.md).
+Paket digital berisi **17 file**, bernama `Dataset_CDEA.zip`. Cara unggah dan checksum: [data/README.md](../data/README.md).
 
 ### Perbedaan sumber dan pengaturan
 
 - `main_observation.zip` memiliki root internal `main_observation_v1/`, bukan `main_observation/`.
 - `scale_reference.zip` memiliki root internal `scale_reference_v4/`, bukan `scale_reference/`.
-- Main historis tidak merekam `num_ctx` dalam manifest maupun episode. Pengaturan `num_ctx=8192` di runner modern hanya berlaku untuk **eksekusi baru**; tidak boleh dipakai untuk menyimpulkan nilai runtime historis.
+- Peneliti mengonfirmasi `num_ctx=8192` digunakan pada Main historis (2026-10-28). Nilai tersebut **tidak terekam dalam manifest/episode asli**, sehingga dituangkan sebagai catatan terpisah dengan sumber konfirmasi peneliti. Salinan manifest teranotasi **bukan** pengganti manifest historis yang tersimpan pada ZIP sumber. Small mencatat nilai 8192 di arsip aslinya. Runner modern menerapkan `num_ctx=8192` juga untuk eksekusi baru.
 - Besaran selisih success rate dalam tabel ilmiah memakai **poin persentase (pp)**, bukan pertumbuhan persentase relatif.
 - Validasi arsip, checksum, dan keluaran notebook tidak membuktikan sendiri eksekusi live historis.
 

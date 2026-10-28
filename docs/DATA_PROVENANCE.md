@@ -24,7 +24,9 @@
 
 **PASS is the researcher's recorded live-evidence review, not an independent host-level attestation.** Archive checks support integrity and traceability; this documentation update did not independently confirm original-host execution or replay every episode.
 
-**Historical `num_ctx` caveat (2026-10-27):** The recorded Main manifest and all 256 Main episode JSONs lack an explicit `num_ctx`; the archived context-window value cannot be established from those fields. A later runner commit sets Main `num_ctx=8192`, matching Scale, for **future executions only**. The Scale historical manifest and its 512 episodes explicitly record `8192`. Never backfill the historical Main archive or describe the runtime context as verified without original request-side evidence.
+**Catatan pencatatan `num_ctx` (2026-10-27):** Manifest dan 256 episode Main asli tidak memuat field `num_ctx`. Kode pada commit pengendali Main asli tidak mengirimkan opsi `num_ctx` secara eksplisit pada request Ollama, sehingga nilainya tidak dapat disimpulkan hanya dari berkas arsip. Arsip Scale historis memang mencatat `8192`. Runner Main yang diperbarui kemudian menerapkan 8192 secara eksplisit untuk eksekusi baru.
+
+**Konfirmasi peneliti (2026-10-28):** Peneliti secara langsung mengonfirmasi bahwa **`num_ctx=8192`** merupakan pengaturan yang sebenarnya digunakan saat Main Study historis. Untuk mendokumentasikannya, paket `Dataset_CDEA.zip` kini menyertakan `NUM_CTX_MAIN_CONFIRMATION.json` dan `manifest_main_researcher_amended.json` (salinan manifest dengan `num_ctx=8192` dan jejak asal konfirmasi). **Kedua ZIP sumber, manifest asli, dan seluruh episode tidak diubah** sehingga checksum asal tetap berlaku. Catatan tersebut adalah informasi yang dikonfirmasi peneliti setelah pelaksanaan, **bukan** field yang terekam oleh runtime pada manifest asli ataupun verifikasi independen dari log permintaan Ollama.
 
 Preserve the original archive unchanged. For review, provide its fingerprint, `manifest.json`, readiness evidence and paired traces alongside the [Main results](MAIN_RESULTS_V1.md) and [frozen protocol](MAIN_PROTOCOL_V1.md).
 

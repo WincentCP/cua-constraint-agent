@@ -1,8 +1,8 @@
 {
   "paket": "Dataset CDEA",
   "package_filename": "Dataset_CDEA.zip",
-  "package_sha256": "bcaf5d8aa0d0a7d3774430e00eea3f9abccd466f5f9d12de49d8e8367f52449c",
-  "size_bytes": 11599297,
+  "package_sha256": "9d7e6cbd838b42690d69318aec75f97cb0bb1887cc0bde01f1ab4db0535aac1d",
+  "size_bytes": 11606817,
   "repository_path_expected": "data/Dataset_CDEA.zip",
   "repository_zip_uploaded": false,
   "notebook": "Notebook_CDEA.ipynb",
@@ -35,8 +35,18 @@
     "excluded_historical_scale_large_pairs": 128
   },
   "historical_num_ctx": {
-    "main_large": "not recorded",
-    "scale_small": 8192
+    "main_large": 8192,
+    "main_large_source": "researcher confirmed on 2026-10-28; main historical manifest and episodes do not record this field",
+    "main_large_recorded_in_original_manifest": false,
+    "main_large_confirmation_file": "NUM_CTX_MAIN_CONFIRMATION.json",
+    "main_large_amended_manifest_file": "manifest_main_researcher_amended.json",
+    "scale_small": 8192,
+    "scale_small_recorded_in_original_manifest": true
   },
-  "verification_scope": "ZIP integrity, identifiers and analytical denominators; not independent proof of historical live execution"
+  "verification_scope": "ZIP integrity, identifiers and analytical denominators; not independent proof of historical live execution",
+  "supporting_files": [
+    "NUM_CTX_MAIN_CONFIRMATION.json",
+    "manifest_main_researcher_amended.json"
+  ],
+  "package_files_count": 17
 }

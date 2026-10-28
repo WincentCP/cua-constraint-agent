@@ -7,6 +7,8 @@
 
 Nama file tersebut adalah alias input; identitas dan hash dari arsip asli tetap berlaku. Hasil Large berasal dari Main dan tidak dihitung dua kali.
 
+**Konteks model:** peneliti mengonfirmasi Main menggunakan `num_ctx=8192` (2026-10-28); arsip Main asli tidak mencatatnya dalam manifest/episode. Paket dataset dilengkapi `NUM_CTX_MAIN_CONFIRMATION.json` dan `manifest_main_researcher_amended.json` sebagai dokumentasi konfirmasi. Notebook salinan di paket menampilkan 8192 dengan label asal konfirmasi. Untuk Small, `num_ctx=8192` tercatat langsung dalam arsip asli. Manifest dan ZIP sumber historis tidak dimodifikasi.
+
 ## Menjalankan notebook utama
 
 ```powershell

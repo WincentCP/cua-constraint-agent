@@ -5,16 +5,20 @@ Berkas yang dirujuk skripsi adalah **`Dataset_CDEA.zip`**. Berkas asli lengkap d
 Untuk melengkapi repo, unggah paket `Dataset_CDEA.zip` yang diberikan bersama hasil audit skripsi ke path **`data/Dataset_CDEA.zip`** melalui GitHub `Add file > Upload files`. Berkas paket berukuran sekitar 11,6 MB, di bawah batas unggahan per file GitHub Web (25 MiB). Setelah unggah, verifikasi SHA-256:
 
 ```text
-bcaf5d8aa0d0a7d3774430e00eea3f9abccd466f5f9d12de49d8e8367f52449c  Dataset_CDEA.zip
+9d7e6cbd838b42690d69318aec75f97cb0bb1887cc0bde01f1ab4db0535aac1d  Dataset_CDEA.zip
 ```
 
-**Tabel ringkas di repo saat ini:** [Hasil 8 model](derived/lampiran_D_per_model_8.csv) dan [Hasil 32 tugas](derived/lampiran_E_per_task_32.csv). Keduanya merupakan turunan ringkas dari arsip, bukan pengganti trace dan dataset lengkap.\n\n**Isi ZIP** (nama sesuai Lampiran F pada skripsi):
+**Tabel ringkas di repo saat ini:** [Hasil 8 model](derived/lampiran_D_per_model_8.csv) dan [Hasil 32 tugas](derived/lampiran_E_per_task_32.csv). Keduanya merupakan turunan ringkas dari arsip, bukan pengganti trace dan dataset lengkap.
+
+**Isi ZIP** (nama sesuai Lampiran F pada skripsi):
 
 | Berkas | Isi |
 |---|---|
 | `main_observation.zip` | Arsip sumber Main Large (128 pasangan, 256 episode) |
 | `scale_reference.zip` | Arsip sumber Scale historis (256 pasangan: Large dan Small) |
-| `Notebook_CDEA.ipynb` | Notebook yang dapat membaca paket ZIP |
+| `Notebook_CDEA.ipynb` | Notebook yang dapat membaca paket ZIP dan menandai sumber `num_ctx` |
+| `NUM_CTX_MAIN_CONFIRMATION.json` | Konfirmasi peneliti (2026-10-28): Main menggunakan `num_ctx=8192` |
+| `manifest_main_researcher_amended.json` | Salinan manifest Main dengan `num_ctx=8192`, bertanda konfirmasi setelah eksperimen; bukan manifest asli |
 | `DATASET_CDEA.json` | Identitas dan checksum sumber |
 | `AUDIT_REPORT.json` | Audit struktur dan rekonsiliasi pasangan |
 | `LAMPIRAN_ANALISIS.json` | Checksum CSV turunan |
@@ -35,6 +39,6 @@ Kedua sumber asli **dipertahankan byte-for-byte**. Model Large dalam arsip Scale
 | `main_observation.zip` | `74f48100b4dc6ae074573596dc87beed18770d4c3740f2c01f5efcd57a2d885c` |
 | `scale_reference.zip` | `052ecf15e2466109175153022baa7a1007a8a88c7358307823f85c3947b38f96` |
 
-**Keterbatasan penting:** nilai `num_ctx` Main historis tidak tercatat di manifest/episode dan tidak boleh dituliskan sebagai 8192 yang terverifikasi. Small mencatat `num_ctx=8192`. Audit berkas membuktikan kesesuaian struktur dan hash, **bukan** verifikasi independen eksekusi live historis.
+**Konfigurasi berdasarkan konfirmasi peneliti:** `num_ctx` Main Large = **8192 token** (dikonfirmasi peneliti pada 2026-10-28), Small = **8192 token** (tercatat pada manifest historis). Perbedaan asal pencatatan harus tetap dinyatakan: nilai Main tidak ada pada manifest/episode asli, sehingga disajikan lewat berkas konfirmasi dan salinan manifest teranotasi. Kedua arsip sumber tidak diubah; verifikasi arsip bukan bukti independen eksekusi live historis.
 
 Cara penggunaan dan reproduksi tercatat dalam [panduan analisis](../docs/REPRODUCIBILITY.md). Setelah paket diunggah, tautan unduhnya adalah `data/Dataset_CDEA.zip` di repo privat (memerlukan izin akses pembaca).
