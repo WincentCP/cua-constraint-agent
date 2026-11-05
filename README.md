@@ -41,7 +41,7 @@ Notebook dalam paket dan [notebook utama repo](notebooks/main_analysis.ipynb) da
 
 Notebook utama adalah **[`notebooks/main_analysis.ipynb`](notebooks/main_analysis.ipynb)**, diselaraskan dari notebook Bab IV terbaru yang diberikan peneliti. Hanya satu notebook analisis utama ditempatkan pada folder aktif.
 
-Notebook ini menggunakan protokol `cdea_main_v1` dan `cdea_scale_v1`. Unggah `Dataset_CDEA.zip` (atau dua arsip `main_observation.zip` dan `scale_reference.zip`), lalu jalankan **Run All** di Jupyter atau Google Colab. Keluaran mencakup 6 tabel utama, 9 grafik berwarna, dan hingga 20 tabel rinci (19 pada fixture tanpa contoh probe di trace).
+Notebook ini menggunakan protokol `cdea_main_v1` dan `cdea_scale_v1`. Unggah `Dataset_CDEA.zip` (atau dua arsip `main_observation.zip` dan `scale_reference.zip`), lalu jalankan **Run All** di Jupyter atau Google Colab. Keluaran mencakup 6 tabel utama, 9 grafik berwarna, dan hingga **26 tabel rinci** (25 pada fixture tanpa contoh probe di trace), termasuk enam tabel tambahan untuk catatan pembimbing.
 
 ```powershell
 python -m pip install -r requirements-analysis.txt
