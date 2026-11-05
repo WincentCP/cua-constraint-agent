@@ -66,3 +66,9 @@ Pengujian baru membutuhkan instalasi OpenApps, BrowserGym, Ollama, dan model ter
 Sumber Main dan Scale menggunakan revisi pengendali berbeda, sehingga perbandingan ukuran model bersifat eksploratori. Perbedaan tindakan saja tidak membuktikan keberhasilan akuisisi informasi. Pemeriksaan format arsip maupun CI tidak merupakan bukti independen bahwa episode historis dijalankan secara langsung.
 
 Rujukan: [Protokol Main](docs/MAIN_PROTOCOL_V1.md) · [Protokol Small](docs/SMALL_EXTENSION_PROTOCOL.md) · [Asal data](docs/DATA_PROVENANCE.md) · [Analisis sumber](docs/MAIN_SMALL_EXTENSION_ANALYSIS.md).
+
+## Analisis tambahan catatan pembimbing
+
+Notebook `notebooks/main_analysis.ipynb` memuat analisis tambahan berbasis **tugas** (uji tanda eksak), median/IQR dan penyebab penghentian episode, pasangan Baseline-only, serta status ledger dalam trace. Keluaran tersebut adalah **analisis ulang arsip lama**, bukan eksperimen baru. Lihat [catatan verifikasi dan batas klaim](docs/THESIS_REVIEW_ANALYSIS_2026-11-05.md) dan [cara menjalankan notebook](docs/REPRODUCIBILITY.md).
+
+**Interpretasi untuk revisi skripsi:** Skenario B membatasi klaim pada CDEA versus Baseline *progress-score*; tidak ada pembanding Vanilla. Protokol lima tugas bank dipertahankan, tetapi uji tanda berbasis lima tugas memberi p = 0,125. Selisih hasil pada model Small tidak boleh ditafsirkan hanya akibat ukuran parameter karena sumber controller berbeda. Pencocokan kutipan AXTree bukan validasi kebenaran faktual suatu constraint.
