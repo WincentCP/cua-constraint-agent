@@ -94,7 +94,41 @@ def verify(protocol):
         # The fixture has no episode JSON traces or selected probe examples.
         # The notebook intentionally skips its optional 17_probe_examples.csv.
         detailed = list((outputs / 'detailed_analysis').glob('*.csv'))
-        assert len(detailed) == 19
+        assert len(detailed) == 25
+        # Enam keluaran tambahan sesuai catatan dosen; 17_probe_examples opsional.
+        required = {
+            '22_task_level_differences.csv',
+            '23_task_level_sign_tests.csv',
+            '24_episode_efficiency_distribution.csv',
+            '25_episode_termination_reasons.csv',
+            '26_cdea_loss_pairs.csv',
+            '27_ledger_trace_scope.csv',
+        }
+        actual = {p.name for p in detailed}
+        assert required.issubset(actual), sorted(required - actual)
+        with (outputs / 'detailed_analysis' / '23_task_level_sign_tests.csv').open(
+                encoding='utf-8') as f:
+            tests = list(csv.DictReader(f))
+        assert {(t['study'], t['cohort']) for t in tests} == {
+            ('Main Large', 'primary_bank_5_tasks'),
+            ('Main Large', 'all_32_tasks'),
+            ('Scale Small', 'all_32_tasks'),
+        }
+        for t in tests:
+            assert (int(t['improved_tasks']) + int(t['worsened_tasks'])
+                    + int(t['tied_tasks']) == int(t['unique_tasks']))
+            assert 0 <= float(t['exact_sign_test_p_two_sided']) <= 1
+        with (outputs / 'detailed_analysis' / '24_episode_efficiency_distribution.csv').open(
+                encoding='utf-8') as f:
+            efficiencies = list(csv.DictReader(f))
+        assert len(efficiencies) == 4
+        assert all(int(e['episode_rows']) == 128 and int(e['max_steps_setting']) == 40
+                   for e in efficiencies)
+        assert all(int(e['episodes_reaching_cap']) == 0 for e in efficiencies)
+        with (outputs / 'detailed_analysis' / '25_episode_termination_reasons.csv').open(
+                encoding='utf-8') as f:
+            terminations = list(csv.DictReader(f))
+        assert sum(int(e['episodes']) for e in terminations) == 512
         assert not (outputs / 'detailed_analysis' / '17_probe_examples.csv').exists()
         print(f'PASS {protocol}: 6 tabel, 9 gambar, 128 pasangan Small')
 
