@@ -1,8 +1,10 @@
 # Dataset dan Lampiran Digital CDEA
 
-Berkas yang dirujuk skripsi adalah **`Dataset_CDEA.zip`**. Berkas asli lengkap disiapkan sebagai paket terpisah; **arsip ZIP belum diunggah ke branch `main` repo ini** pada pemeriksaan 2026-10-28. Informasi di sini tidak boleh dianggap sebagai tautan data yang sudah tersedia di repo.
+Berkas yang dirujuk skripsi adalah **`Dataset_CDEA.zip`**. Berkas asli lengkap disiapkan sebagai paket terpisah; **arsip ZIP tidak diunggah bersama perubahan analisis 2026-11-05**. Informasi di sini tidak boleh dianggap sebagai tautan data yang sudah tersedia di repo.
 
-Untuk melengkapi repo, unggah paket `Dataset_CDEA.zip` yang diberikan bersama hasil audit skripsi ke path **`data/Dataset_CDEA.zip`** melalui GitHub `Add file > Upload files`. Berkas paket berukuran sekitar 11,6 MB, di bawah batas unggahan per file GitHub Web (25 MiB). Setelah unggah, verifikasi SHA-256:
+**Jangan otomatis mengunggah dataset lengkap ke repository publik.** Paket dapat memuat snapshot database, pesan, dan trace. Periksa lebih dahulu apakah seluruh isinya layak dipublikasikan dan apakah pembimbing memerlukan akses lewat lampiran privat. Perubahan dokumen dan notebook tidak mengharuskan unggahan data historis.
+
+Checksum berikut merujuk pada **versi paket yang terdokumentasi sebelumnya**, bukan identitas universal setiap kemasan ZIP:
 
 ```text
 9d7e6cbd838b42690d69318aec75f97cb0bb1887cc0bde01f1ab4db0535aac1d  Dataset_CDEA.zip
@@ -41,4 +43,9 @@ Kedua sumber asli **dipertahankan byte-for-byte**. Model Large dalam arsip Scale
 
 **Konfigurasi berdasarkan konfirmasi peneliti:** `num_ctx` Main Large = **8192 token** (dikonfirmasi peneliti pada 2026-10-28), Small = **8192 token** (tercatat pada manifest historis). Perbedaan asal pencatatan harus tetap dinyatakan: nilai Main tidak ada pada manifest/episode asli, sehingga disajikan lewat berkas konfirmasi dan salinan manifest teranotasi. Kedua arsip sumber tidak diubah; verifikasi arsip bukan bukti independen eksekusi live historis.
 
-Cara penggunaan dan reproduksi tercatat dalam [panduan analisis](../docs/REPRODUCIBILITY.md). Setelah paket diunggah, tautan unduhnya adalah `data/Dataset_CDEA.zip` di repo privat (memerlukan izin akses pembaca).
+Cara penggunaan dan reproduksi tercatat dalam [panduan analisis](../docs/REPRODUCIBILITY.md). Jika dataset perlu dibagikan kepada dosen, pilih jalur penyimpanan yang aksesnya sesuai dan verifikasi SHA-256 **kedua arsip historis** secara terpisah. Repository saat pembaruan ini bersifat publik; jangan menyebutnya privat.
+
+
+## Verifikasi paket yang diterima pada 2026-11-05
+
+Paket yang dianalisis pada review skripsi memiliki SHA-256 `2937b79f5edc85a93f42eb8db1b8aa4e220d6151332b8f2f3af08df2f925c503` dan memuat direktori ekstraksi tambahan. Hash paket ini berbeda dari paket sebelumnya di atas, tetapi **dua arsip sumber yang menjadi dasar analisis tetap cocok** dengan checksum tabel. Gunakan kedua ZIP sumber untuk notebook, bukan direktori salinan ekstraksi yang mungkin tidak lengkap. Detail dan batas pelaporan: [Review pembimbing](../docs/THESIS_REVIEW_ANALYSIS_2026-11-05.md).
