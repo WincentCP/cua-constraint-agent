@@ -38,3 +38,11 @@ Paket digital berisi **17 file**, bernama `Dataset_CDEA.zip`. Cara unggah dan ch
 | Gabungan (Main Large + Scale Small) | 116/256 (45,31%) | 151/256 (58,98%) | +13,67 pp |
 
 Berkas lampiran digital dapat dikirim terpisah kepada dosen, atau diunggah ke `data/Dataset_CDEA.zip` supaya berkas dapat diakses langsung melalui repo privat. Berikan izin akses kepada dosen/penguji.
+
+## Analisis tambahan pembimbing — 2026-11-05
+
+Notebook utama sekarang mencakup **enam tabel CSV tambahan** pada `hasil_analisis_cdea/detailed_analysis/`: `22_task_level_differences.csv`, `23_task_level_sign_tests.csv`, `24_episode_efficiency_distribution.csv`, `25_episode_termination_reasons.csv`, `26_cdea_loss_pairs.csv`, dan `27_ledger_trace_scope.csv`.
+
+Tabel ini mendukung revisi **Bab III (unit analisis), Bab IV (uji tanda berdasarkan tugas, penghentian, kegagalan, ruang lingkup ledger), dan Bab V (pembatasan kesimpulan)**. Nilai yang belum diverifikasi dari rekaman historis tidak boleh diubah menjadi klaim hasil. Catatan pembimbing dan batas interpretasi tersedia di [THESIS_REVIEW_ANALYSIS_2026-11-05.md](THESIS_REVIEW_ANALYSIS_2026-11-05.md).
+
+File analisis baru bukan revisi algoritma CDEA. Untuk replikasi gunakan dua ZIP sumber asli dan [petunjuk reproduksi](REPRODUCIBILITY.md). Kesimpulan tetap dibatasi pada **CDEA vs Baseline progress-score**; tidak tersedia pembanding Vanilla.
