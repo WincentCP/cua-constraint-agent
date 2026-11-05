@@ -38,3 +38,17 @@ Uji integrasi menjalankan notebook dengan fixture. Auditor arsip dapat memeriksa
 | Informasi perbankan | 10/20 (50,00%) | 18/20 (90,00%) |
 
 Perbandingan dua sumber menggunakan revisi pengendali yang berbeda. Nilai statistik bersifat eksploratori dan uji CI tidak membuktikan sendiri provenance eksekusi runtime historis.
+
+## Analisis tambahan sesuai review pembimbing (2026-11-05)
+
+Notebook utama sekarang menyertakan bagian **07A** untuk memenuhi kebutuhan analisis tambahan dari catatan pembimbing, tanpa mengubah angka hasil atau grafik lama. Selain 6 tabel utama dan 9 gambar, bagian ini menghasilkan 6 CSV baru di `hasil_analisis_cdea/detailed_analysis/`:
+
+- `22_task_level_differences.csv` dan `23_task_level_sign_tests.csv`: uji tanda eksak dengan ID tugas sebagai unit; model-model untuk tugas yang sama tidak dihitung sebagai tugas independen.
+- `24_episode_efficiency_distribution.csv`: median, kuartil/IQR, dan proporsi mencapai batas langkah.
+- `25_episode_termination_reasons.csv`: alasan penghentian dan penyebut semua episode terpilih.
+- `26_cdea_loss_pairs.csv`: daftar pasangan ketika Baseline berhasil dan CDEA gagal.
+- `27_ledger_trace_scope.csv`: cakupan ledger pada trace, tanpa klaim validasi kebenaran faktual.
+
+Output rinci yang dihasilkan berjumlah **hingga 26 CSV** (25 jika trace fixture tidak memiliki contoh probe opsional). Uji `verify_notebook.py` menggunakan fixture sintetis; hasil fixture bukan pengganti perhitungan dari ZIP penelitian asli. Gunakan hash input untuk merekonsiliasi arsip; lihat [pemetaan review pembimbing](THESIS_REVIEW_ANALYSIS_2026-11-05.md).
+
+**Batas interpretasi wajib:** lima tugas perbankan adalah fokus utama yang tercatat pada protokol Main; p uji tanda berbasis tugas adalah **0,125**, bukan bukti signifikansi pada tingkat tugas. McNemar berbasis 20 pasangan hanya analisis eksploratori, bukan uji dengan 20 tugas independen. Main dan Scale menggunakan controller berbeda, dan ledger Scale Small yang tercatat tidak diperbarui. Hasil ini tidak membuktikan CDEA lebih baik daripada agen Vanilla tanpa override.
