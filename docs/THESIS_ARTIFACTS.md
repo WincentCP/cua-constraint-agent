@@ -1,16 +1,16 @@
-# Pemetaan Artefak Skripsi CDEA
+# Peta Berkas Pendukung Skripsi CDEA
 
-Dokumentasi ini menghubungkan berkas penelitian dengan nama yang dipakai di skripsi versi 2026-10-28.
+Dokumentasi ini menghubungkan berkas penelitian dengan skripsi revisi November 2026 (Lampiran A–E). Paket data digital disediakan terpisah dan tidak menjadi Lampiran F.
 
 | Dalam skripsi | Pada repositori / lampiran digital | Status |
 |---|---|---|
-| Kode implementasi CDEA | `scripts/browsergym/shared_policy.py` | Di repo |
+| Kode implementasi CDEA (Persamaan 1–3) | `scripts/browsergym/shared_policy.py` | Di repo; komentar persamaan pada `choose_action()` |
 | Pengendali agen | `scripts/browsergym/matched_dev.py` | Di repo |
 | Pelaksanaan Main | `scripts/browsergym/main.py` | Di repo |
 | Pelaksanaan Small | `scripts/browsergym/small_extension.py` | Di repo |
 | Daftar 32 tugas | `config/main_taskset_v1.json` | Di repo |
 | Konfigurasi Main | `config/main_plan.json` | Di repo; pengaturan untuk eksekusi baru |
-| Notebook Bab IV | `notebooks/main_analysis.ipynb` | Di repo |
+| Notebook Bab IV (Persamaan 4–7) | `notebooks/main_analysis.ipynb` | Di repo |
 | Notebook lampiran | `Notebook_CDEA.ipynb` di dalam `Dataset_CDEA.zip` | Di paket digital |
 | Arsip Main historis | `main_observation.zip` di dalam paket | Di paket digital |
 | Arsip Scale historis | `scale_reference.zip` di dalam paket | Di paket digital |
@@ -19,6 +19,8 @@ Dokumentasi ini menghubungkan berkas penelitian dengan nama yang dipakai di skri
 | Audit dan daftar checksum | `AUDIT_REPORT.json`, `LAMPIRAN_ANALISIS.json`, `SHA256SUMS.txt` | Di paket digital |
 
 Paket digital berisi **17 file**, bernama `Dataset_CDEA.zip`. Cara unggah dan checksum: [data/README.md](../data/README.md).
+
+**Lampiran C.1** menampilkan pseudocode ringkas dari pemilihan kandidat. Untuk implementasi penuh, termasuk validasi kandidat dan deduplikasi ID, lihat [`shared_policy.py`](../scripts/browsergym/shared_policy.py). **Lampiran C.2** memuat templat prompt historis Main. Nama internal `Proposed` dalam kode dan arsip historis adalah metode yang dalam skripsi disebut **CDEA**; nama historis ini tidak diganti agar bukti tetap bisa ditelusuri. [Peta Persamaan (1)–(7)](CODE_MAP.md#peta-persamaan-skripsi).
 
 ### Perbedaan sumber dan pengaturan
 
@@ -37,7 +39,7 @@ Paket digital berisi **17 file**, bernama `Dataset_CDEA.zip`. Cara unggah dan ch
 | Small | 43/128 (33,59%) | 54/128 (42,19%) | +8,59 pp |
 | Gabungan (Main Large + Scale Small) | 116/256 (45,31%) | 151/256 (58,98%) | +13,67 pp |
 
-Berkas lampiran digital dapat dikirim terpisah kepada dosen, atau diunggah ke `data/Dataset_CDEA.zip` supaya berkas dapat diakses langsung melalui repo privat. Berikan izin akses kepada dosen/penguji.
+Berkas paket digital dapat dibagikan terpisah kepada dosen/penguji melalui saluran terbatas setelah pemeriksaan konten. Repo ini bersifat **publik**; jangan mengunggah arsip berisi pesan, snapshot database, atau data pribadi tanpa peninjauan dan izin yang sesuai.
 
 ## Analisis tambahan pembimbing — 2026-11-05
 
