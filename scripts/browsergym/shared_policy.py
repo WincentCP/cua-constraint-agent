@@ -280,11 +280,20 @@ def choose_action(reply: dict, method: str, observation: dict, tree: str,
     selected_probe = None
     if opportunity:
         if method == "Baseline":
+            # Persamaan (1) skripsi: pilih progress_score terbesar; jika seri,
+            # pertahankan kandidat dengan urutan kemunculan paling awal.
             selected_probe = min(probes, key=lambda x: (-x["progress_score"], x["order"]))
         else:
             def proposed_key(item):
+                # Persamaan (2) skripsi: coverage = jumlah ID constraint unik
+                # dan valid di may_answer yang masih berstatus UNKNOWN.
+                # _probe_candidates() sudah memvalidasi ID dan melakukan
+                # deduplikasi melalui sorted(set(ids)); jangan hitung duplikat.
                 unknown = sum(ledger[key]["state"] == "UNKNOWN"
                               for key in item["may_answer"])
+                # Persamaan (3) skripsi: urutkan menurut coverage terbesar,
+                # lalu forward_cost terkecil, lalu urutan kandidat awal.
+                # Ini prioritas leksikografis, bukan coverage / forward_cost.
                 return (-unknown, item["forward_cost"], item["order"])
             selected_probe = min(probes, key=proposed_key)
         selected = selected_probe["action"]
