@@ -19,8 +19,10 @@ class AnalysisNotebookContracts(unittest.TestCase):
                               if c['cell_type'] == 'markdown')
 
     def test_source_notebook_is_complete(self):
-        self.assertEqual(len(self.notebook['cells']), 48)
-        self.assertEqual(sum(c['cell_type'] == 'code' for c in self.notebook['cells']), 24)
+        # Notebook final memuat 50 sel (25 kode, 25 markdown).
+        # Hitung jumlah aktual, jangan mempertahankan angka dari revisi lama.
+        self.assertEqual(len(self.notebook['cells']), 50)
+        self.assertEqual(sum(c['cell_type'] == 'code' for c in self.notebook['cells']), 25)
         for cell in self.notebook['cells']:
             if cell['cell_type'] == 'code':
                 ast.parse(''.join(cell['source']))
