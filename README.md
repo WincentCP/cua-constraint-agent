@@ -13,6 +13,8 @@ Constraint-Driven Evidence Acquisition (CDEA) memprioritaskan tindakan pencarian
 
 **Mulai di sini:** [Notebook Bab IV](notebooks/main_analysis.ipynb) · [Cara menjalankan analisis](docs/REPRODUCIBILITY.md) · [Peta kode](docs/CODE_MAP.md) · [Daftar tugas](config/main_taskset_v1.json).
 
+**Rumus skripsi:** [Peta Persamaan (1)–(7)](docs/CODE_MAP.md#peta-persamaan-skripsi) menjelaskan lokasi kode pemeringkatan dan analisis statistik tanpa mengubah eksperimen historis.
+
 ## Rancangan dan sumber hasil
 
 | Kelompok | Sumber | Tugas | Varian model | Pasangan | Episode |
@@ -33,7 +35,7 @@ Angka tersebut berasal dari arsip referensi, bukan eksekusi baru. **Peneliti men
 
 ## Data dan lampiran digital
 
-Nama paket pendukung sesuai Lampiran F adalah **`Dataset_CDEA.zip`** (17 berkas: dua arsip sumber, notebook salinan, CSV hasil terpilih, metadata, dan audit). Paket ini disiapkan terpisah dan **belum diunggah ke repository**; ikuti [panduan unggah dan verifikasi checksum](data/README.md) untuk menjadikannya tersedia pada `data/Dataset_CDEA.zip`. [Pemetaan nama berkas skripsi](docs/THESIS_ARTIFACTS.md).
+Paket data pendukung terpisah bernama **`Dataset_CDEA.zip`** (17 berkas: dua arsip sumber, notebook salinan, CSV hasil terpilih, metadata, dan audit). Paket ini disiapkan terpisah dan **belum diunggah ke repository**; ikuti [panduan unggah dan verifikasi checksum](data/README.md) untuk menjadikannya tersedia pada `data/Dataset_CDEA.zip`. [Pemetaan nama berkas skripsi](docs/THESIS_ARTIFACTS.md).
 
 Notebook dalam paket dan [notebook utama repo](notebooks/main_analysis.ipynb) dapat menghitung ulang hasil dari dua arsip sumber. Arsip Main dan Scale tidak diedit, serta arsip Scale Large tidak dihitung sebagai pasangan tambahan.
 
