@@ -25,6 +25,22 @@ Satu *paired run* menggunakan tugas dan varian model yang sama untuk episode Bas
 
 Baseline memprioritaskan *progress score*; Proposed memprioritaskan *constraint coverage*, kemudian *forward cost* saat tersedia kandidat pencarian yang dapat dibandingkan.
 
+## Peta Persamaan Skripsi
+
+Penomoran berikut mengikuti skripsi versi November 2026. Rumus pemeringkatan berada pada pengendali agen; rumus hasil pengujian dihitung dari pasangan yang tercatat pada notebook. Komentar `Persamaan (1)`, `(2)`, dan `(3)` juga tersedia langsung pada `choose_action()`.
+
+| Persamaan | Konsep | Lokasi implementasi |
+|---|---|---|
+| (1) | Baseline: `progress_score` tertinggi, lalu urutan awal | [`shared_policy.py`, `choose_action()`](../scripts/browsergym/shared_policy.py) |
+| (2) | Cakupan ID `may_answer` valid dan unik berstatus `UNKNOWN` | [`shared_policy.py`, `_probe_candidates()` dan `choose_action()`](../scripts/browsergym/shared_policy.py) |
+| (3) | CDEA: cakupan terbesar, lalu `forward_cost` terkecil, lalu urutan awal | [`shared_policy.py`, `choose_action()`](../scripts/browsergym/shared_policy.py) |
+| (4) | Tingkat keberhasilan dari episode valid | [`main_analysis.ipynb`](../notebooks/main_analysis.ipynb), ringkasan pasangan |
+| (5) | Selisih keberhasilan CDEA dan Baseline | [`main_analysis.ipynb`](../notebooks/main_analysis.ipynb), `paired_stats()` |
+| (6) | Uji McNemar eksak pada pasangan tidak sejalan | [`main_analysis.ipynb`](../notebooks/main_analysis.ipynb), `binomtest()`; analisis eksploratori |
+| (7) | Perbandingan manfaat Small dan Large | [`main_analysis.ipynb`](../notebooks/main_analysis.ipynb), analisis beda kelompok dan bootstrap tugas |
+
+**Catatan:** Pemilihan CDEA bersifat leksikografis, **bukan** optimasi rasio coverage/biaya ataupun implementasi greedy set-cover klasik secara penuh. Sebelum menghitung cakupan, `_probe_candidates()` memvalidasi ID constraint dan menghapus duplikasi (`sorted(set(ids))`). Pengujian ulang notebook memakai data simulasi uji, bukan bukti independen eksekusi historis.
+
 ## 3. Lingkungan & Pemeriksaan
 
 | Lokasi | Fungsi |
