@@ -20,6 +20,10 @@ Buka [`notebooks/main_analysis.ipynb`](../notebooks/main_analysis.ipynb) di Jupy
 
 Keluaran: 6 tabel utama, 9 gambar berwarna, hingga **26 CSV analisis rinci** (termasuk 6 CSV tambahan untuk catatan pembimbing), serta ringkasan statistik. File `17_probe_examples.csv` hanya dibuat bila tersedia contoh probe di trace; fixture CI tanpa trace menghasilkan **25 CSV rinci** (19 tabel asal dan 6 tabel tambahan). Tidak ada berkas `pemetaan_bab_iv.json`. Nama output mengikuti notebook asli.
 
+## Kecocokan dengan rumus skripsi
+
+[Peta Persamaan (1)–(7)](CODE_MAP.md#peta-persamaan-skripsi) menunjukkan lokasi penghitungan. Persamaan (1)–(3) berada di `scripts/browsergym/shared_policy.py` (komentar inline pada `choose_action()`). Persamaan (4)–(7) dihitung oleh `notebooks/main_analysis.ipynb`; pengujian notebook dengan data simulasi uji tidak menggantikan arsip penelitian asli. Nama `Proposed` pada sumber historis berarti CDEA.
+
 ## Pengujian kode
 
 ```powershell
