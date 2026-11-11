@@ -37,7 +37,7 @@ python scripts/analysis/audit_archives.py --main main_observation.zip --small sc
 
 Buka [`notebooks/main_analysis.ipynb`](notebooks/main_analysis.ipynb) di Jupyter atau Google Colab. Unggah `Dataset_CDEA.zip` atau kedua arsip sumber, lalu jalankan **Run All**.
 
-Notebook menghasilkan folder `CDEA_Analysis_Results/` dan paket `CDEA_Analysis_Results.zip), yang berisi grafik, tabel utama, analisis rinci, dan ringkasan statistik. Seluruh keluaran tersebut dikecualikan dari Git melalui `.gitignore`.
+Notebook menghasilkan folder `CDEA_Analysis_Results/` dan paket `CDEA_Analysis_Results.zip`, yang berisi grafik, tabel utama, analisis rinci, dan ringkasan statistik. Seluruh keluaran tersebut dikecualikan dari Git melalui `.gitignore`.
 
 Panduan lengkap tersedia di [Reproducibility](docs/REPRODUCIBILITY.md).
 
