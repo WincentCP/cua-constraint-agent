@@ -1,0 +1,104 @@
+{
+  "dataset_package": {
+    "filename": "Dataset_CDEA(1).zip",
+    "size_bytes": 27511104,
+    "sha256": "2937b79f5edc85a93f42eb8db1b8aa4e220d6151332b8f2f3af08df2f925c503"
+  },
+  "source_archives": [
+    {
+      "filename": "main_observation.zip",
+      "size_bytes": 3971324,
+      "sha256": "74f48100b4dc6ae074573596dc87beed18770d4c3740f2c01f5efcd57a2d885c",
+      "protocol": "cdea_main_v1",
+      "archive_id": "main_observation_v1",
+      "created_utc": "2026-10-20T10:00:00+00:00",
+      "controller_git_commit": "ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1",
+      "openapps_git_commit": "6e6782794433c60468d65ac75bc3f03c56007f8c",
+      "planned_pairs": 128,
+      "planned_episodes": 256,
+      "valid_pairs": 128,
+      "invalid_pairs": 0,
+      "not_started_pairs": 0,
+      "shared_parameters": {
+        "seed": 233,
+        "max_steps": 40,
+        "model_timeout_seconds": 240,
+        "temperature": 0,
+        "num_predict": 640,
+        "think": false,
+        "num_ctx": "not explicitly recorded in Main manifest"
+      }
+    },
+    {
+      "filename": "scale_reference.zip",
+      "size_bytes": 24509041,
+      "sha256": "052ecf15e2466109175153022baa7a1007a8a88c7358307823f85c3947b38f96",
+      "protocol": "cdea_scale_v1",
+      "archive_id": "scale_reference_v4",
+      "created_utc": "2026-10-24T03:12:00Z",
+      "controller_git_commit": "ff655d1389bc84aa8100b6321220f5ec01c4e3b4",
+      "openapps_git_commit": "6e6782794433c60468d65ac75bc3f03c56007f8c",
+      "planned_pairs": 256,
+      "planned_episodes": 512,
+      "valid_pairs": 256,
+      "invalid_pairs": 0,
+      "not_started_pairs": 0,
+      "shared_parameters": {
+        "seed": 233,
+        "max_steps": 40,
+        "model_timeout_seconds": 240,
+        "temperature": 0,
+        "num_predict": 640,
+        "num_ctx": 8192,
+        "think": false
+      }
+    }
+  ],
+  "analysis_selection": {
+    "main": {
+      "source_archive": "main_observation.zip",
+      "size": "large",
+      "selected_pairs": 128,
+      "selected_episodes": 256
+    },
+    "small": {
+      "source_archive": "scale_reference.zip",
+      "size": "small",
+      "selected_pairs": 128,
+      "selected_episodes": 256
+    },
+    "excluded": {
+      "source_archive": "scale_reference.zip",
+      "size": "large",
+      "excluded_pairs": 128,
+      "excluded_episodes": 256
+    },
+    "total_selected_pairs": 256,
+    "total_selected_episodes": 512,
+    "methods": [
+      "Baseline",
+      "Proposed"
+    ],
+    "task_count": 32,
+    "model_count": 8
+  },
+  "validation": {
+    "outer_zip_integrity": "passed",
+    "main_source_zip_integrity": "passed",
+    "scale_source_zip_integrity": "passed",
+    "selected_pair_ids_match_source": "passed",
+    "selected_pair_outcomes_match_source": "passed",
+    "selected_episode_records_match_source": "passed for validity, success, steps, model calls, model time, probe opportunities, and policy overrides",
+    "success_by_task_matches_source_pairs": "passed",
+    "success_by_model_matches_source_pairs": "passed",
+    "model_size_comparison_by_task_matches_source_pairs": "passed",
+    "small_model_higher_uplift_tasks_matches_source": "passed",
+    "small_model_success_comparison_examples_match_source": "passed"
+  },
+  "interpretation_notes": [
+    "The Main and Scale archives use different Agent Controller commits.",
+    "The Main manifest does not explicitly record num_ctx; Scale explicitly records num_ctx=8192.",
+    "The thesis comparison uses Main Large and Scale Small only; Scale Large is excluded from the selected comparison dataset.",
+    "Archive checks establish internal integrity and record consistency, not independent verification of the execution host or runtime."
+  ]
+}
