@@ -12,7 +12,6 @@ This folder contains compact, derived result tables for the CDEA thesis. The tab
 | `small_model_higher_uplift_tasks.csv` | 5 tasks where the CDEA uplift was larger in Small than Large | `derived/analisis_peningkatan_cdea_small_5.csv` |
 | `small_model_success_comparison_examples.csv` | 6 tasks where Small had more successful models than Large in at least one method | `derived/tabel_4_7_small_menang_6.csv` |
 | `pair_outcomes.csv.gz` | Pair-level outcomes for the 128 Main Large and 128 selected Scale Small pairs | `derived/selected_pairs.csv` |
-| `episode_outcomes.csv.gz` | Compact episode-level outcomes for the 512 selected episodes | `derived/selected_results.csv` |
 | `provenance.json` | Source archive identifiers, checksums, experiment commits, configurations, and validation notes | Source archive manifests |
 
 ## Which source records are included?
@@ -27,7 +26,6 @@ The pair-level and episode-level files are gzip-compressed CSV files. They can b
 
 ```bash
 gzip -dk pair_outcomes.csv.gz
-gzip -dk episode_outcomes.csv.gz
 ```
 
 ## Reproducibility and limitations
