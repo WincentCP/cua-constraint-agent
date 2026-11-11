@@ -18,6 +18,8 @@ Di dalam kode dan arsip eksperimen, metode CDEA menggunakan label internal **Pro
 ~~~text
 .
 ├── .github/workflows/ci.yml
+├── docs/
+│   └── MAIN_READINESS_TEMPLATE.json
 ├── config/
 │   ├── main_plan.json
 │   ├── main_taskset_v1.json
@@ -52,6 +54,7 @@ Keterangan:
 | scripts/analysis/ | Audit arsip dan pemeriksaan notebook analisis. |
 | notebooks/ | Analisis hasil eksperimen, tabel, grafik, dan statistik. |
 | tests/ | Pengujian fungsi dan kontrak sistem secara offline. |
+| docs/ | Template readiness Main dengan status awal pending; bukan persetujuan eksperimen. |
 | .github/workflows/ci.yml | Pengujian otomatis melalui GitHub Actions. |
 
 ## Konfigurasi model
@@ -157,7 +160,7 @@ GitHub Actions menjalankan pemeriksaan kode dan pengujian otomatis pada Ubuntu d
 
 Pelaksanaan eksperimen penuh berbeda dari pemeriksaan --dry-run. Eksekusi memerlukan checkout OpenApps pada commit yang dipatok dalam konfigurasi, BrowserGym, Ollama, serta checkpoint model yang sesuai.
 
-Main Study memiliki pemeriksaan kesiapan (*readiness gate*). File readiness yang dibuat melalui opsi -InitReadiness berstatus pending dan **bukan** persetujuan untuk menjalankan eksperimen. Eksekusi Main memerlukan file readiness yang telah disetujui dan lolos pemeriksaan.
+Main Study memiliki pemeriksaan kesiapan (*readiness gate*). Runner menggunakan [template readiness Main](docs/MAIN_READINESS_TEMPLATE.json). File readiness yang dibuat melalui opsi -InitReadiness berstatus pending dan **bukan** persetujuan untuk menjalankan eksperimen. Eksekusi Main memerlukan file readiness yang telah disetujui dan lolos pemeriksaan.
 
 Small-Model Extension menggunakan identitas pengujian (ExtensionId) tersendiri. Runner akan memeriksa commit OpenApps dan konfigurasi sebelum menjalankan pasangan pengujian.
 
