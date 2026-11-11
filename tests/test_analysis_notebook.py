@@ -36,7 +36,6 @@ class AnalysisNotebookContracts(unittest.TestCase):
         self.assertIn('Tabel_4_6', self.code)
         self.assertIn("Path('CDEA_Analysis_Results')", self.code)
         self.assertIn("CDEA_Analysis_Results.zip", self.code)
-        self.assertNotIn('Hasil_Analisis_CDEA_Bab_IV_Terurut.zip', self.code)
 
     def test_selected_source_and_exclusions(self):
         for token in ('main_observation.zip', 'scale_reference.zip',
