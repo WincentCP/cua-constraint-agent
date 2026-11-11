@@ -39,11 +39,13 @@ class AnalysisNotebookContracts(unittest.TestCase):
 
     def test_selected_source_and_exclusions(self):
         for token in ('main_observation.zip', 'scale_reference.zip',
-                      'cdea_main_v1', 'cdea_scale_v1', "'size'].eq('small')",
+                      'cdea_main_v1', 'cdea_scale_v1', "scale_sizes.eq('small')",
                       'raw_excluded', 'origin_archive', 'Main Large', 'Scale Small'):
             self.assertIn(token, self.code)
-        # Notebook asli belum mendukung format Small-only dari runner baru.
-        self.assertNotIn('cdea_small_extension_v1', self.code)
+        # Notebook harus menerima arsip Scale gabungan maupun Small-only.
+        self.assertIn('cdea_small_extension_v1', self.code)
+        self.assertIn("SCALE_PROTOCOLS=('cdea_scale_v1','cdea_small_extension_v1')",
+                      self.code)
 
 
 if __name__ == '__main__':
