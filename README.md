@@ -1,196 +1,203 @@
 # CDEA — Computer-Using Agent Research
 
-Repository ini berisi implementasi **Constraint-Driven Evidence Acquisition (CDEA)** untuk Computer-Using Agent (CUA), konfigurasi eksperimen, notebook analisis, serta pengujian otomatis. Penelitian membandingkan CDEA dengan Baseline *progress-score* pada lingkungan OpenApps melalui BrowserGym.
+Repository ini memuat implementasi **Constraint-Driven Evidence Acquisition (CDEA)** untuk Computer-Using Agent (CUA) berbasis Large Language Model (LLM), konfigurasi eksperimen, notebook analisis, pengujian otomatis, dan tabel hasil penelitian.
 
-Di dalam kode dan arsip eksperimen, metode CDEA menggunakan label internal **Proposed**. Dengan demikian, Proposed dan CDEA merujuk pada metode yang sama.
+Dalam kode dan arsip eksperimen, CDEA menggunakan label internal **\`Proposed\`**. Istilah \`Proposed\` dan CDEA merujuk pada metode yang sama.
 
 ## Ringkasan penelitian
 
-- **Metode:** Baseline progress-score dan CDEA (Proposed).
-- **Kumpulan tugas:** 32 tugas, terdiri atas 9 tugas dasar, 18 tugas lintas aplikasi, dan 5 tugas informasi perbankan.
-- **Main Study:** 4 model Large, 32 tugas, 128 pasangan pengujian, dan 256 episode terjadwal.
-- **Small-Model Extension:** 4 model Small, 32 tugas, 128 pasangan pengujian, dan 256 episode terjadwal.
-- **Lingkungan:** OpenApps dan BrowserGym.
-- **Model runtime:** Ollama.
+Penelitian membandingkan CDEA dengan Baseline \`progress-score\` pada lingkungan OpenApps menggunakan BrowserGym.
+
+| Kelompok | Pasangan | Baseline | CDEA | Selisih |
+|---|---:|---:|---:|---:|
+| Main Study — Large | 128 | 73/128 (57,03%) | 97/128 (75,78%) | +18,75 pp |
+| Small-Model Extension — Small | 128 | 43/128 (33,59%) | 54/128 (42,19%) | +8,59 pp |
+
+Pada tingkat tugas, Main Study menunjukkan 11 tugas membaik, tidak ada yang memburuk, dan 21 tidak berubah (uji tanda dua sisi, p = 0,00098; interval task-cluster bootstrap 95%: 9,38–29,69 pp). Pada Small-Model Extension, 10 tugas membaik, 5 memburuk, dan 17 tidak berubah (p = 0,30176; interval 95%: 0,00–17,97 pp).
+
+Angka tersebut berasal dari arsip terpilih yang dijelaskan dalam [results/README.md](results/README.md). Hasil Main dan Small dilaporkan terpisah; keduanya tidak diperlakukan sebagai satu eksperimen dengan konfigurasi identik.
+
+## Cakupan data yang dianalisis
+
+Kumpulan tugas berisi 32 tugas:
+- 9 tugas dasar (\`primitive_control\`);
+- 18 tugas lintas aplikasi (\`cross_app_workflow\`); dan
+- 5 tugas informasi perbankan (\`bank_information\`).
+
+Analisis menggunakan:
+- **Main Large:** 128 pasangan valid atau 256 episode dari \`main_observation.zip\`.
+- **Scale Small:** 128 pasangan Small terpilih atau 256 episode dari \`scale_reference.zip\`. Arsip Scale juga memuat 128 pasangan Large, tetapi pasangan tersebut tidak digunakan dalam dataset perbandingan skripsi.
+
+Dengan demikian, dataset terpilih memuat **256 pasangan dan 512 episode**. Jumlah tersebut bukan keseluruhan riwayat pelaksanaan eksperimen, retry, Proof of Concept (PoC), Pilot, atau run lainnya.
 
 ## Struktur repository
 
-~~~text
+\`\`\`text
 .
-├── .github/workflows/ci.yml
-├── docs/
-│   └── MAIN_READINESS_TEMPLATE.json
-├── config/
-│   ├── main_plan.json
-│   ├── main_taskset_v1.json
-│   ├── models.json
-│   ├── models_small_extension.json
-│   ├── pilot_plan.json
-│   └── small_extension_plan.json
-├── notebooks/
-│   └── main_analysis.ipynb
-├── results/
-│   ├── README.md
-│   ├── provenance.json
-│   ├── success_by_model.csv
-│   ├── success_by_task.csv
-│   ├── model_size_comparison_by_task.csv
-│   └── pair_outcomes.csv.gz
+├── .github/workflows/       # Pengujian otomatis
+├── config/                  # Rencana eksperimen, task set, dan konfigurasi model
+├── docs/                    # Template readiness Main
+├── notebooks/               # Notebook analisis hasil
+├── results/                 # Tabel hasil olahan dan provenance
 ├── scripts/
-│   ├── analysis/
-│   │   ├── audit_archives.py
-│   │   └── verify_notebook.py
-│   └── browsergym/
-│       ├── main.py
-│       ├── small_extension.py
-│       ├── shared_policy.py
-│       ├── run_main.ps1
-│       ├── run_small_extension.ps1
-│       └── skrip pendukung lainnya
-├── tests/
+│   ├── analysis/            # Audit arsip dan pemeriksaan notebook
+│   └── browsergym/          # Runner, kebijakan, dan skrip pendukung
+├── tests/                   # Pengujian offline
 ├── requirements-analysis.txt
 └── README.md
-~~~
+\`\`\`
 
-Keterangan:
-
-| Lokasi | Fungsi |
+| Lokasi | Isi |
 |---|---|
-| config/ | Rencana eksperimen, daftar 32 tugas, dan konfigurasi model. |
-| scripts/browsergym/ | Implementasi kebijakan, runner eksperimen, pemeriksaan kesiapan, dan skrip pendukung. |
-| scripts/analysis/ | Audit arsip dan pemeriksaan notebook analisis. |
-| notebooks/ | Analisis hasil eksperimen, tabel, grafik, dan statistik. |
-| results/ | Tabel hasil olahan yang telah dicocokkan dengan arsip sumber serta metadata provenance. |
-| tests/ | Pengujian fungsi dan kontrak sistem secara offline. |
-| docs/ | Template readiness Main dengan status awal pending; bukan persetujuan eksperimen. |
-| .github/workflows/ci.yml | Pengujian otomatis melalui GitHub Actions. |
+| \`config/\` | Rencana Main dan Small, daftar 32 tugas, serta konfigurasi model. |
+| \`scripts/browsergym/\` | Implementasi Baseline dan CDEA, runner, pemeriksaan kesiapan, dan utilitas eksperimen. |
+| \`scripts/analysis/\` | Audit konsistensi arsip dan verifikasi notebook. |
+| \`notebooks/\` | Analisis statistik, tabel, dan grafik. |
+| \`results/\` | Tabel hasil turunan yang dicocokkan dengan catatan arsip serta metadata provenance. |
+| \`tests/\` | Pengujian kontrak sistem tanpa menjalankan browser atau inferensi model. |
+| \`docs/\` | Template readiness; bukan persetujuan untuk menjalankan eksperimen. |
 
 ## Konfigurasi model
 
-Daftar model yang digunakan tersimpan pada file konfigurasi berikut.
+**Main Study — Large** (\`config/models.json\`):
+- \`qwen3.5-9b\`
+- \`ministral3-8b\`
+- \`granite4.1-8b\`
+- \`xlam2-8b\`
 
-**Main Study — Large**
-- qwen3.5-9b
-- ministral3-8b
-- granite4.1-8b
-- xlam2-8b
+**Small-Model Extension — Small** (\`config/models_small_extension.json\`):
+- \`qwen3.5-4b\`
+- \`ministral3-3b\`
+- \`granite4.1-3b\`
+- \`xlam2-3b\`
 
-Konfigurasi: [config/models.json](config/models.json).
+Nama model runtime dan label analisis dapat dilihat pada kedua file konfigurasi tersebut.
 
-**Small-Model Extension — Small**
-- qwen3.5-4b
-- ministral3-3b
-- granite4.1-3b
-- xlam2-3b
+## Versi eksperimen dan provenance
 
-Konfigurasi: [config/models_small_extension.json](config/models_small_extension.json).
+Commit repository, commit Agent Controller, dan commit OpenApps merupakan identitas yang berbeda. Arsip mencatat versi pengendali dan OpenApps berikut:
+
+| Kelompok | Protokol / arsip | Agent Controller | OpenApps |
+|---|---|---|---|
+| Main Large | \`cdea_main_v1\` / \`main_observation_v1\` | \`ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1\` | \`6e6782794433c60468d65ac75bc3f03c56007f8c\` |
+| Scale Small terpilih | \`cdea_scale_v1\` / \`scale_reference_v4\` | \`ff655d1389bc84aa8100b6321220f5ec01c4e3b4\` | \`6e6782794433c60468d65ac75bc3f03c56007f8c\` |
+
+Kedua kelompok menggunakan seed 233, batas 40 langkah, timeout model 240 detik, temperature 0, \`num_predict\` 640, dan \`think=false\`.
+
+**Catatan konteks model:** \`config/main_plan.json\` mencantumkan \`num_ctx=8192\`, tetapi nilai tersebut tidak tercantum dalam manifest arsip Main. Karena itu, konfigurasi tersebut tidak dapat dianggap sebagai verifikasi independen atas nilai context window yang benar-benar digunakan saat run Main. Manifest Scale secara eksplisit mencatat \`num_ctx=8192\`.
+
+Digest checkpoint model disalin dari manifest sumber. Digest tersebut tidak membuktikan secara independen checkpoint yang benar-benar dimuat oleh host Ollama ketika eksperimen dijalankan. Rincian dan checksum arsip tersedia di [results/provenance.json](results/provenance.json).
 
 ## Data penelitian
 
-Arsip sumber penelitian tidak disimpan di repository. File yang digunakan oleh analisis adalah:
+Arsip sumber dan snapshot aplikasi tidak disimpan di repository. Paket dataset yang diberikan memuat:
+- \`main_observation.zip\`: arsip Main Study dengan 128 pasangan Large.
+- \`scale_reference.zip\`: arsip Scale dengan 256 pasangan, yaitu 128 Large dan 128 Small.
 
-- **main_observation.zip:** arsip Main Study dengan protokol cdea_main_v1, berisi 128 pasangan pengujian.
-- **scale_reference.zip:** arsip sumber untuk analisis kelompok Small. Format yang didukung dijelaskan pada bagian berikut.
+Tabel hasil olahan yang dipublikasikan di repository meliputi:
+- keberhasilan per model;
+- keberhasilan per tugas;
+- perbandingan jumlah model berhasil berdasarkan ukuran model;
+- tugas dengan peningkatan CDEA yang lebih besar pada Small; dan
+- contoh tugas ketika Small memiliki lebih banyak model yang berhasil daripada Large.
 
-Arsip mentah dan snapshot aplikasi tidak disimpan di repository. Tabel hasil olahan yang telah diverifikasi tersedia di [results/](results/README.md), termasuk checksum arsip sumber pada [results/provenance.json](results/provenance.json). File arsip dan keluaran analisis lokal tetap dikecualikan dari Git melalui file [.gitignore](.gitignore).
+Daftar file, arti kolom, cakupan data, dan batas interpretasinya dijelaskan dalam [results/README.md](results/README.md). File arsip dan keluaran notebook lokal dikecualikan dari Git melalui [.gitignore](.gitignore).
 
-### Format arsip Scale yang didukung
+### Format arsip Scale yang didukung notebook
 
-Notebook analisis menerima 2 format arsip Scale:
+Notebook menerima 2 format arsip Scale:
 
-1. **cdea_small_extension_v1** — arsip Small-only dengan 128 pasangan dan 256 episode terjadwal. Format ini dihasilkan oleh runner Small-Model Extension.
-2. **cdea_scale_v1** — arsip Scale dengan 256 pasangan dan 512 episode terjadwal, terdiri atas 128 pasangan Large dan 128 pasangan Small. Notebook hanya mengambil 128 pasangan Small dari arsip ini. Hasil Large dari arsip Scale tidak digunakan dalam analisis perbandingan; hasil Large berasal dari arsip Main Study.
+1. **\`cdea_small_extension_v1\`** — arsip Small-only dengan 128 pasangan dan 256 episode.
+2. **\`cdea_scale_v1\`** — arsip Scale dengan 256 pasangan dan 512 episode, terdiri atas 128 pasangan Large dan 128 pasangan Small. Notebook memilih hanya 128 pasangan Small; hasil Large dari arsip ini tidak digunakan dalam perbandingan skripsi.
 
-Kedua format harus memiliki 32 tugas dan 4 model Small pada kelompok Small yang dipilih. Notebook memeriksa protokol, identitas pasangan, hasil episode, dan kesesuaian roster tugas sebelum analisis.
+Kedua format harus memiliki 32 tugas dan 4 model Small pada kelompok yang dipilih. Notebook memeriksa protokol, identitas pasangan, hasil episode, dan kesesuaian roster tugas sebelum analisis.
 
 ### Menyiapkan data untuk notebook
 
-Letakkan main_observation.zip dan scale_reference.zip di direktori kerja notebook. Nama file dapat berbeda apabila variabel MAIN_ZIP dan SCALE_ZIP pada sel kode pertama notebook diubah sesuai lokasi file.
+Letakkan \`main_observation.zip\` dan \`scale_reference.zip\` di direktori kerja notebook. Nama file dapat diubah melalui variabel \`MAIN_ZIP\` dan \`SCALE_ZIP\` pada sel konfigurasi notebook.
 
-Sebagai alternatif, notebook dapat menemukan paket Dataset_CDEA*.zip di direktori kerja atau /content (umum digunakan oleh Google Colab). Notebook mendukung 2 bentuk paket:
-1. Paket dengan DATASET_CDEA.json yang mencantumkan nama dan SHA-256 arsip sumber.
-2. Paket dengan struktur folder Dataset_CDEA/main_observation.zip dan Dataset_CDEA/scale_reference.zip, seperti paket dataset penelitian yang disediakan bersama skripsi ini.
+Notebook juga dapat menemukan paket \`Dataset_CDEA*.zip\` di direktori kerja atau \`/content\` (misalnya Google Colab). Paket dapat berisi:
+1. \`DATASET_CDEA.json\` yang mencantumkan nama dan SHA-256 arsip sumber; atau
+2. folder \`Dataset_CDEA/\` yang berisi \`main_observation.zip\` dan \`scale_reference.zip\`.
 
-Notebook hanya mengekstrak 2 arsip sumber yang diperlukan ke direktori kerja. Jika file dengan nama yang sama sudah tersedia, SHA-256 harus cocok dengan isi paket. Protokol di dalam setiap arsip juga diperiksa sebelum analisis dijalankan.
+Notebook mengekstrak hanya 2 arsip sumber yang diperlukan. Jika file dengan nama yang sama sudah tersedia, SHA-256 harus cocok dengan isi paket. Protokol setiap arsip juga diperiksa sebelum analisis dijalankan.
 
-## Menjalankan audit arsip
+## Audit arsip
 
-Gunakan Python 3.11 atau lebih baru. Pasang dependensi analisis:
+Gunakan Python 3.11 atau lebih baru. Pasang dependensi:
 
-~~~bash
+\`\`\`bash
 python -m pip install -r requirements-analysis.txt
-~~~
+\`\`\`
 
-Jalankan audit terhadap kedua arsip:
+Setelah mengekstrak kedua arsip sumber dari paket dataset, jalankan:
 
-~~~bash
+\`\`\`bash
 python scripts/analysis/audit_archives.py --main main_observation.zip --small scale_reference.zip --output archive_audit.json
-~~~
+\`\`\`
 
 Audit memeriksa integritas ZIP, manifest, protokol, jumlah pasangan dan episode, identitas pasangan, kesesuaian hasil pasangan dengan hasil episode, serta kesamaan roster 32 tugas dan 4 model pada kelompok yang dipilih.
 
-**Batas audit:** pemeriksaan ini menilai konsistensi internal arsip. Audit tidak membuktikan secara independen bahwa seluruh episode benar-benar dijalankan pada host, konfigurasi, atau runtime yang dinyatakan dalam manifest.
+**Batas audit:** pemeriksaan tersebut menilai konsistensi internal arsip dan tabel turunan. Audit tidak membuktikan secara independen host pelaksanaan, runtime, model yang dimuat, atau kebenaran seluruh informasi yang ditampilkan aplikasi.
 
 ## Menjalankan analisis
 
-1. Siapkan kedua arsip sumber sesuai format yang didukung.
-2. Pasang dependensi dari requirements-analysis.txt.
+1. Siapkan arsip sumber sesuai format yang didukung.
+2. Pasang dependensi dari \`requirements-analysis.txt\`.
 3. Buka [notebooks/main_analysis.ipynb](notebooks/main_analysis.ipynb) menggunakan Jupyter atau Google Colab.
-4. Pastikan variabel MAIN_ZIP dan SCALE_ZIP menunjuk ke arsip yang benar.
+4. Pastikan \`MAIN_ZIP\` dan \`SCALE_ZIP\` menunjuk ke arsip yang benar.
 5. Jalankan seluruh sel notebook secara berurutan.
 
-Notebook menghasilkan folder CDEA_Analysis_Results/ dan file CDEA_Analysis_Results.zip. Keluaran mencakup 9 grafik utama, 6 tabel utama, analisis rinci, dan ringkasan statistik. File hasil tersebut tidak dilacak di Git.
+Notebook menghasilkan folder \`CDEA_Analysis_Results/\` dan file \`CDEA_Analysis_Results.zip\`. Keluaran mencakup 9 grafik utama, 6 tabel utama, analisis rinci, dan ringkasan statistik. Keluaran notebook tersebut dibuat secara lokal dan tidak dilacak di Git; tabel ringkasan terpilih tersedia di folder \`results/\`.
 
-## Pemeriksaan dan pengujian offline
+## Pemeriksaan offline
 
-Pemeriksaan notebook menggunakan arsip fixture sintetis, bukan data hasil eksperimen penelitian:
+Verifikasi notebook dengan fixture sintetis:
 
-~~~bash
+\`\`\`bash
 python scripts/analysis/verify_notebook.py
-~~~
-
-Skrip tersebut menjalankan notebook dengan 2 format arsip Scale yang didukung, yaitu cdea_scale_v1 dan cdea_small_extension_v1. Pengujian ini memeriksa kompatibilitas alur analisis dan format keluaran, bukan mengesahkan hasil eksperimen asli.
+\`\`\`
 
 Jalankan seluruh pengujian offline:
 
-~~~bash
+\`\`\`bash
 python -m unittest discover -s tests -v
-~~~
+\`\`\`
 
-Pemeriksaan rencana eksperimen tanpa menjalankan browser atau inferensi model:
+Periksa rencana tanpa menjalankan browser atau inferensi model:
 
-~~~bash
+\`\`\`bash
 python scripts/browsergym/main.py --dry-run
 python scripts/browsergym/small_extension.py --dry-run
-~~~
+\`\`\`
 
-Perintah --dry-run hanya memeriksa rencana dan konfigurasi. Perintah tersebut tidak menjalankan episode BrowserGym, tidak memulai server OpenApps, dan tidak melakukan inferensi Ollama.
+Fixture sintetis hanya digunakan untuk menguji alur notebook dan kontrak perangkat lunak. Fixture tersebut **bukan** data hasil penelitian. Perintah \`--dry-run\` hanya memeriksa rencana dan konfigurasi; perintah tersebut tidak menjalankan episode BrowserGym, server OpenApps, atau inferensi Ollama.
 
-GitHub Actions menjalankan pemeriksaan kode dan pengujian otomatis pada Ubuntu dan Windows. Job analisis juga menjalankan notebook menggunakan data fixture sintetis.
+GitHub Actions menjalankan pemeriksaan kode dan pengujian otomatis pada Ubuntu dan Windows. Job analisis juga memverifikasi notebook menggunakan fixture sintetis.
 
 ## Menjalankan eksperimen baru
 
-Pelaksanaan eksperimen penuh berbeda dari pemeriksaan --dry-run. Eksekusi memerlukan checkout OpenApps pada commit yang dipatok dalam konfigurasi, BrowserGym, Ollama, serta checkpoint model yang sesuai.
+Pelaksanaan eksperimen penuh berbeda dari pemeriksaan offline. Eksekusi memerlukan checkout OpenApps pada commit yang dipatok dalam konfigurasi, BrowserGym, Ollama, serta checkpoint model yang sesuai.
 
-Main Study memiliki pemeriksaan kesiapan (*readiness gate*). Runner menggunakan [template readiness Main](docs/MAIN_READINESS_TEMPLATE.json). File readiness yang dibuat melalui opsi -InitReadiness berstatus pending dan **bukan** persetujuan untuk menjalankan eksperimen. Eksekusi Main memerlukan file readiness yang telah disetujui dan lolos pemeriksaan.
+Main Study memiliki pemeriksaan kesiapan (*readiness gate*) dan menggunakan [template readiness Main](docs/MAIN_READINESS_TEMPLATE.json). File readiness yang dibuat melalui opsi \`-InitReadiness\` berstatus \`pending\` dan **bukan** persetujuan menjalankan eksperimen. Main hanya dapat dijalankan setelah persyaratan readiness dipenuhi dan disetujui.
 
-Small-Model Extension menggunakan identitas pengujian (ExtensionId) tersendiri. Runner akan memeriksa commit OpenApps dan konfigurasi sebelum menjalankan pasangan pengujian.
+Small-Model Extension menggunakan identitas pengujian (\`ExtensionId\`) tersendiri. Runner memeriksa commit OpenApps dan konfigurasi sebelum menjalankan pasangan.
 
-Skrip PowerShell tersedia di:
-
-- [scripts/browsergym/run_main.ps1](scripts/browsergym/run_main.ps1)
-- [scripts/browsergym/run_small_extension.ps1](scripts/browsergym/run_small_extension.ps1)
+Skrip PowerShell:
+- [run_main.ps1](scripts/browsergym/run_main.ps1)
+- [run_small_extension.ps1](scripts/browsergym/run_small_extension.ps1)
 
 Jangan menjalankan eksperimen baru jika tujuannya hanya memeriksa atau mengolah arsip penelitian yang sudah tersedia.
 
 ## Batas interpretasi hasil
 
-- Penelitian membandingkan CDEA dengan Baseline progress-score; kondisi Vanilla tidak diuji.
+- Penelitian membandingkan CDEA dengan Baseline \`progress-score\`; kondisi Vanilla tidak diuji.
 - Perbedaan tindakan pencarian menunjukkan perbedaan pemilihan kandidat, bukan bukti langsung bahwa informasi yang ditemukan benar atau menyebabkan keberhasilan tugas.
 - Keterlihatan kutipan pada AXTree tidak sama dengan verifikasi kebenaran seluruh informasi atau pemenuhan seluruh constraint.
-- Perbandingan Large dan Small bersifat eksploratori karena sumber menggunakan versi Agent Controller berbeda dan provenance arsip Small belum diverifikasi secara independen.
-- Hasil analisis hanya berlaku untuk arsip, tugas, model, dan konfigurasi yang benar-benar tersedia dan diperiksa.
+- Perbandingan Large dan Small bersifat eksploratori karena kedua kelompok menggunakan versi Agent Controller berbeda dan provenance arsip Scale belum diverifikasi secara independen.
+- Pengujian menggunakan satu seed dan satu konfigurasi tampilan aplikasi.
+- Hasil hanya berlaku untuk arsip, tugas, model, dan konfigurasi yang benar-benar tersedia dan diperiksa.
 
 ## Lisensi dan penggunaan
 
-Periksa file lisensi dan ketentuan penggunaan dari setiap dependensi serta lingkungan eksternal yang digunakan. Repository ini tidak menyertakan arsip data eksperimen atau salinan lingkungan OpenApps.
+Repository ini tidak menyertakan arsip data eksperimen atau salinan lingkungan OpenApps. Periksa lisensi dan ketentuan penggunaan setiap dependensi serta lingkungan eksternal sebelum penggunaan atau distribusi lebih lanjut.

@@ -1,39 +1,136 @@
-# Experiment Results
+# Hasil Penelitian
 
-This folder contains compact, derived result tables for the CDEA thesis. The tables were extracted from the supplied `Dataset_CDEA(1).zip` package and checked against the corresponding source archive records.
+Folder ini berisi tabel hasil turunan untuk skripsi CDEA. Tabel diekstrak dari paket \`Dataset_CDEA(1).zip\` dan dicocokkan dengan catatan pasangan pada arsip sumber. Arsip mentah tidak disimpan di repository.
 
-## Included files
+Dalam kode dan arsip, metode CDEA menggunakan label internal \`Proposed\`. Dengan demikian, kolom \`proposed\` pada file CSV merujuk pada CDEA.
 
-| File | Contents | Original source |
+## 1. Cakupan data terpilih
+
+| Sumber | Protokol | Isi arsip sumber | Data yang digunakan |
+|---|---|---:|---:|
+| \`main_observation.zip\` | \`cdea_main_v1\` | 128 pasangan Large / 256 episode | 128 pasangan Large / 256 episode |
+| \`scale_reference.zip\` | \`cdea_scale_v1\` | 256 pasangan / 512 episode | 128 pasangan Small / 256 episode |
+
+Arsip Scale juga berisi 128 pasangan Large. Pasangan tersebut **tidak** digunakan dalam dataset perbandingan skripsi karena hasil Large berasal dari arsip Main yang terpisah.
+
+Dataset terpilih berisi:
+- 256 pasangan pengujian;
+- 512 episode;
+- 32 tugas unik; dan
+- 8 varian model (4 Large dan 4 Small).
+
+Distribusi tugas terdiri atas 9 tugas dasar, 18 tugas lintas aplikasi, dan 5 tugas informasi perbankan.
+
+## 2. Ringkasan keberhasilan
+
+| Kelompok | Pasangan | Baseline | CDEA | Selisih |
+|---|---:|---:|---:|---:|
+| Main Study — Large | 128 | 73/128 (57,03%) | 97/128 (75,78%) | +18,75 pp |
+| Small-Model Extension — Small | 128 | 43/128 (33,59%) | 54/128 (42,19%) | +8,59 pp |
+
+### Analisis tingkat tugas
+
+| Kelompok | Tugas membaik | Tugas memburuk | Tidak berubah | Uji tanda dua sisi | Interval task-cluster bootstrap 95% |
+|---|---:|---:|---:|---:|---:|
+| Main Large | 11 | 0 | 21 | p = 0,00098 | 9,38–29,69 pp |
+| Scale Small | 10 | 5 | 17 | p = 0,30176 | 0,00–17,97 pp |
+
+Unit analisis inferensial adalah tugas unik, bukan 128 pasangan model–tugas yang dianggap independen. Empat model pada setiap kelompok menjalankan tugas yang sama sehingga hasilnya memiliki pengelompokan berdasarkan tugas.
+
+### Kelompok fokus informasi perbankan
+
+Main Study mencakup 5 tugas informasi perbankan yang dijalankan pada 4 model Large, sehingga terdapat 20 pasangan model–tugas:
+- Baseline: 10/20 berhasil (50,00%).
+- CDEA: 18/20 berhasil (90,00%).
+- Uji tanda tingkat tugas: p = 0,125.
+
+Angka 20 pasangan digunakan untuk ringkasan keberhasilan, sedangkan analisis inferensial tingkat tugas menggunakan 5 tugas unik. Hasil ini belum menunjukkan peningkatan yang signifikan secara statistik pada tingkat tugas.
+
+## 3. Keputusan pencarian informasi dan evidence ledger
+
+- **Main Study:** 48 pasangan memiliki keputusan pencarian yang dapat dibandingkan; 33 di antaranya menunjukkan tindakan berbeda antara Baseline dan CDEA.
+- **Small-Model Extension:** 75 pasangan memiliki keputusan yang dapat dibandingkan; 49 di antaranya menunjukkan tindakan berbeda.
+- **Evidence ledger Main:** terdapat 96 pembaruan berstatus \`SATISFIED\` dengan kutipan yang terlihat pada accessibility tree (AXTree).
+- Dari 96 pembaruan tersebut, 40 peristiwa informasi perbankan juga sesuai dengan pemeriksaan fakta sederhana pada snapshot database. Sebanyak 56 lainnya hanya dapat diperiksa berdasarkan keterlihatan kutipan.
+- Pada arsip Small terpilih tidak ditemukan pembaruan evidence ledger.
+
+Keterlihatan kutipan pada AXTree menunjukkan bahwa kutipan tercatat dalam pengamatan antarmuka. Hal tersebut tidak otomatis membuktikan kebenaran semantik informasi atau terpenuhinya seluruh constraint.
+
+## 4. Efisiensi pada pasangan yang sama-sama berhasil
+
+| Kelompok | Pasangan kedua metode berhasil | Selisih rata-rata tindakan CDEA terhadap Baseline | Selisih rata-rata waktu CDEA terhadap Baseline |
+|---|---:|---:|---:|
+| Main Large | 72 | −0,19 tindakan | −1,30 detik |
+| Scale Small | 33 | +0,06 tindakan | +1,14 detik |
+
+Nilai negatif berarti CDEA menggunakan lebih sedikit tindakan atau waktu daripada Baseline. Analisis ini hanya mencakup pasangan ketika kedua metode sama-sama berhasil; hasilnya tidak menggambarkan efisiensi seluruh episode.
+
+## 5. Daftar file
+
+| File | Isi | Sumber turunan |
 |---|---|---|
-| `success_by_model.csv` | Baseline and CDEA success counts/rates for 4 Large and 4 Small models | `derived/lampiran_D_per_model_8.csv` |
-| `success_by_task.csv` | Success counts and rates for each of the 32 tasks, aggregated across 8 model variants | `derived/lampiran_E_per_task_32.csv` |
-| `model_size_comparison_by_task.csv` | Successful-model counts by size and method for each task | `derived/lampiran_E4_ukuran_model_32.csv` |
-| `small_model_higher_uplift_tasks.csv` | 5 tasks where the CDEA uplift was larger in Small than Large | `derived/analisis_peningkatan_cdea_small_5.csv` |
-| `small_model_success_comparison_examples.csv` | 6 tasks where Small had more successful models than Large in at least one method | `derived/tabel_4_7_small_menang_6.csv` |
-| `pair_outcomes.csv.gz` | Pair-level outcomes for the 128 Main Large and 128 selected Scale Small pairs | `derived/selected_pairs.csv` |
-| `provenance.json` | Source archive identifiers, checksums, experiment commits, configurations, and validation notes | Source archive manifests |
+| \`success_by_model.csv\` | Jumlah dan persentase keberhasilan Baseline dan CDEA untuk 8 model | \`derived/lampiran_D_per_model_8.csv\` |
+| \`success_by_task.csv\` | Jumlah dan persentase keberhasilan untuk masing-masing 32 tugas, digabungkan pada 8 varian model | \`derived/lampiran_E_per_task_32.csv\` |
+| \`model_size_comparison_by_task.csv\` | Jumlah model Large dan Small yang berhasil pada setiap tugas dan metode | \`derived/lampiran_E4_ukuran_model_32.csv\` |
+| \`small_model_higher_uplift_tasks.csv\` | 5 tugas dengan peningkatan CDEA yang lebih besar pada Small daripada Large | \`derived/analisis_peningkatan_cdea_small_5.csv\` |
+| \`small_model_success_comparison_examples.csv\` | 6 tugas ketika Small memiliki lebih banyak model berhasil daripada Large pada setidaknya satu metode | \`derived/tabel_4_7_small_menang_6.csv\` |
+| \`pair_outcomes.csv.gz\` | Hasil tingkat pasangan untuk 128 Main Large dan 128 Scale Small terpilih | \`derived/selected_pairs.csv\` |
+| \`provenance.json\` | Identitas arsip, checksum, konfigurasi, commit eksperimen, seleksi data, dan hasil pemeriksaan | Manifest arsip sumber |
 
-## Which source records are included?
+### Arti kolom utama
 
-The Main Study contributes all 128 valid Large pairs from `main_observation.zip`. The Small-Model Extension contributes the 128 valid Small pairs selected from `scale_reference.zip`. The 128 Large pairs also present in the Scale archive are not included in the thesis comparison dataset.
+- \`baseline_n\` dan \`proposed_n\`: jumlah keberhasilan.
+- \`baseline_pct\` dan \`proposed_pct\`: persentase keberhasilan.
+- \`delta_pp\`: selisih persentase CDEA dikurangi Baseline dalam poin persentase.
+- \`baseline_large\`, \`baseline_small\`, \`proposed_large\`, dan \`proposed_small\`: jumlah model yang berhasil pada masing-masing kelompok untuk tugas terkait, bukan persentase.
+- \`paired_valid\`: status validitas pasangan menurut catatan arsip.
+- \`comparable_probe_decisions\`: jumlah keputusan pencarian yang dapat dibandingkan.
+- \`policy_action_divergences\`: jumlah perbedaan tindakan pada keputusan yang dicatat.
 
-The combined analysis therefore contains 256 pairs and 512 episodes:
-- Main Large: 128 pairs / 256 episodes.
-- Scale Small: 128 pairs / 256 episodes.
+Persentase dalam file turunan mengikuti nilai yang diekspor dari tabel sumber dan ditampilkan dengan presisi dua angka desimal. Jangan menghitung ulang atau mengganti angka sumber tanpa memperbarui proses pengolahan dan pemeriksaan kesesuaiannya.
 
-The pair-level and episode-level files are gzip-compressed CSV files. They can be opened after decompression with standard tools, for example:
+## 6. Identitas dan checksum arsip sumber
 
-```bash
+| Arsip | ID arsip | Ukuran | SHA-256 |
+|---|---|---:|---|
+| \`main_observation.zip\` | \`main_observation_v1\` | 3.971.324 byte | \`74f48100b4dc6ae074573596dc87beed18770d4c3740f2c01f5efcd57a2d885c\` |
+| \`scale_reference.zip\` | \`scale_reference_v4\` | 24.509.041 byte | \`052ecf15e2466109175153022baa7a1007a8a88c7358307823f85c3947b38f96\` |
+
+Kedua arsip menggunakan commit OpenApps \`6e6782794433c60468d65ac75bc3f03c56007f8c\`, tetapi Agent Controller berbeda:
+- Main: \`ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1\`.
+- Scale: \`ff655d1389bc84aa8100b6321220f5ec01c4e3b4\`.
+
+Konfigurasi Main pada \`config/main_plan.json\` mencantumkan \`num_ctx=8192\`, tetapi manifest arsip Main tidak mencatat nilai tersebut. Manifest Scale secara eksplisit mencatat \`num_ctx=8192\`. Perbedaan sumber pencatatan ini tidak boleh disamakan dengan verifikasi independen atas runtime.
+
+SHA-256 paket luar \`Dataset_CDEA(1).zip\` adalah \`2937b79f5edc85a93f42eb8db1b8aa4e220d6151332b8f2f3af08df2f925c503\`. Rincian lengkap tersedia pada \`provenance.json\`.
+
+## 7. Membuka data pasangan
+
+File \`pair_outcomes.csv.gz\` dikompresi dengan gzip. Untuk mengekstraknya:
+
+\`\`\`bash
 gzip -dk pair_outcomes.csv.gz
-```
+\`\`\`
 
-## Reproducibility and limitations
+Hasil ekstraksi adalah \`pair_outcomes.csv\`. File CSV dapat dibuka dengan Python, R, Excel, atau perangkat analisis data lain yang mendukung CSV.
 
-The raw source archives are not stored in this repository. Their exact SHA-256 hashes and sizes are recorded in `provenance.json`. A separately obtained source archive should match the recorded checksum before being used for re-analysis.
+## 8. Pemeriksaan dan keterbatasan
 
-The Main manifest does not explicitly record `num_ctx`. The value 8192 is explicitly recorded in the Scale manifest only. Do not treat the Main value as independently confirmed by the manifest.
+Pemeriksaan yang dicatat dalam \`provenance.json\` meliputi:
+- integritas ZIP paket dan kedua arsip sumber;
+- kesesuaian ID pasangan terpilih dengan arsip sumber;
+- kesesuaian hasil pasangan dan catatan episode;
+- kesesuaian tabel keberhasilan per model dan per tugas; dan
+- kesesuaian tabel perbandingan ukuran model dan daftar tugas turunan.
 
-The archive checks performed for this release verify ZIP integrity, record counts, pair/episode consistency, and agreement of the published derived tables with source pair records. They do not independently prove the execution host, runtime environment, or model digests at the time of the experiments.
+Pemeriksaan tersebut membuktikan konsistensi internal data yang tersedia, bukan verifikasi independen atas host, runtime, checkpoint yang benar-benar dimuat, atau seluruh keadaan aplikasi ketika eksperimen berlangsung.
 
-The files in this folder are research outputs, not synthetic CI fixtures. GitHub Actions uses separate synthetic fixtures only for automated software tests.
+Batas interpretasi utama:
+1. Penelitian membandingkan CDEA dan Baseline progress-score; kondisi Vanilla tidak diuji.
+2. Main dan Scale menggunakan versi Agent Controller berbeda.
+3. Provenance arsip Scale belum diverifikasi secara independen.
+4. Hanya satu seed (233) dan satu konfigurasi tampilan aplikasi yang digunakan.
+5. Perbandingan Large dan Small bersifat eksploratori dan tidak membuktikan pengaruh kausal ukuran parameter.
+6. Arsip sumber tidak memuat seluruh riwayat retry, PoC, Pilot, dan run lainnya.
+
+File dalam folder ini adalah **hasil penelitian turunan**, bukan fixture sintetis untuk Continuous Integration (CI). GitHub Actions menggunakan fixture terpisah hanya untuk pengujian otomatis perangkat lunak.
