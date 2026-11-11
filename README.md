@@ -108,7 +108,11 @@ Kedua format harus memiliki 32 tugas dan 4 model Small pada kelompok Small yang 
 
 Letakkan main_observation.zip dan scale_reference.zip di direktori kerja notebook. Nama file dapat berbeda apabila variabel MAIN_ZIP dan SCALE_ZIP pada sel kode pertama notebook diubah sesuai lokasi file.
 
-Sebagai alternatif, notebook dapat menemukan paket Dataset_CDEA*.zip di direktori kerja atau /content (umum digunakan oleh Google Colab). Paket tersebut harus berisi DATASET_CDEA.json dan arsip sumber dengan nama serta nilai SHA-256 yang tercantum di dalam manifest. Notebook memeriksa SHA-256 sebelum mengekstrak arsip sumber.
+Sebagai alternatif, notebook dapat menemukan paket Dataset_CDEA*.zip di direktori kerja atau /content (umum digunakan oleh Google Colab). Notebook mendukung 2 bentuk paket:
+1. Paket dengan DATASET_CDEA.json yang mencantumkan nama dan SHA-256 arsip sumber.
+2. Paket dengan struktur folder Dataset_CDEA/main_observation.zip dan Dataset_CDEA/scale_reference.zip, seperti paket dataset penelitian yang disediakan bersama skripsi ini.
+
+Notebook hanya mengekstrak 2 arsip sumber yang diperlukan ke direktori kerja. Jika file dengan nama yang sama sudah tersedia, SHA-256 harus cocok dengan isi paket. Protokol di dalam setiap arsip juga diperiksa sebelum analisis dijalankan.
 
 ## Menjalankan audit arsip
 
