@@ -82,7 +82,7 @@ def verify(protocol):
         nb = nbformat.read(NOTEBOOK, as_version=4)
         ExecutePreprocessor(timeout=180, kernel_name='python3').preprocess(
             nb, {'metadata': {'path': str(work)}})
-        outputs = work / 'hasil_analisis_cdea'
+        outputs = work / 'CDEA_Analysis_Results'
         figures = sorted((outputs / 'figures').glob('Gambar_4_*.png'))
         tables = sorted((outputs / 'tables').glob('Tabel_4_*.csv'))
         expected_figures = [f'Gambar_4_{i}.png' for i in range(1, 10)]
@@ -90,6 +90,11 @@ def verify(protocol):
         assert [p.name for p in figures] == expected_figures
         assert [p.name for p in tables] == expected_tables
         assert not list((outputs / 'summary').glob('*pemetaan*.json'))
+        archive_path = work / 'CDEA_Analysis_Results.zip'
+        assert archive_path.is_file()
+        with zipfile.ZipFile(archive_path) as result_zip:
+            assert any(name.startswith('CDEA_Analysis_Results/figures/Gambar_4_1.png')
+                       for name in result_zip.namelist())
         assert (outputs / 'summary' / 'ringkasan_statistik.csv').is_file()
         # The fixture has no episode JSON traces or selected probe examples.
         # The notebook intentionally skips its optional 17_probe_examples.csv.

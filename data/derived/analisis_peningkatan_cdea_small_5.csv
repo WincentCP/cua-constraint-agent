@@ -1,6 +1,0 @@
-﻿no,task,baseline_large,baseline_small,proposed_large,proposed_small,delta_large_model,delta_small_model
-7,navigate_from_codeeditor_to_todo,3,1,3,2,0,1
-15,remove_times_square_and_add_todo,2,1,3,4,1,3
-20,cleanup_and_new_plan,3,2,3,3,0,1
-28,log_business_card_charges_as_todos,4,1,4,2,0,1
-32,report_the_card_statement_balance_and_headroom,2,0,3,3,1,3

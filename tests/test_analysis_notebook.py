@@ -34,6 +34,8 @@ class AnalysisNotebookContracts(unittest.TestCase):
         self.assertEqual(figures, [f'4.{n}' for n in range(1, 10)])
         self.assertIn('Gambar_4_9', self.code)
         self.assertIn('Tabel_4_6', self.code)
+        self.assertIn("Path('CDEA_Analysis_Results')", self.code)
+        self.assertIn("CDEA_Analysis_Results.zip", self.code)
 
     def test_selected_source_and_exclusions(self):
         for token in ('main_observation.zip', 'scale_reference.zip',
