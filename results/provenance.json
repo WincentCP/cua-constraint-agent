@@ -105,19 +105,64 @@
     "main_source_zip_integrity": "passed",
     "scale_source_zip_integrity": "passed",
     "selected_pair_ids_match_source": "passed",
-    "selected_pair_outcomes_match_source": "passed",
     "selected_episode_records_match_source": "passed for validity, success, steps, model calls, model time, probe opportunities, and policy overrides",
     "success_by_task_matches_source_pairs": "passed",
     "success_by_model_matches_source_pairs": "passed",
     "model_size_comparison_by_task_matches_source_pairs": "passed",
     "small_model_higher_uplift_tasks_matches_source": "passed",
-    "small_model_success_comparison_examples_match_source": "passed"
+    "small_model_success_comparison_examples_match_source": "passed",
+    "selected_pair_success_outcomes_match_source_pairs": "passed",
+    "main_pair_decision_metrics_match_mirrored_episode_records": "passed",
+    "scale_pair_decision_metrics_match_source_pair_records": "passed",
+    "decision_comparison_by_group_matches_pair_level_records": "passed"
   },
   "interpretation_notes": [
     "The Main and Scale archives use different Agent Controller commits.",
     "The Main manifest does not explicitly record num_ctx; Scale explicitly records num_ctx=8192.",
     "The thesis comparison uses Main Large and Scale Small only; Scale Large is excluded from the selected comparison dataset.",
     "Archive checks establish internal integrity and record consistency, not independent verification of the execution host or runtime.",
-    "Model checkpoint digests are copied exactly from each source archive manifest; the Main and Scale manifests use different string formatting."
-  ]
+    "Model checkpoint digests are copied exactly from each source archive manifest; the Main and Scale manifests use different string formatting.",
+    "Main decision-comparison indicators in pair_outcomes.csv.gz are aggregated from the two source episode rows per pair after verifying that the Baseline and Proposed records match; each pair is counted once.",
+    "Scale decision-comparison indicators are copied from the Scale pair records and retained for the selected 128 Small pairs."
+  ],
+  "derived_outputs": {
+    "pair_outcomes.csv.gz": {
+      "sha256": "7c25f124b52d459e3b22b87947abd7c079723b37090427d1ad3bcd2ecc7c8de4",
+      "rows": 256,
+      "generated_by": "scripts/analysis/build_public_results.py",
+      "source_files": [
+        "Dataset_CDEA/derived/selected_pairs.csv",
+        "Dataset_CDEA/main_observation/main_observation_v1/results.csv",
+        "Dataset_CDEA/scale_reference/scale_reference_v4/pairs.csv"
+      ],
+      "transformation": "Main decision indicators are taken from results.csv after confirming that Baseline and Proposed episode rows contain identical pair-level values; each pair is counted once. Scale decision indicators are checked against and retained from the Scale pairs.csv records."
+    },
+    "decision_comparison_by_group.csv": {
+      "sha256": "520bd721aa2531b5126dd0028831b44fe5df163047e3de1c248721d80ab904f0",
+      "rows": 2,
+      "generated_by": "scripts/analysis/build_public_results.py",
+      "source_files": [
+        "Dataset_CDEA/main_observation/main_observation_v1/results.csv",
+        "Dataset_CDEA/scale_reference/scale_reference_v4/pairs.csv"
+      ],
+      "summary": [
+        {
+          "study_group": "Main Study — Large",
+          "valid_pairs": 128,
+          "pairs_with_comparable_decisions": 48,
+          "pairs_with_different_actions": 33,
+          "pairs_with_same_action_when_comparable": 15,
+          "pairs_without_comparable_decision": 80
+        },
+        {
+          "study_group": "Scale Small",
+          "valid_pairs": 128,
+          "pairs_with_comparable_decisions": 75,
+          "pairs_with_different_actions": 49,
+          "pairs_with_same_action_when_comparable": 26,
+          "pairs_without_comparable_decision": 53
+        }
+      ]
+    }
+  }
 }

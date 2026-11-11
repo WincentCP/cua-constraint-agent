@@ -1,15 +1,15 @@
 # Hasil Penelitian
 
-Folder ini berisi tabel hasil turunan untuk skripsi CDEA. Tabel diekstrak dari paket \`Dataset_CDEA(1).zip\` dan dicocokkan dengan catatan pasangan pada arsip sumber. Arsip mentah tidak disimpan di repository.
+Folder ini berisi tabel hasil turunan untuk skripsi CDEA. Tabel diekstrak dari paket `Dataset_CDEA(1).zip` dan dicocokkan dengan catatan pasangan pada arsip sumber. Arsip mentah tidak disimpan di repository.
 
-Dalam kode dan arsip, metode CDEA menggunakan label internal \`Proposed\`. Dengan demikian, kolom \`proposed\` pada file CSV merujuk pada CDEA.
+Dalam kode dan arsip, metode CDEA menggunakan label internal `Proposed`. Dengan demikian, kolom `proposed` pada file CSV merujuk pada CDEA.
 
 ## 1. Cakupan data terpilih
 
 | Sumber | Protokol | Isi arsip sumber | Data yang digunakan |
 |---|---|---:|---:|
-| \`main_observation.zip\` | \`cdea_main_v1\` | 128 pasangan Large / 256 episode | 128 pasangan Large / 256 episode |
-| \`scale_reference.zip\` | \`cdea_scale_v1\` | 256 pasangan / 512 episode | 128 pasangan Small / 256 episode |
+| `main_observation.zip` | `cdea_main_v1` | 128 pasangan Large / 256 episode | 128 pasangan Large / 256 episode |
+| `scale_reference.zip` | `cdea_scale_v1` | 256 pasangan / 512 episode | 128 pasangan Small / 256 episode |
 
 Arsip Scale juga berisi 128 pasangan Large. Pasangan tersebut **tidak** digunakan dalam dataset perbandingan skripsi karena hasil Large berasal dari arsip Main yang terpisah.
 
@@ -50,7 +50,7 @@ Angka 20 pasangan digunakan untuk ringkasan keberhasilan, sedangkan analisis inf
 
 - **Main Study:** 48 pasangan memiliki keputusan pencarian yang dapat dibandingkan; 33 di antaranya menunjukkan tindakan berbeda antara Baseline dan CDEA.
 - **Small-Model Extension:** 75 pasangan memiliki keputusan yang dapat dibandingkan; 49 di antaranya menunjukkan tindakan berbeda.
-- **Evidence ledger Main:** terdapat 96 pembaruan berstatus \`SATISFIED\` dengan kutipan yang terlihat pada accessibility tree (AXTree).
+- **Evidence ledger Main:** terdapat 96 pembaruan berstatus `SATISFIED` dengan kutipan yang terlihat pada accessibility tree (AXTree).
 - Dari 96 pembaruan tersebut, 40 peristiwa informasi perbankan juga sesuai dengan pemeriksaan fakta sederhana pada snapshot database. Sebanyak 56 lainnya hanya dapat diperiksa berdasarkan keterlihatan kutipan.
 - Pada arsip Small terpilih tidak ditemukan pembaruan evidence ledger.
 
@@ -69,57 +69,73 @@ Nilai negatif berarti CDEA menggunakan lebih sedikit tindakan atau waktu daripad
 
 | File | Isi | Sumber turunan |
 |---|---|---|
-| \`success_by_model.csv\` | Jumlah dan persentase keberhasilan Baseline dan CDEA untuk 8 model | \`derived/lampiran_D_per_model_8.csv\` |
-| \`success_by_task.csv\` | Jumlah dan persentase keberhasilan untuk masing-masing 32 tugas, digabungkan pada 8 varian model | \`derived/lampiran_E_per_task_32.csv\` |
-| \`model_size_comparison_by_task.csv\` | Jumlah model Large dan Small yang berhasil pada setiap tugas dan metode | \`derived/lampiran_E4_ukuran_model_32.csv\` |
-| \`small_model_higher_uplift_tasks.csv\` | 5 tugas dengan peningkatan CDEA yang lebih besar pada Small daripada Large | \`derived/analisis_peningkatan_cdea_small_5.csv\` |
-| \`small_model_success_comparison_examples.csv\` | 6 tugas ketika Small memiliki lebih banyak model berhasil daripada Large pada setidaknya satu metode | \`derived/tabel_4_7_small_menang_6.csv\` |
-| \`pair_outcomes.csv.gz\` | Hasil tingkat pasangan untuk 128 Main Large dan 128 Scale Small terpilih | \`derived/selected_pairs.csv\` |
-| \`provenance.json\` | Identitas arsip, checksum, konfigurasi, commit eksperimen, seleksi data, dan hasil pemeriksaan | Manifest arsip sumber |
+| `success_by_model.csv` | Jumlah dan persentase keberhasilan Baseline dan CDEA untuk 8 model | `derived/lampiran_D_per_model_8.csv` |
+| `success_by_task.csv` | Jumlah dan persentase keberhasilan untuk masing-masing 32 tugas, digabungkan pada 8 varian model | `derived/lampiran_E_per_task_32.csv` |
+| `model_size_comparison_by_task.csv` | Jumlah model Large dan Small yang berhasil pada setiap tugas dan metode | `derived/lampiran_E4_ukuran_model_32.csv` |
+| `small_model_higher_uplift_tasks.csv` | 5 tugas dengan peningkatan CDEA yang lebih besar pada Small daripada Large | `derived/analisis_peningkatan_cdea_small_5.csv` |
+| `small_model_success_comparison_examples.csv` | 6 tugas ketika Small memiliki lebih banyak model berhasil daripada Large pada setidaknya satu metode | `derived/tabel_4_7_small_menang_6.csv` |
+| `pair_outcomes.csv.gz` | Hasil tingkat pasangan untuk 128 Main Large dan 128 Scale Small terpilih, termasuk indikator keputusan pencarian per pasangan | `derived/selected_pairs.csv`, Main `results.csv`, dan Scale `pairs.csv` |
+| `decision_comparison_by_group.csv` | Ringkasan jumlah pasangan dengan keputusan sebanding dan tindakan berbeda pada setiap kelompok | Main `results.csv` dan Scale `pairs.csv` |
+| `provenance.json` | Identitas arsip, checksum, konfigurasi, commit eksperimen, seleksi data, dan hasil pemeriksaan | Manifest arsip sumber |
 
 ### Arti kolom utama
 
-- \`baseline_n\` dan \`proposed_n\`: jumlah keberhasilan.
-- \`baseline_pct\` dan \`proposed_pct\`: persentase keberhasilan.
-- \`delta_pp\`: selisih persentase CDEA dikurangi Baseline dalam poin persentase.
-- \`baseline_large\`, \`baseline_small\`, \`proposed_large\`, dan \`proposed_small\`: jumlah model yang berhasil pada masing-masing kelompok untuk tugas terkait, bukan persentase.
-- \`paired_valid\`: status validitas pasangan menurut catatan arsip.
-- \`comparable_probe_decisions\`: jumlah keputusan pencarian yang dapat dibandingkan.
-- \`policy_action_divergences\`: jumlah perbedaan tindakan pada keputusan yang dicatat.
+- `baseline_n` dan `proposed_n`: jumlah keberhasilan.
+- `baseline_pct` dan `proposed_pct`: persentase keberhasilan.
+- `delta_pp`: selisih persentase CDEA dikurangi Baseline dalam poin persentase.
+- `baseline_large`, `baseline_small`, `proposed_large`, dan `proposed_small`: jumlah model yang berhasil pada masing-masing kelompok untuk tugas terkait, bukan persentase.
+- `paired_valid`: status validitas pasangan menurut catatan arsip.
+- `comparable_probe_decisions`: indikator pasangan bernilai 1 jika terdapat keputusan pencarian yang dapat dibandingkan, dan 0 jika tidak.
+- `policy_action_divergences`: indikator pasangan bernilai 1 jika terdapat tindakan berbeda pada keputusan yang dapat dibandingkan, dan 0 jika tidak.
+
+Pada Main Study, kedua indikator tersebut diambil dari `results.csv`. Nilainya tercatat pada kedua baris episode (Baseline dan Proposed) untuk pasangan yang sama. Skrip `build_public_results.py` memeriksa kesamaan kedua catatan dan menghitungnya satu kali pada tingkat pasangan. Pada Scale Small, indikator dicocokkan langsung dengan `pairs.csv` arsip Scale. Ringkasan jumlah pasangan tersedia di `decision_comparison_by_group.csv`.
 
 Persentase dalam file turunan mengikuti nilai yang diekspor dari tabel sumber dan ditampilkan dengan presisi dua angka desimal. Jangan menghitung ulang atau mengganti angka sumber tanpa memperbarui proses pengolahan dan pemeriksaan kesesuaiannya.
+
+### Membangun ulang tabel pasangan dan keputusan
+
+Dengan paket dataset yang sama, jalankan:
+
+```bash
+python scripts/analysis/build_public_results.py --package "Dataset_CDEA(1).zip" --output-dir results
+```
+
+Skrip akan berhenti jika SHA-256 paket tidak cocok dengan nilai pada `results/provenance.json`. Skrip menghasilkan `pair_outcomes.csv.gz` dan `decision_comparison_by_group.csv`; file sumber eksperimen tidak diubah.
 
 ## 6. Identitas dan checksum arsip sumber
 
 | Arsip | ID arsip | Ukuran | SHA-256 |
 |---|---|---:|---|
-| \`main_observation.zip\` | \`main_observation_v1\` | 3.971.324 byte | \`74f48100b4dc6ae074573596dc87beed18770d4c3740f2c01f5efcd57a2d885c\` |
-| \`scale_reference.zip\` | \`scale_reference_v4\` | 24.509.041 byte | \`052ecf15e2466109175153022baa7a1007a8a88c7358307823f85c3947b38f96\` |
+| `main_observation.zip` | `main_observation_v1` | 3.971.324 byte | `74f48100b4dc6ae074573596dc87beed18770d4c3740f2c01f5efcd57a2d885c` |
+| `scale_reference.zip` | `scale_reference_v4` | 24.509.041 byte | `052ecf15e2466109175153022baa7a1007a8a88c7358307823f85c3947b38f96` |
 
-Kedua arsip menggunakan commit OpenApps \`6e6782794433c60468d65ac75bc3f03c56007f8c\`, tetapi Agent Controller berbeda:
-- Main: \`ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1\`.
-- Scale: \`ff655d1389bc84aa8100b6321220f5ec01c4e3b4\`.
+Kedua arsip menggunakan commit OpenApps `6e6782794433c60468d65ac75bc3f03c56007f8c`, tetapi Agent Controller berbeda:
+- Main: `ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1`.
+- Scale: `ff655d1389bc84aa8100b6321220f5ec01c4e3b4`.
 
-Konfigurasi Main pada \`config/main_plan.json\` mencantumkan \`num_ctx=8192\`, tetapi manifest arsip Main tidak mencatat nilai tersebut. Manifest Scale secara eksplisit mencatat \`num_ctx=8192\`. Perbedaan sumber pencatatan ini tidak boleh disamakan dengan verifikasi independen atas runtime.
+Konfigurasi Main pada `config/main_plan.json` mencantumkan `num_ctx=8192`, tetapi manifest arsip Main tidak mencatat nilai tersebut. Manifest Scale secara eksplisit mencatat `num_ctx=8192`. Perbedaan sumber pencatatan ini tidak boleh disamakan dengan verifikasi independen atas runtime.
 
-SHA-256 paket luar \`Dataset_CDEA(1).zip\` adalah \`2937b79f5edc85a93f42eb8db1b8aa4e220d6151332b8f2f3af08df2f925c503\`. Rincian lengkap tersedia pada \`provenance.json\`.
+SHA-256 paket luar `Dataset_CDEA(1).zip` adalah `2937b79f5edc85a93f42eb8db1b8aa4e220d6151332b8f2f3af08df2f925c503`. Rincian lengkap tersedia pada `provenance.json`.
 
 ## 7. Membuka data pasangan
 
-File \`pair_outcomes.csv.gz\` dikompresi dengan gzip. Untuk mengekstraknya:
+File `pair_outcomes.csv.gz` dikompresi dengan gzip. Untuk mengekstraknya:
 
-\`\`\`bash
+```bash
 gzip -dk pair_outcomes.csv.gz
-\`\`\`
+```
 
-Hasil ekstraksi adalah \`pair_outcomes.csv\`. File CSV dapat dibuka dengan Python, R, Excel, atau perangkat analisis data lain yang mendukung CSV.
+Hasil ekstraksi adalah `pair_outcomes.csv`. File CSV dapat dibuka dengan Python, R, Excel, atau perangkat analisis data lain yang mendukung CSV.
 
 ## 8. Pemeriksaan dan keterbatasan
 
-Pemeriksaan yang dicatat dalam \`provenance.json\` meliputi:
+Pemeriksaan yang dicatat dalam `provenance.json` meliputi:
 - integritas ZIP paket dan kedua arsip sumber;
 - kesesuaian ID pasangan terpilih dengan arsip sumber;
 - kesesuaian hasil pasangan dan catatan episode;
+- kesesuaian indikator keputusan Main antara dua baris episode untuk setiap pasangan;
+- kesesuaian indikator keputusan Scale dengan catatan pasangan sumber;
+- kesesuaian ringkasan keputusan per kelompok dengan tabel pasangan;
 - kesesuaian tabel keberhasilan per model dan per tugas; dan
 - kesesuaian tabel perbandingan ukuran model dan daftar tugas turunan.
 
