@@ -1,0 +1,123 @@
+{
+  "dataset_package": {
+    "filename": "Dataset_CDEA(1).zip",
+    "size_bytes": 27511104,
+    "sha256": "2937b79f5edc85a93f42eb8db1b8aa4e220d6151332b8f2f3af08df2f925c503"
+  },
+  "source_archives": [
+    {
+      "filename": "main_observation.zip",
+      "size_bytes": 3971324,
+      "sha256": "74f48100b4dc6ae074573596dc87beed18770d4c3740f2c01f5efcd57a2d885c",
+      "protocol": "cdea_main_v1",
+      "archive_id": "main_observation_v1",
+      "created_utc": "2026-10-20T10:00:00+00:00",
+      "controller_git_commit": "ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1",
+      "openapps_git_commit": "6e6782794433c60468d65ac75bc3f03c56007f8c",
+      "planned_pairs": 128,
+      "planned_episodes": 256,
+      "valid_pairs": 128,
+      "invalid_pairs": 0,
+      "not_started_pairs": 0,
+      "shared_parameters": {
+        "seed": 233,
+        "max_steps": 40,
+        "model_timeout_seconds": 240,
+        "temperature": 0,
+        "num_predict": 640,
+        "think": false,
+        "num_ctx": "not explicitly recorded in Main manifest"
+      },
+      "manifest_sha256": "4fd509296c655dd41841945c9f76a4886e036cdb582822d6df94834334528a1f",
+      "model_checkpoint_digests": {
+        "qwen3.5-9b": "8570bc3f191c06144a95b9e8f201e9c55ac519d13abed1b5ff5eff8b7e9da481",
+        "ministral3-8b": "0f77b3dc63f5602561bff3df86c5416cabe9e05689e52dc577b5899c95139db5",
+        "granite4.1-8b": "e8fbab6177227e8540ad00331964418fdbf59b12c0f15387f4ab60df8527a79f",
+        "xlam2-8b": "dd024d68a4bcefc26c7ee1e2b3c707760a632105ebde34edab19a1ab20c3c011"
+      }
+    },
+    {
+      "filename": "scale_reference.zip",
+      "size_bytes": 24509041,
+      "sha256": "052ecf15e2466109175153022baa7a1007a8a88c7358307823f85c3947b38f96",
+      "protocol": "cdea_scale_v1",
+      "archive_id": "scale_reference_v4",
+      "created_utc": "2026-10-24T03:12:00Z",
+      "controller_git_commit": "ff655d1389bc84aa8100b6321220f5ec01c4e3b4",
+      "openapps_git_commit": "6e6782794433c60468d65ac75bc3f03c56007f8c",
+      "planned_pairs": 256,
+      "planned_episodes": 512,
+      "valid_pairs": 256,
+      "invalid_pairs": 0,
+      "not_started_pairs": 0,
+      "shared_parameters": {
+        "seed": 233,
+        "max_steps": 40,
+        "model_timeout_seconds": 240,
+        "temperature": 0,
+        "num_predict": 640,
+        "num_ctx": 8192,
+        "think": false
+      },
+      "manifest_sha256": "07c4a01fa3acad1cf3faa5e03ca76b9a676708a8d65b120d4f298c095ccbc386",
+      "model_checkpoint_digests": {
+        "qwen3.5-4b": "sha256:2ba0733f9830f2dfaf2c46d35377258216a2018041077130059da6dc6c9fa0dc",
+        "qwen3.5-9b": "sha256:c5b1f587bcbb582bf8d899ff74309e17b6a410999b2cb69634938d4e042c9c3c",
+        "ministral3-3b": "sha256:2d53e2711c70372f488b3c5ede875869dc13dd2e4020402a4d64ce32ec55c755",
+        "ministral3-8b": "sha256:bdb437803289777b9370b8d08dd0ff8faa73348c17dba9fc3bb6a5211a1d5403",
+        "granite4.1-3b": "sha256:77b069d7974ff9f832e448b113b1681a5d39cd27f72b7e9295cb8d7b9bf295bd",
+        "granite4.1-8b": "sha256:495fc26364324fcd962eedde747b26bf577d91dd5a74e9389a214624f08c0a2e",
+        "xlam2-3b": "sha256:b31994c19a790d8a111d7f9619bddadb65de6d2899ceedd6b920b772be18bf27",
+        "xlam2-8b": "sha256:7fe60a6308e6312196013d0108c7fb9e3ab1ca4b4ac3a3e55050bbd720d18fba"
+      }
+    }
+  ],
+  "analysis_selection": {
+    "main": {
+      "source_archive": "main_observation.zip",
+      "size": "large",
+      "selected_pairs": 128,
+      "selected_episodes": 256
+    },
+    "small": {
+      "source_archive": "scale_reference.zip",
+      "size": "small",
+      "selected_pairs": 128,
+      "selected_episodes": 256
+    },
+    "excluded": {
+      "source_archive": "scale_reference.zip",
+      "size": "large",
+      "excluded_pairs": 128,
+      "excluded_episodes": 256
+    },
+    "total_selected_pairs": 256,
+    "total_selected_episodes": 512,
+    "methods": [
+      "Baseline",
+      "Proposed"
+    ],
+    "task_count": 32,
+    "model_count": 8
+  },
+  "validation": {
+    "outer_zip_integrity": "passed",
+    "main_source_zip_integrity": "passed",
+    "scale_source_zip_integrity": "passed",
+    "selected_pair_ids_match_source": "passed",
+    "selected_pair_outcomes_match_source": "passed",
+    "selected_episode_records_match_source": "passed for validity, success, steps, model calls, model time, probe opportunities, and policy overrides",
+    "success_by_task_matches_source_pairs": "passed",
+    "success_by_model_matches_source_pairs": "passed",
+    "model_size_comparison_by_task_matches_source_pairs": "passed",
+    "small_model_higher_uplift_tasks_matches_source": "passed",
+    "small_model_success_comparison_examples_match_source": "passed"
+  },
+  "interpretation_notes": [
+    "The Main and Scale archives use different Agent Controller commits.",
+    "The Main manifest does not explicitly record num_ctx; Scale explicitly records num_ctx=8192.",
+    "The thesis comparison uses Main Large and Scale Small only; Scale Large is excluded from the selected comparison dataset.",
+    "Archive checks establish internal integrity and record consistency, not independent verification of the execution host or runtime.",
+    "Model checkpoint digests are copied exactly from each source archive manifest; the Main and Scale manifests use different string formatting."
+  ]
+}

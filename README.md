@@ -29,6 +29,14 @@ Di dalam kode dan arsip eksperimen, metode CDEA menggunakan label internal **Pro
 │   └── small_extension_plan.json
 ├── notebooks/
 │   └── main_analysis.ipynb
+├── results/
+│   ├── README.md
+│   ├── provenance.json
+│   ├── success_by_model.csv
+│   ├── success_by_task.csv
+│   ├── model_size_comparison_by_task.csv
+│   ├── pair_outcomes.csv.gz
+│   └── episode_outcomes.csv.gz
 ├── scripts/
 │   ├── analysis/
 │   │   ├── audit_archives.py
@@ -53,6 +61,7 @@ Keterangan:
 | scripts/browsergym/ | Implementasi kebijakan, runner eksperimen, pemeriksaan kesiapan, dan skrip pendukung. |
 | scripts/analysis/ | Audit arsip dan pemeriksaan notebook analisis. |
 | notebooks/ | Analisis hasil eksperimen, tabel, grafik, dan statistik. |
+| results/ | Tabel hasil olahan yang telah dicocokkan dengan arsip sumber serta metadata provenance. |
 | tests/ | Pengujian fungsi dan kontrak sistem secara offline. |
 | docs/ | Template readiness Main dengan status awal pending; bukan persetujuan eksperimen. |
 | .github/workflows/ci.yml | Pengujian otomatis melalui GitHub Actions. |
@@ -84,7 +93,7 @@ Arsip sumber penelitian tidak disimpan di repository. File yang digunakan oleh a
 - **main_observation.zip:** arsip Main Study dengan protokol cdea_main_v1, berisi 128 pasangan pengujian.
 - **scale_reference.zip:** arsip sumber untuk analisis kelompok Small. Format yang didukung dijelaskan pada bagian berikut.
 
-File arsip, paket dataset, dan keluaran analisis dikecualikan dari Git melalui file [.gitignore](.gitignore). Jangan mengunggah arsip eksperimen atau data aplikasi ke repository publik sebelum izin penggunaan, privasi, dan kelayakan distribusinya diperiksa.
+Arsip mentah dan snapshot aplikasi tidak disimpan di repository. Tabel hasil olahan yang telah diverifikasi tersedia di [results/](results/README.md), termasuk checksum arsip sumber pada [results/provenance.json](results/provenance.json). File arsip dan keluaran analisis lokal tetap dikecualikan dari Git melalui file [.gitignore](.gitignore).
 
 ### Format arsip Scale yang didukung
 
@@ -99,7 +108,11 @@ Kedua format harus memiliki 32 tugas dan 4 model Small pada kelompok Small yang 
 
 Letakkan main_observation.zip dan scale_reference.zip di direktori kerja notebook. Nama file dapat berbeda apabila variabel MAIN_ZIP dan SCALE_ZIP pada sel kode pertama notebook diubah sesuai lokasi file.
 
-Sebagai alternatif, notebook dapat menemukan paket Dataset_CDEA*.zip di direktori kerja atau /content (umum digunakan oleh Google Colab). Paket tersebut harus berisi DATASET_CDEA.json dan arsip sumber dengan nama serta nilai SHA-256 yang tercantum di dalam manifest. Notebook memeriksa SHA-256 sebelum mengekstrak arsip sumber.
+Sebagai alternatif, notebook dapat menemukan paket Dataset_CDEA*.zip di direktori kerja atau /content (umum digunakan oleh Google Colab). Notebook mendukung 2 bentuk paket:
+1. Paket dengan DATASET_CDEA.json yang mencantumkan nama dan SHA-256 arsip sumber.
+2. Paket dengan struktur folder Dataset_CDEA/main_observation.zip dan Dataset_CDEA/scale_reference.zip, seperti paket dataset penelitian yang disediakan bersama skripsi ini.
+
+Notebook hanya mengekstrak 2 arsip sumber yang diperlukan ke direktori kerja. Jika file dengan nama yang sama sudah tersedia, SHA-256 harus cocok dengan isi paket. Protokol di dalam setiap arsip juga diperiksa sebelum analisis dijalankan.
 
 ## Menjalankan audit arsip
 
