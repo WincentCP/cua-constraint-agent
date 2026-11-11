@@ -72,7 +72,7 @@ def make_archive(path, protocol, include_large):
         archive.writestr('results.csv', csv_bytes(episodes))
 
 
-def verify(protocol):
+def verify(protocol, package_mode=False):
     with TemporaryDirectory(prefix='cdea_notebook_fixture_') as directory:
         work = Path(directory)
         make_archive(work / 'main_observation.zip', 'cdea_main_v1', include_large=False)
@@ -80,6 +80,23 @@ def verify(protocol):
         report = audit(work / 'main_observation.zip', work / 'scale_reference.zip')
         assert report['selected_pairs_total'] == 256
         nb = nbformat.read(NOTEBOOK, as_version=4)
+        if package_mode:
+            # Simulasikan paket pengguna: 2 arsip sumber berada di dalam Dataset_CDEA/.
+            package_path = work / 'Dataset_CDEA(1).zip'
+            with zipfile.ZipFile(package_path, 'w', compression=zipfile.ZIP_DEFLATED) as package:
+                package.write(work / 'main_observation.zip', 'Dataset_CDEA/main_observation.zip')
+                package.write(work / 'scale_reference.zip', 'Dataset_CDEA/scale_reference.zip')
+            (work / 'main_observation.zip').unlink()
+            (work / 'scale_reference.zip').unlink()
+            found = False
+            for cell in nb.cells:
+                if cell.cell_type == 'code' and "DATASET_PAKET = ''" in cell.source:
+                    cell.source = cell.source.replace(
+                        "DATASET_PAKET = ''",
+                        "DATASET_PAKET = " + repr(str(package_path)))
+                    found = True
+                    break
+            assert found, 'DATASET_PAKET setting was not found in notebook'
         ExecutePreprocessor(timeout=180, kernel_name='python3').preprocess(
             nb, {'metadata': {'path': str(work)}})
         outputs = work / 'CDEA_Analysis_Results'
@@ -135,7 +152,7 @@ def verify(protocol):
             terminations = list(csv.DictReader(f))
         assert sum(int(e['episodes']) for e in terminations) == 512
         assert not (outputs / 'detailed_analysis' / '17_probe_examples.csv').exists()
-        print(f'PASS {protocol}: 6 tabel, 9 gambar, 128 pasangan Small')
+        print(f'PASS {protocol} (package={package_mode}): 6 tabel, 9 gambar, 128 pasangan Small')
 
 
 def verify_small_only_archive():
@@ -143,5 +160,5 @@ def verify_small_only_archive():
     verify('cdea_small_extension_v1')
 
 if __name__ == '__main__':
-    verify('cdea_scale_v1')
+    verify('cdea_scale_v1', package_mode=True)
     verify_small_only_archive()
