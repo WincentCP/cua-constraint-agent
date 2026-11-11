@@ -28,7 +28,7 @@
 
 **Konfirmasi peneliti (2026-10-28):** Peneliti secara langsung mengonfirmasi bahwa **`num_ctx=8192`** merupakan pengaturan yang sebenarnya digunakan saat Main Study historis. Untuk mendokumentasikannya, paket `Dataset_CDEA.zip` kini menyertakan `NUM_CTX_MAIN_CONFIRMATION.json` dan `manifest_main_researcher_amended.json` (salinan manifest dengan `num_ctx=8192` dan jejak asal konfirmasi). **Kedua ZIP sumber, manifest asli, dan seluruh episode tidak diubah** sehingga checksum asal tetap berlaku. Catatan tersebut adalah informasi yang dikonfirmasi peneliti setelah pelaksanaan, **bukan** field yang terekam oleh runtime pada manifest asli ataupun verifikasi independen dari log permintaan Ollama.
 
-Preserve the original archive unchanged. For review, provide its fingerprint, `manifest.json`, readiness evidence and paired traces alongside the [Main results](MAIN_RESULTS_V1.md) and [frozen protocol](MAIN_PROTOCOL_V1.md).
+Arsip sumber asli harus tetap tidak berubah. Untuk pemeriksaan, gunakan fingerprint, `manifest.json`, readiness evidence, dan paired traces dari arsip sumber yang disimpan terpisah. Konfigurasi protokol tersedia di [`config/main_plan.json`](../config/main_plan.json), sedangkan analisis tersedia di [notebook utama](../notebooks/main_analysis.ipynb).
 
 ## Notebook input alias
 

@@ -16,9 +16,18 @@ dist/
 coverage.xml
 htmlcov/
 
-# Generated runtime and research output (preserve originals outside Git)
+# Local experiment inputs and generated research artifacts
+main_observation.zip
+scale_reference.zip
+Dataset_CDEA*.zip
+archive_audit.json
 output/
 log_outputs/
+CDEA_Analysis_Results/
+CDEA_Analysis_Results.zip
+
+# Notebook runtime state
+.ipynb_checkpoints/
 
 # Local environments and editor/OS metadata
 .venv/
