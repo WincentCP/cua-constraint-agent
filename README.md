@@ -35,7 +35,8 @@ Di dalam kode dan arsip eksperimen, metode CDEA menggunakan label internal **Pro
 │   ├── success_by_model.csv
 │   ├── success_by_task.csv
 │   ├── model_size_comparison_by_task.csv
-│   └── pair_outcomes.csv.gz
+│   ├── pair_outcomes.csv.gz
+│   └── episode_outcomes.csv.gz
 ├── scripts/
 │   ├── analysis/
 │   │   ├── audit_archives.py
