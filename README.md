@@ -29,6 +29,13 @@ Di dalam kode dan arsip eksperimen, metode CDEA menggunakan label internal **Pro
 │   └── small_extension_plan.json
 ├── notebooks/
 │   └── main_analysis.ipynb
+├── results/
+│   ├── README.md
+│   ├── provenance.json
+│   ├── success_by_model.csv
+│   ├── success_by_task.csv
+│   ├── model_size_comparison_by_task.csv
+│   └── pair_outcomes.csv.gz
 ├── scripts/
 │   ├── analysis/
 │   │   ├── audit_archives.py
@@ -53,6 +60,7 @@ Keterangan:
 | scripts/browsergym/ | Implementasi kebijakan, runner eksperimen, pemeriksaan kesiapan, dan skrip pendukung. |
 | scripts/analysis/ | Audit arsip dan pemeriksaan notebook analisis. |
 | notebooks/ | Analisis hasil eksperimen, tabel, grafik, dan statistik. |
+| results/ | Tabel hasil olahan yang telah dicocokkan dengan arsip sumber serta metadata provenance. |
 | tests/ | Pengujian fungsi dan kontrak sistem secara offline. |
 | docs/ | Template readiness Main dengan status awal pending; bukan persetujuan eksperimen. |
 | .github/workflows/ci.yml | Pengujian otomatis melalui GitHub Actions. |
@@ -84,7 +92,7 @@ Arsip sumber penelitian tidak disimpan di repository. File yang digunakan oleh a
 - **main_observation.zip:** arsip Main Study dengan protokol cdea_main_v1, berisi 128 pasangan pengujian.
 - **scale_reference.zip:** arsip sumber untuk analisis kelompok Small. Format yang didukung dijelaskan pada bagian berikut.
 
-File arsip, paket dataset, dan keluaran analisis dikecualikan dari Git melalui file [.gitignore](.gitignore). Jangan mengunggah arsip eksperimen atau data aplikasi ke repository publik sebelum izin penggunaan, privasi, dan kelayakan distribusinya diperiksa.
+Arsip mentah dan snapshot aplikasi tidak disimpan di repository. Tabel hasil olahan yang telah diverifikasi tersedia di [results/](results/README.md), termasuk checksum arsip sumber pada [results/provenance.json](results/provenance.json). File arsip dan keluaran analisis lokal tetap dikecualikan dari Git melalui file [.gitignore](.gitignore).
 
 ### Format arsip Scale yang didukung
 
