@@ -27,6 +27,13 @@
         "num_predict": 640,
         "think": false,
         "num_ctx": "not explicitly recorded in Main manifest"
+      },
+      "manifest_sha256": "4fd509296c655dd41841945c9f76a4886e036cdb582822d6df94834334528a1f",
+      "model_checkpoint_digests": {
+        "qwen3.5-9b": "8570bc3f191c06144a95b9e8f201e9c55ac519d13abed1b5ff5eff8b7e9da481",
+        "ministral3-8b": "0f77b3dc63f5602561bff3df86c5416cabe9e05689e52dc577b5899c95139db5",
+        "granite4.1-8b": "e8fbab6177227e8540ad00331964418fdbf59b12c0f15387f4ab60df8527a79f",
+        "xlam2-8b": "dd024d68a4bcefc26c7ee1e2b3c707760a632105ebde34edab19a1ab20c3c011"
       }
     },
     {
@@ -51,6 +58,17 @@
         "num_predict": 640,
         "num_ctx": 8192,
         "think": false
+      },
+      "manifest_sha256": "07c4a01fa3acad1cf3faa5e03ca76b9a676708a8d65b120d4f298c095ccbc386",
+      "model_checkpoint_digests": {
+        "qwen3.5-4b": "sha256:2ba0733f9830f2dfaf2c46d35377258216a2018041077130059da6dc6c9fa0dc",
+        "qwen3.5-9b": "sha256:c5b1f587bcbb582bf8d899ff74309e17b6a410999b2cb69634938d4e042c9c3c",
+        "ministral3-3b": "sha256:2d53e2711c70372f488b3c5ede875869dc13dd2e4020402a4d64ce32ec55c755",
+        "ministral3-8b": "sha256:bdb437803289777b9370b8d08dd0ff8faa73348c17dba9fc3bb6a5211a1d5403",
+        "granite4.1-3b": "sha256:77b069d7974ff9f832e448b113b1681a5d39cd27f72b7e9295cb8d7b9bf295bd",
+        "granite4.1-8b": "sha256:495fc26364324fcd962eedde747b26bf577d91dd5a74e9389a214624f08c0a2e",
+        "xlam2-3b": "sha256:b31994c19a790d8a111d7f9619bddadb65de6d2899ceedd6b920b772be18bf27",
+        "xlam2-8b": "sha256:7fe60a6308e6312196013d0108c7fb9e3ab1ca4b4ac3a3e55050bbd720d18fba"
       }
     }
   ],
@@ -99,6 +117,7 @@
     "The Main and Scale archives use different Agent Controller commits.",
     "The Main manifest does not explicitly record num_ctx; Scale explicitly records num_ctx=8192.",
     "The thesis comparison uses Main Large and Scale Small only; Scale Large is excluded from the selected comparison dataset.",
-    "Archive checks establish internal integrity and record consistency, not independent verification of the execution host or runtime."
+    "Archive checks establish internal integrity and record consistency, not independent verification of the execution host or runtime.",
+    "Model checkpoint digests are copied exactly from each source archive manifest; the Main and Scale manifests use different string formatting."
   ]
 }
