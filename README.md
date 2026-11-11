@@ -74,3 +74,14 @@ Rujukan: [Protokol Main](docs/MAIN_PROTOCOL_V1.md) · [Protokol Small](docs/SMAL
 Notebook `notebooks/main_analysis.ipynb` memuat analisis tambahan berbasis **tugas** (uji tanda eksak), median/IQR dan penyebab penghentian episode, pasangan Baseline-only, serta status ledger dalam trace. Keluaran tersebut adalah **analisis ulang arsip lama**, bukan eksperimen baru. Lihat [catatan verifikasi dan batas klaim](docs/THESIS_REVIEW_ANALYSIS_2026-11-05.md) dan [cara menjalankan notebook](docs/REPRODUCIBILITY.md).
 
 **Interpretasi untuk revisi skripsi:** Skenario B membatasi klaim pada CDEA versus Baseline *progress-score*; tidak ada pembanding Vanilla. Protokol lima tugas bank dipertahankan, tetapi uji tanda berbasis lima tugas memberi p = 0,125. Selisih hasil pada model Small tidak boleh ditafsirkan hanya akibat ukuran parameter karena sumber controller berbeda. Pencocokan kutipan AXTree bukan validasi kebenaran faktual suatu constraint.
+
+
+## Update — hasil turunan yang dapat diakses langsung (11 November 2026)
+
+Tiga berkas CSV tambahan untuk lampiran dan analisis perbandingan ukuran model tersedia di [data/derived](data/derived/):
+
+- [Perbandingan per tugas dan ukuran model](data/derived/lampiran_E4_ukuran_model_32.csv)
+- [Tugas dengan hasil Small yang berbeda/unggul](data/derived/tabel_4_7_small_menang_6.csv)
+- [Tugas dengan peningkatan CDEA lebih besar pada Small](data/derived/analisis_peningkatan_cdea_small_5.csv)
+
+**Catatan dataset mentah:** arsip Main dan Scale telah diekstrak dan divalidasi secara lokal, tetapi direktori historis lengkap belum disertakan dalam perubahan ini. Arsip tersebut berisi snapshot SQLite untuk aplikasi perbankan, pesan, kalender, dan to-do; sebelum dipublikasikan, lisensi sumber dan kelayakan distribusi data perlu ditinjau. Tidak ada ZIP dataset yang ditambahkan ke repository.

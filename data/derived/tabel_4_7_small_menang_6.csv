@@ -1,0 +1,7 @@
+﻿no,task,baseline_large,baseline_small,proposed_large,proposed_small,delta_large_model,delta_small_model,small_unggul_pada
+3,mark_visit_grandma_as_done,3,4,3,4,0,0,Baseline; Proposed
+15,remove_times_square_and_add_todo,2,1,3,4,1,3,Proposed
+19,doctor_followup,1,2,1,1,0,-1,Baseline
+24,garage_sale,1,3,1,2,0,-1,Baseline; Proposed
+25,deadline_swap,0,1,3,1,3,0,Baseline
+31,schedule_the_card_payment_due_date,1,3,3,2,2,-1,Baseline

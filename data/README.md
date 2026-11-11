@@ -49,3 +49,14 @@ Cara penggunaan dan reproduksi tercatat dalam [panduan analisis](../docs/REPRODU
 ## Verifikasi paket yang diterima pada 2026-11-05
 
 Paket yang dianalisis pada review skripsi memiliki SHA-256 `2937b79f5edc85a93f42eb8db1b8aa4e220d6151332b8f2f3af08df2f925c503` dan memuat direktori ekstraksi tambahan. Hash paket ini berbeda dari paket sebelumnya di atas, tetapi **dua arsip sumber yang menjadi dasar analisis tetap cocok** dengan checksum tabel. Gunakan kedua ZIP sumber untuk notebook, bukan direktori salinan ekstraksi yang mungkin tidak lengkap. Detail dan batas pelaporan: [Review pembimbing](../docs/THESIS_REVIEW_ANALYSIS_2026-11-05.md).
+
+
+## Berkas turunan tambahan — 11 November 2026
+
+Berkas berikut ditambahkan langsung sebagai CSV biasa (bukan ZIP):
+
+- `derived/lampiran_E4_ukuran_model_32.csv`
+- `derived/tabel_4_7_small_menang_6.csv`
+- `derived/analisis_peningkatan_cdea_small_5.csv`
+
+Ketiganya merupakan tabel turunan untuk mendukung Lampiran E dan pembahasan perbandingan model. Data mentah Main/Scale yang telah diekstrak belum dipublikasikan dalam repository ini. Paket lokal memuat 3.840 snapshot SQLite dengan tabel perbankan, pesan, kalender, dan to-do. Walaupun contoh isi yang diperiksa tampak seperti data uji sintetis, pemeriksaan otomatis tidak cukup untuk memastikan seluruh isi aman dan boleh didistribusikan. Tinjau lisensi sumber dan privasi sebelum mengunggah direktori mentah ke repository publik.
