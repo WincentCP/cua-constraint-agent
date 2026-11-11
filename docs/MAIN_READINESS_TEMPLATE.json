@@ -1,0 +1,35 @@
+{
+  "protocol": "cdea_main_readiness_v1",
+  "status": "pending",
+  "approved_by": "",
+  "approved_utc": "",
+  "controller_git_commit": "",
+  "task_order_sha256": "73d4a4a8e377422072c6ab27c066f87f8acbed7683ed50168c3407c861d61333",
+  "openapps_git_commit": "6e6782794433c60468d65ac75bc3f03c56007f8c",
+  "checks": {
+    "pilot_provenance_verified": {
+      "passed": false,
+      "evidence_path": ""
+    },
+    "official_evaluator_controls_passed": {
+      "passed": false,
+      "evidence_path": ""
+    },
+    "four_model_live_compatibility_passed": {
+      "passed": false,
+      "evidence_path": ""
+    },
+    "cdea_mechanism_verified": {
+      "passed": false,
+      "evidence_path": ""
+    },
+    "all_main_tasks_suitability_screened": {
+      "passed": false,
+      "evidence_path": ""
+    },
+    "statistical_protocol_preregistered": {
+      "passed": false,
+      "evidence_path": ""
+    }
+  }
+}

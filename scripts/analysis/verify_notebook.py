@@ -139,16 +139,8 @@ def verify(protocol):
 
 
 def verify_small_only_archive():
-    # Audit arsip Small-only tanpa memaksa notebook asli membacanya.
-    with TemporaryDirectory(prefix='cdea_small_audit_fixture_') as directory:
-        work = Path(directory)
-        make_archive(work / 'main_observation.zip', 'cdea_main_v1', include_large=False)
-        make_archive(work / 'scale_reference.zip', 'cdea_small_extension_v1', include_large=False)
-        report = audit(work / 'main_observation.zip', work / 'scale_reference.zip')
-        assert report['small']['selected_pairs'] == 128
-        assert report['small']['excluded_large_pairs'] == 0
-        print('PASS cdea_small_extension_v1: audit schema Small-only')
-
+    # Run the full notebook against the 128-pair Small-only protocol.
+    verify('cdea_small_extension_v1')
 
 if __name__ == '__main__':
     verify('cdea_scale_v1')
