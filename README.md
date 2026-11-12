@@ -120,7 +120,7 @@ Letakkan `main_observation.zip` dan `scale_reference_small_v1.zip` di direktori 
 
 Notebook juga dapat menemukan paket `Dataset_CDEA*.zip` di direktori kerja atau `/content` (misalnya Google Colab). Paket dapat berisi:
 1. `DATASET_CDEA.json` yang mencantumkan nama dan SHA-256 arsip sumber; atau
-2. folder `Dataset_CDEA/` yang berisi `main_observation.zip` dan `scale_reference_small_v1.zip` (paket lama dengan `scale_reference.zip` tetap dapat diaudit menggunakan format arsip penuh).
+2. folder legacy `Dataset_CDEA/` yang berisi `main_observation.zip` dan `scale_reference.zip` (arsip Scale penuh maupun Small Extension tetap didukung untuk kompatibilitas).
 
 Notebook mengekstrak hanya 2 arsip sumber yang diperlukan. Jika file dengan nama yang sama sudah tersedia, SHA-256 harus cocok dengan isi paket. Protokol setiap arsip juga diperiksa sebelum analisis dijalankan.
 
