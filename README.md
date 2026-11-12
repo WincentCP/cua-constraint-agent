@@ -112,7 +112,7 @@ Notebook menerima 2 format arsip Scale:
 1. **`cdea_small_extension_v1`** — arsip Small-only dengan 128 pasangan dan 256 episode.
 2. **`cdea_scale_v1`** — arsip Scale dengan 256 pasangan dan 512 episode, terdiri atas 128 pasangan Large dan 128 pasangan Small. Notebook memilih hanya 128 pasangan Small; hasil Large dari arsip ini tidak digunakan dalam perbandingan skripsi.
 
-Kedua format harus memiliki 32 tugas dan 4 model Small pada kelompok yang dipilih. Notebook memeriksa protokol, identitas pasangan, hasil episode, dan kesesuaian roster tugas sebelum analisis.
+Untuk paket penelitian terbaru, gunakan format pertama (`cdea_small_extension_v1`) melalui `scale_reference_small_v1.zip`. Format penuh kedua tetap dipertahankan untuk audit dan kompatibilitas arsip lama. Kedua format harus memiliki 32 tugas dan 4 model Small pada kelompok yang dipilih. Notebook memeriksa protokol, identitas pasangan, hasil episode, dan kesesuaian roster tugas sebelum analisis.
 
 ### Menyiapkan data untuk notebook
 
