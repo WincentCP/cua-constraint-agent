@@ -1,6 +1,6 @@
 # Hasil Penelitian
 
-Folder ini berisi tabel hasil turunan untuk skripsi CDEA. Tabel diekstrak dari paket `Dataset_CDEA(1).zip` dan dicocokkan dengan catatan pasangan pada arsip sumber. Arsip mentah tidak disimpan di repository.
+Folder ini berisi tabel hasil turunan untuk skripsi CDEA. Tabel diekstrak dari paket `Dataset_CDEA_small_only.zip` dan dicocokkan dengan catatan pasangan pada arsip sumber. Arsip mentah tidak disimpan di repository.
 
 Dalam kode dan arsip, metode CDEA menggunakan label internal `Proposed`. Dengan demikian, kolom `proposed` pada file CSV merujuk pada CDEA.
 
@@ -9,9 +9,9 @@ Dalam kode dan arsip, metode CDEA menggunakan label internal `Proposed`. Dengan 
 | Sumber | Protokol | Isi arsip sumber | Data yang digunakan |
 |---|---|---:|---:|
 | `main_observation.zip` | `cdea_main_v1` | 128 pasangan Large / 256 episode | 128 pasangan Large / 256 episode |
-| `scale_reference.zip` | `cdea_scale_v1` | 256 pasangan / 512 episode | 128 pasangan Small / 256 episode |
+| `scale_reference_small_v1.zip` | `cdea_small_extension_v1` | 128 pasangan Small / 256 episode | 128 pasangan Small / 256 episode |
 
-Arsip Scale juga berisi 128 pasangan Large. Pasangan tersebut **tidak** digunakan dalam dataset perbandingan skripsi karena hasil Large berasal dari arsip Main yang terpisah.
+Arsip sumber Scale lengkap (`scale_reference.zip`, `cdea_scale_v1`) tetap berisi 256 pasangan dan 512 episode (128 Small + 128 Large). Arsip analisis `scale_reference_small_v1.zip` adalah subset yang hanya memuat 128 pasangan Small. Pasangan Large dari arsip sumber tidak disalin ke subset ini dan tetap tersedia di arsip sumber lengkap untuk audit.
 
 Dataset terpilih berisi:
 - 256 pasangan pengujian;
@@ -97,7 +97,7 @@ Persentase dalam file turunan mengikuti nilai yang diekspor dari tabel sumber da
 Dengan paket dataset yang sama, jalankan:
 
 ```bash
-python scripts/analysis/build_public_results.py --package "Dataset_CDEA(1).zip" --output-dir results
+python scripts/analysis/build_public_results.py --package "Dataset_CDEA_small_only.zip" --output-dir results
 ```
 
 Skrip akan berhenti jika SHA-256 paket tidak cocok dengan nilai pada `results/provenance.json`. Skrip menghasilkan `pair_outcomes.csv.gz` dan `decision_comparison_by_group.csv`; file sumber eksperimen tidak diubah.
@@ -107,7 +107,8 @@ Skrip akan berhenti jika SHA-256 paket tidak cocok dengan nilai pada `results/pr
 | Arsip | ID arsip | Ukuran | SHA-256 |
 |---|---|---:|---|
 | `main_observation.zip` | `main_observation_v1` | 3.971.324 byte | `74f48100b4dc6ae074573596dc87beed18770d4c3740f2c01f5efcd57a2d885c` |
-| `scale_reference.zip` | `scale_reference_v4` | 23.343.948 byte | `25d4ae4f6c595bb8658d6d0dcbf0b6017e3f2b9d0f1ce7de3b80d582eadbb0b5` |
+| `scale_reference.zip` (sumber lengkap) | `scale_reference_v4` | 23.343.948 byte | `25d4ae4f6c595bb8658d6d0dcbf0b6017e3f2b9d0f1ce7de3b80d582eadbb0b5` |
+| `scale_reference_small_v1.zip` (subset Small-only) | `scale_reference_small_v1` | 11.758.406 byte | `3fd21228b1df5e65f8c6ffd5e117a12e7a3f7c978a514bbe4ef399df8a4c750b` |
 
 Kedua arsip menggunakan commit OpenApps `6e6782794433c60468d65ac75bc3f03c56007f8c`, tetapi Agent Controller berbeda:
 - Main: `ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1`.
@@ -115,14 +116,19 @@ Kedua arsip menggunakan commit OpenApps `6e6782794433c60468d65ac75bc3f03c56007f8
 
 Konfigurasi Main pada `config/main_plan.json` mencantumkan `num_ctx=8192`, tetapi manifest arsip Main tidak mencatat nilai tersebut. Manifest Scale secara eksplisit mencatat `num_ctx=8192`. Perbedaan sumber pencatatan ini tidak boleh disamakan dengan verifikasi independen atas runtime.
 
-SHA-256 paket luar `Dataset_CDEA(1).zip` adalah `a8d45828e358e39241aa72862640a504627c332c0f1023e177b63889affb9d1e`. Rincian lengkap tersedia pada `provenance.json`.
+SHA-256 paket analisis `Dataset_CDEA_small_only.zip` adalah `10dfa84181fbc7b5e77d17e7d5fd459405b87d4b5cae7796d3d48056d4d087ae` (15.774.069 byte). Paket mempertahankan arsip Scale lengkap sebagai sumber audit dan menggunakan `scale_reference_small_v1.zip` sebagai input Scale Small-only. Rincian lengkap tersedia pada `provenance.json`.
 
 
 ### Perbaikan arsip Scale (12 November 2026)
 
-Arsip Scale terbaru telah direkonsiliasi agar memuat **256/256 file `pair.json`**. Metadata untuk `pair_109`–`pair_256` dibangun ulang dari manifest, `pairs.csv`, `results.csv`, dan `episode.json`; 108 metadata pasangan yang sudah cocok dipertahankan byte-identik. File episode, trace, observasi, dan database dari arsip terbaru tidak diubah atau dibuat sintetis.
+Arsip sumber Scale lengkap telah direkonsiliasi agar memuat **256/256 file `pair.json`**. Metadata untuk `pair_109`–`pair_256` dibangun ulang dari manifest, `pairs.csv`, `results.csv`, dan `episode.json`; 108 metadata pasangan yang sudah cocok dipertahankan byte-identik. File episode, trace, observasi, dan database dari arsip terbaru tidak diubah atau dibuat sintetis.
 
 Nilai `total_seconds` pada 256 baris Scale di `derived/selected_results.csv` juga diperiksa dan diperbarui terhadap episode terbaru (148 nilai berubah). Checksum baru untuk arsip Scale dan paket luar tercatat di `provenance.json`. Pemeriksaan tersebut menguji konsistensi internal; bukan verifikasi independen atas runtime atau host eksperimen.
+
+
+### Subset Scale Small-only
+
+Arsip turunan `scale_reference_small_v1.zip` memakai protokol arsip `cdea_small_extension_v1` dan hanya memuat 4 model Small: Qwen 3.5 4B, Ministral 3 3B, Granite 4.1 3B, dan xLAM 2 3B. Cakupannya 128/128 pasangan, 256/256 episode, 128/128 `pair.json`, 256 trace, 14.018 file observasi, dan 1.280 database SQLite. Checksum inventori internal mencakup 17.508 file (tidak menghitung file inventori itu sendiri). Arsip ini merupakan subset data sumber, bukan eksperimen baru.
 
 ## 7. Membuka data pasangan
 
