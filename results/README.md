@@ -116,7 +116,7 @@ Kedua arsip menggunakan commit OpenApps `6e6782794433c60468d65ac75bc3f03c56007f8
 
 Konfigurasi Main pada `config/main_plan.json` mencantumkan `num_ctx=8192`, tetapi manifest arsip Main tidak mencatat nilai tersebut. Manifest Scale secara eksplisit mencatat `num_ctx=8192`. Perbedaan sumber pencatatan ini tidak boleh disamakan dengan verifikasi independen atas runtime.
 
-SHA-256 paket analisis `Dataset_CDEA_small_only.zip` adalah `10dfa84181fbc7b5e77d17e7d5fd459405b87d4b5cae7796d3d48056d4d087ae` (15.774.069 byte). Paket mempertahankan arsip Scale lengkap sebagai sumber audit dan menggunakan `scale_reference_small_v1.zip` sebagai input Scale Small-only. Rincian lengkap tersedia pada `provenance.json`.
+SHA-256 paket analisis `Dataset_CDEA_small_only.zip` adalah `cccbb4608aab683d089341142c86644463e292b86f04e4d607a099bc3f7f7d5f` (15.774.265 byte). Paket mempertahankan arsip Scale lengkap sebagai sumber audit dan menggunakan `scale_reference_small_v1.zip` sebagai input Scale Small-only. Rincian lengkap tersedia pada `provenance.json`.
 
 
 ### Perbaikan arsip Scale (12 November 2026)
