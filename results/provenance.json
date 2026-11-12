@@ -132,7 +132,7 @@
     "small_only_sqlite_database_files": "passed: 1,280",
     "small_only_file_hash_inventory": "passed: 17,508 entries; inventory file excludes its own hash",
     "small_only_notebook_execution": "passed: 25 code cells executed with synthetic fixtures; 6 main tables and 9 figures exported; detailed outputs 28 and 29 included",
-    "ledger_status_transition_audit": "passed: Main 96 first transitions to SATISFIED across 48 pairs; Scale Small 8 first transitions to SATISFIED across 4 pairs; no REFUTED transitions; all 8 Small events have quotes and observation hashes, 7 have grounded_in_axtree=true, and none has verified_correctness=true",
+    "ledger_status_transition_audit": "passed: Main 96 status transitions to SATISFIED across 48 pairs; Scale Small 8 status transitions to SATISFIED across 4 pairs; no REFUTED transitions; all 8 Small events have quotes and observation hashes, 7 have grounded_in_axtree=true, and none has verified_correctness=true",
     "baseline_only_failure_trace_audit": "passed: Main 1 Baseline-only pair and Scale Small 10 Baseline-only pairs; both episode traces are available for all 11 pairs (22 episode rows); descriptive only, no causal attribution",
     "small_success_pair_efficiency_reconciled": "passed: 33 Scale Small pairs where both methods succeeded; mean Proposed minus Baseline total_seconds = 0.6945757576 seconds; mean steps difference = 0.0606060606"
   },
@@ -151,7 +151,7 @@
     "The current analysis package uses scale_reference_small_v1.zip, a cdea_small_extension_v1 derived subset with only 4 Small models and 128 pairs.",
     "The original full scale_reference_v4 archive remains unchanged as an audit source; its 128 Large pairs are excluded from the Scale Small-only analysis archive.",
     "Main Large remains a separate experiment. Cross-cohort Large-versus-Small charts are descriptive because the two source archives use different Agent Controller commits.",
-    "The selected Small archive contains 8 first observed transitions to SATISFIED across 4 pair IDs and no REFUTED transitions. All 8 ledger records have a quote and observation hash; 7 have a matching grounded_in_axtree=true entry, and none records verified_correctness=true. One Proposed episode (pair_232) has a SATISFIED ledger state while the official task outcome remains unsuccessful. Ledger status is not factual verification or task completion.",
+    "The selected Small archive contains 8 status transitions to SATISFIED across 4 pair IDs and no REFUTED transitions. All 8 ledger records have a quote and observation hash; 7 have a matching grounded_in_axtree=true entry, and none records verified_correctness=true. One Proposed episode (pair_232) has a SATISFIED ledger state while the official task outcome remains unsuccessful. Ledger status is not factual verification or task completion.",
     "Small success-conditioned efficiency was recalculated from 33 matched pairs with both methods successful using total_seconds from episode.json: mean Proposed minus Baseline is +0.6945757576 seconds and +0.0606060606 steps.",
     "The notebook's Baseline-only trace audit includes both episode arms for 1 Main pair and 10 Scale Small pairs. The trace summaries are descriptive and do not establish causal reasons for the outcome differences."
   ],

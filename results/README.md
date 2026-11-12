@@ -50,9 +50,9 @@ Angka 20 pasangan digunakan untuk ringkasan keberhasilan, sedangkan analisis inf
 
 - **Main Study:** 48 pasangan memiliki keputusan pencarian yang dapat dibandingkan; 33 di antaranya menunjukkan tindakan berbeda antara Baseline dan CDEA.
 - **Small-Model Extension:** 75 pasangan memiliki keputusan yang dapat dibandingkan; 49 di antaranya menunjukkan tindakan berbeda.
-- **Evidence ledger Main:** terdapat 96 transisi pertama ke status `SATISFIED`; seluruh kutipan dan hash observasinya dapat ditelusuri ke AXTree tersimpan.
+- **Evidence ledger Main:** terdapat 96 transisi status ke `SATISFIED`; seluruh kutipan dan hash observasinya dapat ditelusuri ke AXTree tersimpan.
 - Dari 96 pembaruan tersebut, 40 peristiwa informasi perbankan juga sesuai dengan pemeriksaan fakta sederhana pada snapshot database. Sebanyak 56 lainnya hanya dapat diperiksa berdasarkan keterlihatan kutipan.
-- **Evidence ledger Small:** terdapat 8 transisi pertama ke status `SATISFIED` pada 4 pasangan (`pair_128`, `pair_201`, `pair_220`, dan `pair_232`), masing-masing pada episode Baseline dan Proposed. Tidak ditemukan transisi `REFUTED`. Kedelapan catatan memiliki kutipan dan hash observasi; 7 memiliki entri `grounded_in_axtree=true`, sedangkan tidak ada yang mencatat `verified_correctness=true`. Pada `pair_232`, episode Proposed mencatat status `SATISFIED` meskipun tugas tidak berhasil.
+- **Evidence ledger Small:** terdapat 8 transisi status ke `SATISFIED` pada 4 pasangan (`pair_128`, `pair_201`, `pair_220`, dan `pair_232`), masing-masing pada episode Baseline dan Proposed. Tidak ditemukan transisi `REFUTED`. Kedelapan catatan memiliki kutipan dan hash observasi; 7 memiliki entri `grounded_in_axtree=true`, sedangkan tidak ada yang mencatat `verified_correctness=true`. Pada `pair_232`, episode Proposed mencatat status `SATISFIED` meskipun tugas tidak berhasil.
 
 Keterlihatan kutipan pada AXTree menunjukkan bahwa kutipan tercatat dalam pengamatan antarmuka. Hal tersebut tidak otomatis membuktikan kebenaran semantik informasi atau terpenuhinya seluruh constraint.
 
