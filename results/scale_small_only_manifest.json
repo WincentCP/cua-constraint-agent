@@ -1,0 +1,50 @@
+{
+  "archive": "scale_reference_small_v1.zip",
+  "archive_id": "scale_reference_small_v1",
+  "protocol": "cdea_small_extension_v1",
+  "size_bytes": 11758406,
+  "sha256": "3fd21228b1df5e65f8c6ffd5e117a12e7a3f7c978a514bbe4ef399df8a4c750b",
+  "source_archive": "scale_reference.zip",
+  "source_archive_id": "scale_reference_v4",
+  "source_archive_sha256": "25d4ae4f6c595bb8658d6d0dcbf0b6017e3f2b9d0f1ce7de3b80d582eadbb0b5",
+  "selection": {
+    "field": "size",
+    "equals": "small"
+  },
+  "models": [
+    {
+      "label": "qwen3.5-4b",
+      "parameters_b": 4,
+      "pairs": 32
+    },
+    {
+      "label": "ministral3-3b",
+      "parameters_b": 3,
+      "pairs": 32
+    },
+    {
+      "label": "granite4.1-3b",
+      "parameters_b": 3,
+      "pairs": 32
+    },
+    {
+      "label": "xlam2-3b",
+      "parameters_b": 3,
+      "pairs": 32
+    }
+  ],
+  "task_count": 32,
+  "pairs": 128,
+  "episodes": 256,
+  "pair_json": 128,
+  "trace_jsonl": 256,
+  "observation_artifact_files": 14018,
+  "sqlite_database_files": 1280,
+  "baseline_successes": 43,
+  "proposed_successes": 54,
+  "baseline_success_rate": 0.3359375,
+  "proposed_success_rate": 0.421875,
+  "paired_difference_pp": 8.59375,
+  "integrity": "passed",
+  "note": "Derived analysis subset only; original full Scale archive is retained unchanged for audit."
+}
