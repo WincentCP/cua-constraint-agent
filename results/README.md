@@ -107,7 +107,7 @@ Skrip akan berhenti jika SHA-256 paket tidak cocok dengan nilai pada `results/pr
 | Arsip | ID arsip | Ukuran | SHA-256 |
 |---|---|---:|---|
 | `main_observation.zip` | `main_observation_v1` | 3.971.324 byte | `74f48100b4dc6ae074573596dc87beed18770d4c3740f2c01f5efcd57a2d885c` |
-| `scale_reference.zip` | `scale_reference_v4` | 24.509.041 byte | `052ecf15e2466109175153022baa7a1007a8a88c7358307823f85c3947b38f96` |
+| `scale_reference.zip` | `scale_reference_v4` | 23.343.948 byte | `25d4ae4f6c595bb8658d6d0dcbf0b6017e3f2b9d0f1ce7de3b80d582eadbb0b5` |
 
 Kedua arsip menggunakan commit OpenApps `6e6782794433c60468d65ac75bc3f03c56007f8c`, tetapi Agent Controller berbeda:
 - Main: `ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1`.
@@ -115,7 +115,14 @@ Kedua arsip menggunakan commit OpenApps `6e6782794433c60468d65ac75bc3f03c56007f8
 
 Konfigurasi Main pada `config/main_plan.json` mencantumkan `num_ctx=8192`, tetapi manifest arsip Main tidak mencatat nilai tersebut. Manifest Scale secara eksplisit mencatat `num_ctx=8192`. Perbedaan sumber pencatatan ini tidak boleh disamakan dengan verifikasi independen atas runtime.
 
-SHA-256 paket luar `Dataset_CDEA(1).zip` adalah `2937b79f5edc85a93f42eb8db1b8aa4e220d6151332b8f2f3af08df2f925c503`. Rincian lengkap tersedia pada `provenance.json`.
+SHA-256 paket luar `Dataset_CDEA(1).zip` adalah `a8d45828e358e39241aa72862640a504627c332c0f1023e177b63889affb9d1e`. Rincian lengkap tersedia pada `provenance.json`.
+
+
+### Perbaikan arsip Scale (12 November 2026)
+
+Arsip Scale terbaru telah direkonsiliasi agar memuat **256/256 file `pair.json`**. Metadata untuk `pair_109`–`pair_256` dibangun ulang dari manifest, `pairs.csv`, `results.csv`, dan `episode.json`; 108 metadata pasangan yang sudah cocok dipertahankan byte-identik. File episode, trace, observasi, dan database dari arsip terbaru tidak diubah atau dibuat sintetis.
+
+Nilai `total_seconds` pada 256 baris Scale di `derived/selected_results.csv` juga diperiksa dan diperbarui terhadap episode terbaru (148 nilai berubah). Checksum baru untuk arsip Scale dan paket luar tercatat di `provenance.json`. Pemeriksaan tersebut menguji konsistensi internal; bukan verifikasi independen atas runtime atau host eksperimen.
 
 ## 7. Membuka data pasangan
 

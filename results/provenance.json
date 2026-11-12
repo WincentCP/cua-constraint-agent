@@ -1,8 +1,8 @@
 {
   "dataset_package": {
     "filename": "Dataset_CDEA(1).zip",
-    "size_bytes": 27511104,
-    "sha256": "2937b79f5edc85a93f42eb8db1b8aa4e220d6151332b8f2f3af08df2f925c503"
+    "size_bytes": 39139302,
+    "sha256": "a8d45828e358e39241aa72862640a504627c332c0f1023e177b63889affb9d1e"
   },
   "source_archives": [
     {
@@ -38,8 +38,8 @@
     },
     {
       "filename": "scale_reference.zip",
-      "size_bytes": 24509041,
-      "sha256": "052ecf15e2466109175153022baa7a1007a8a88c7358307823f85c3947b38f96",
+      "size_bytes": 23343948,
+      "sha256": "25d4ae4f6c595bb8658d6d0dcbf0b6017e3f2b9d0f1ce7de3b80d582eadbb0b5",
       "protocol": "cdea_scale_v1",
       "archive_id": "scale_reference_v4",
       "created_utc": "2026-10-24T03:12:00Z",
@@ -105,7 +105,7 @@
     "main_source_zip_integrity": "passed",
     "scale_source_zip_integrity": "passed",
     "selected_pair_ids_match_source": "passed",
-    "selected_episode_records_match_source": "passed for validity, success, steps, model calls, model time, probe opportunities, and policy overrides",
+    "selected_episode_records_match_source": "passed for validity, success, steps, model calls, model time, total time, probe opportunities, and policy overrides",
     "success_by_task_matches_source_pairs": "passed",
     "success_by_model_matches_source_pairs": "passed",
     "model_size_comparison_by_task_matches_source_pairs": "passed",
@@ -114,7 +114,13 @@
     "selected_pair_success_outcomes_match_source_pairs": "passed",
     "main_pair_decision_metrics_match_mirrored_episode_records": "passed",
     "scale_pair_decision_metrics_match_source_pair_records": "passed",
-    "decision_comparison_by_group_matches_pair_level_records": "passed"
+    "decision_comparison_by_group_matches_pair_level_records": "passed",
+    "scale_pair_json_coverage": "passed: 256/256",
+    "scale_pair_json_metadata_match": "passed: pair_001–pair_108 byte-identical; pair_109–pair_256 rebuilt/updated from current episode records",
+    "scale_trace_jsonl_matches_episode_json": "passed for 512 episodes",
+    "scale_observation_sha256": "passed for 24,656 observation references",
+    "scale_file_hash_inventory": "passed",
+    "selected_results_total_seconds_match_episode_json": "passed for all 512 selected episodes"
   },
   "interpretation_notes": [
     "The Main and Scale archives use different Agent Controller commits.",
@@ -123,7 +129,11 @@
     "Archive checks establish internal integrity and record consistency, not independent verification of the execution host or runtime.",
     "Model checkpoint digests are copied exactly from each source archive manifest; the Main and Scale manifests use different string formatting.",
     "Main decision-comparison indicators in pair_outcomes.csv.gz are aggregated from the two source episode rows per pair after verifying that the Baseline and Proposed records match; each pair is counted once.",
-    "Scale decision-comparison indicators are copied from the Scale pair records and retained for the selected 128 Small pairs."
+    "Scale decision-comparison indicators are copied from the Scale pair records and retained for the selected 128 Small pairs.",
+    "The repaired Scale archive retains the newer episode artifacts supplied for pair_109–pair_256; pairs.csv, results.csv, and analysis.json remain unchanged.",
+    "Pair-level metadata is complete at 256/256 pair.json files. The 148 records for pair_109–pair_256 were rebuilt or reconciled from existing manifest, pair, result, and episode records; no episode traces or observations were fabricated.",
+    "The selected_results.csv total_seconds values were refreshed against the current episode.json records; 148 of the 256 selected Scale values changed.",
+    "The repaired Scale validation report verifies internal consistency only and does not independently attest live runtime, host process ownership, or the model checkpoint loaded."
   ],
   "derived_outputs": {
     "pair_outcomes.csv.gz": {
@@ -163,6 +173,36 @@
           "pairs_without_comparable_decision": 53
         }
       ]
+    },
+    "selected_results.csv": {
+      "sha256": "71b603f71d0c62f40bb4512b236100fc59a668e69c58d3a6f25a644e61444f58",
+      "rows": 512,
+      "source_files": [
+        "Dataset_CDEA/derived/selected_pairs.csv",
+        "Dataset_CDEA/main_observation/main_observation_v1/results.csv",
+        "Dataset_CDEA/scale_reference/scale_reference_v4/results.csv",
+        "Dataset_CDEA/scale_reference/scale_reference_v4/episodes/{pair_id}/{method}/episode/episode.json"
+      ],
+      "transformation": "Selected Main Large and Scale Small episode rows; total_seconds reconciled to current episode.json values. Other selected fields were checked against source records."
     }
+  },
+  "archive_repair": {
+    "repair_date": "2026-11-12",
+    "scale_archive": "scale_reference.zip",
+    "scale_pair_json_total": 256,
+    "pair_json_byte_identical_and_retained": 108,
+    "pair_json_rebuilt_or_updated": 148,
+    "pair_json_rebuilt_range": "pair_109–pair_256",
+    "pair_json_source_records": [
+      "manifest.json",
+      "pairs.csv",
+      "results.csv",
+      "episodes/{pair_id}/{method}/episode/episode.json"
+    ],
+    "raw_episode_artifacts_modified": false,
+    "pairs_csv_results_csv_and_analysis_json_modified": false,
+    "selected_results_total_seconds_rows_checked": 256,
+    "selected_results_total_seconds_values_changed": 148,
+    "runtime_attestation": "not independently verified; launcher.json files are templates only"
   }
 }
