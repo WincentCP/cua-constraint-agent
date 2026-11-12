@@ -226,7 +226,7 @@ def build(package_path: Path, output_dir: Path, *, skip_package_hash_check: bool
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--package", type=Path, default=Path("Dataset_CDEA(1).zip"))
+    parser.add_argument("--package", type=Path, default=Path("Dataset_CDEA_small_only.zip"))
     parser.add_argument("--output-dir", type=Path, default=Path("results"))
     parser.add_argument("--skip-package-hash-check", action="store_true")
     args = parser.parse_args()
