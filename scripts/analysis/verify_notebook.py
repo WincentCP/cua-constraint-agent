@@ -80,7 +80,7 @@ def verify(protocol, package_mode=False):
         report = audit(work / 'main_observation.zip', work / 'scale_reference.zip')
         assert report['selected_pairs_total'] == 256
         nb = nbformat.read(NOTEBOOK, as_version=4)
-        if package_mode:
+        # The production notebook defaults to the Small-only archive name; fixtures use the legacy test filename.\n        for cell in nb.cells:\n            if cell.cell_type == 'code' and "SCALE_ZIP = 'scale_reference_small_v1.zip'" in cell.source:\n                cell.source = cell.source.replace(\n                    "SCALE_ZIP = 'scale_reference_small_v1.zip'",\n                    "SCALE_ZIP = 'scale_reference.zip'"\n                )\n                break\n        if package_mode:
             # Simulasikan paket pengguna: 2 arsip sumber berada di dalam Dataset_CDEA/.
             package_path = work / 'Dataset_CDEA(1).zip'
             with zipfile.ZipFile(package_path, 'w', compression=zipfile.ZIP_DEFLATED) as package:
