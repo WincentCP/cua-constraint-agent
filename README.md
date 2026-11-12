@@ -158,7 +158,7 @@ Skrip memeriksa SHA-256 paket terhadap `results/provenance.json`, memvalidasi ca
 4. Pastikan `MAIN_ZIP` dan `SCALE_ZIP` menunjuk ke arsip yang benar.
 5. Jalankan seluruh sel notebook secara berurutan.
 
-Notebook menghasilkan folder `CDEA_Analysis_Results/` dan file `CDEA_Analysis_Results.zip`. Keluaran mencakup 9 grafik utama, 6 tabel utama, analisis rinci, dan ringkasan statistik. Keluaran notebook tersebut dibuat secara lokal dan tidak dilacak di Git; tabel ringkasan terpilih tersedia di folder `results/`.
+Notebook menghasilkan folder `CDEA_Analysis_Results/` dan file `CDEA_Analysis_Results.zip`. Keluaran mencakup 9 grafik utama, 6 tabel utama, serta CSV analisis rinci untuk uji tingkat tugas, efisiensi, alasan penghentian, transisi status evidence ledger, dan audit trace pasangan Baseline-only, beserta ringkasan statistik. Keluaran notebook tersebut dibuat secara lokal dan tidak dilacak di Git; tabel ringkasan terpilih tersedia di folder `results/`.
 
 ## Pemeriksaan offline
 

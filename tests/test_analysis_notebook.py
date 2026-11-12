@@ -48,5 +48,14 @@ class AnalysisNotebookContracts(unittest.TestCase):
                       self.code)
 
 
+    def test_trace_audit_outputs_are_part_of_official_notebook(self):
+        for token in ('ledger_transition_rows', '28_ledger_status_transitions',
+                      '29_failure_trace_audit', 'verified_correctness',
+                      'cause_verified', 'policy_override_steps'):
+            self.assertIn(token, self.code)
+        self.assertEqual(self.notebook['metadata'].get('cdea_revision'),
+                         'v2_model_wording_size_comparison')
+
+
 if __name__ == '__main__':
     unittest.main()

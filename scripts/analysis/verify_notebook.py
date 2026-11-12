@@ -124,8 +124,8 @@ def verify(protocol, package_mode=False):
         # The fixture has no episode JSON traces or selected probe examples.
         # The notebook intentionally skips its optional 17_probe_examples.csv.
         detailed = list((outputs / 'detailed_analysis').glob('*.csv'))
-        assert len(detailed) == 25
-        # Enam keluaran tambahan sesuai catatan dosen; 17_probe_examples opsional.
+        assert len(detailed) == 27
+        # Delapan keluaran tambahan sesuai catatan dosen; 17_probe_examples opsional.
         required = {
             '22_task_level_differences.csv',
             '23_task_level_sign_tests.csv',
@@ -133,6 +133,8 @@ def verify(protocol, package_mode=False):
             '25_episode_termination_reasons.csv',
             '26_cdea_loss_pairs.csv',
             '27_ledger_trace_scope.csv',
+            '28_ledger_status_transitions.csv',
+            '29_failure_trace_audit.csv',
         }
         actual = {p.name for p in detailed}
         assert required.issubset(actual), sorted(required - actual)
@@ -160,6 +162,20 @@ def verify(protocol, package_mode=False):
             terminations = list(csv.DictReader(f))
         assert sum(int(e['episodes']) for e in terminations) == 512
         assert not (outputs / 'detailed_analysis' / '17_probe_examples.csv').exists()
+        with (outputs / 'detailed_analysis' / '28_ledger_status_transitions.csv').open(
+                encoding='utf-8') as f:
+            ledger_events = list(csv.DictReader(f))
+        # Synthetic fixtures intentionally contain no episode traces.
+        assert ledger_events == []
+        with (outputs / 'detailed_analysis' / '26_cdea_loss_pairs.csv').open(
+                encoding='utf-8') as f:
+            loss_pairs = list(csv.DictReader(f))
+        with (outputs / 'detailed_analysis' / '29_failure_trace_audit.csv').open(
+                encoding='utf-8') as f:
+            failure_audit = list(csv.DictReader(f))
+        assert len(failure_audit) == 2 * len(loss_pairs)
+        assert all(row['cause_verified'].lower() == 'false' for row in failure_audit)
+        assert all(row['trace_available'].lower() == 'false' for row in failure_audit)
         print(f'PASS {protocol} (package={package_mode}): 6 tabel, 9 gambar, 128 pasangan Small')
 
 

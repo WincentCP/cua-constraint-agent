@@ -50,9 +50,9 @@ Angka 20 pasangan digunakan untuk ringkasan keberhasilan, sedangkan analisis inf
 
 - **Main Study:** 48 pasangan memiliki keputusan pencarian yang dapat dibandingkan; 33 di antaranya menunjukkan tindakan berbeda antara Baseline dan CDEA.
 - **Small-Model Extension:** 75 pasangan memiliki keputusan yang dapat dibandingkan; 49 di antaranya menunjukkan tindakan berbeda.
-- **Evidence ledger Main:** terdapat 96 pembaruan berstatus `SATISFIED` dengan kutipan yang terlihat pada accessibility tree (AXTree).
+- **Evidence ledger Main:** terdapat 96 transisi pertama ke status `SATISFIED`; seluruh kutipan dan hash observasinya dapat ditelusuri ke AXTree tersimpan.
 - Dari 96 pembaruan tersebut, 40 peristiwa informasi perbankan juga sesuai dengan pemeriksaan fakta sederhana pada snapshot database. Sebanyak 56 lainnya hanya dapat diperiksa berdasarkan keterlihatan kutipan.
-- Pada arsip Small terpilih tidak ditemukan pembaruan evidence ledger.
+- **Evidence ledger Small:** terdapat 8 transisi pertama ke status `SATISFIED` pada 4 pasangan (`pair_128`, `pair_201`, `pair_220`, dan `pair_232`), masing-masing pada episode Baseline dan Proposed. Tidak ditemukan transisi `REFUTED`. Kedelapan catatan memiliki kutipan dan hash observasi; 7 memiliki entri `grounded_in_axtree=true`, sedangkan tidak ada yang mencatat `verified_correctness=true`. Pada `pair_232`, episode Proposed mencatat status `SATISFIED` meskipun tugas tidak berhasil.
 
 Keterlihatan kutipan pada AXTree menunjukkan bahwa kutipan tercatat dalam pengamatan antarmuka. Hal tersebut tidak otomatis membuktikan kebenaran semantik informasi atau terpenuhinya seluruh constraint.
 
@@ -61,9 +61,9 @@ Keterlihatan kutipan pada AXTree menunjukkan bahwa kutipan tercatat dalam pengam
 | Kelompok | Pasangan kedua metode berhasil | Selisih rata-rata tindakan CDEA terhadap Baseline | Selisih rata-rata waktu CDEA terhadap Baseline |
 |---|---:|---:|---:|
 | Main Large | 72 | −0,19 tindakan | −1,30 detik |
-| Scale Small | 33 | +0,06 tindakan | +1,14 detik |
+| Scale Small | 33 | +0,06 tindakan | +0,69 detik |
 
-Nilai negatif berarti CDEA menggunakan lebih sedikit tindakan atau waktu daripada Baseline. Analisis ini hanya mencakup pasangan ketika kedua metode sama-sama berhasil; hasilnya tidak menggambarkan efisiensi seluruh episode.
+Nilai negatif berarti CDEA menggunakan lebih sedikit tindakan atau waktu daripada Baseline. Analisis ini hanya mencakup pasangan ketika kedua metode sama-sama berhasil; hasilnya tidak menggambarkan efisiensi seluruh episode. Selisih waktu Small dihitung dari `total_seconds` pada 33 pasangan yang sama-sama berhasil dan bernilai +0,69 detik.
 
 ## 5. Daftar file
 
@@ -101,6 +101,14 @@ python scripts/analysis/build_public_results.py --package "Dataset_CDEA_small_on
 ```
 
 Skrip akan berhenti jika SHA-256 paket tidak cocok dengan nilai pada `results/provenance.json`. Skrip menghasilkan `pair_outcomes.csv.gz` dan `decision_comparison_by_group.csv`; file sumber eksperimen tidak diubah.
+
+### Keluaran audit rinci notebook
+
+Selain tabel utama, notebook resmi menghasilkan:
+- `detailed_analysis/28_ledger_status_transitions.csv`: transisi pertama status ledger ke `SATISFIED` atau `REFUTED`, dengan indikator keterlihatan kutipan, hash observasi, dan status verifikasi faktual yang tercatat.
+- `detailed_analysis/29_failure_trace_audit.csv`: ringkasan trace kedua metode untuk setiap pasangan ketika Baseline berhasil tetapi CDEA tidak. Tabel ini bersifat deskriptif dan tidak menetapkan penyebab kegagalan.
+
+Keduanya berada di keluaran lokal `CDEA_Analysis_Results/` dan ikut dimasukkan ke `CDEA_Analysis_Results.zip`; arsip trace mentah tidak disalin ke repository.
 
 ## 6. Identitas dan checksum arsip sumber
 
@@ -150,7 +158,9 @@ Pemeriksaan yang dicatat dalam `provenance.json` meliputi:
 - kesesuaian indikator keputusan Scale dengan catatan pasangan sumber;
 - kesesuaian ringkasan keputusan per kelompok dengan tabel pasangan;
 - kesesuaian tabel keberhasilan per model dan per tugas; dan
-- kesesuaian tabel perbandingan ukuran model dan daftar tugas turunan.
+- kesesuaian tabel perbandingan ukuran model dan daftar tugas turunan;
+- audit transisi status ledger pada trace episode; dan
+- ringkasan trace untuk kedua metode pada pasangan Baseline-only, tanpa atribusi sebab.
 
 Pemeriksaan tersebut membuktikan konsistensi internal data yang tersedia, bukan verifikasi independen atas host, runtime, checkpoint yang benar-benar dimuat, atau seluruh keadaan aplikasi ketika eksperimen berlangsung.
 
