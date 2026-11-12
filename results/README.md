@@ -105,7 +105,7 @@ Skrip akan berhenti jika SHA-256 paket tidak cocok dengan nilai pada `results/pr
 ### Keluaran audit rinci notebook
 
 Selain tabel utama, notebook resmi menghasilkan:
-- `detailed_analysis/28_ledger_status_transitions.csv`: transisi pertama status ledger ke `SATISFIED` atau `REFUTED`, dengan indikator keterlihatan kutipan, hash observasi, dan status verifikasi faktual yang tercatat.
+- `detailed_analysis/28_ledger_status_transitions.csv`: peristiwa transisi status ledger ke `SATISFIED` atau `REFUTED`, dengan indikator keterlihatan kutipan, hash observasi, dan status verifikasi faktual yang tercatat.
 - `detailed_analysis/29_failure_trace_audit.csv`: ringkasan trace kedua metode untuk setiap pasangan ketika Baseline berhasil tetapi CDEA tidak. Tabel ini bersifat deskriptif dan tidak menetapkan penyebab kegagalan.
 
 Keduanya berada di keluaran lokal `CDEA_Analysis_Results/` dan ikut dimasukkan ke `CDEA_Analysis_Results.zip`; arsip trace mentah tidak disalin ke repository.
