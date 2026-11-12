@@ -26,7 +26,7 @@ Kumpulan tugas berisi 32 tugas:
 
 Analisis menggunakan:
 - **Main Large:** 128 pasangan valid atau 256 episode dari `main_observation.zip`.
-- **Scale Small:** 128 pasangan Small terpilih atau 256 episode dari `scale_reference.zip`. Arsip Scale juga memuat 128 pasangan Large, tetapi pasangan tersebut tidak digunakan dalam dataset perbandingan skripsi.
+- **Scale Small:** 128 pasangan atau 256 episode dari `scale_reference_small_v1.zip`, yang hanya memuat 4 model Small (3B–4B). Arsip sumber lengkap `scale_reference.zip` tetap dipertahankan untuk audit; 128 pasangan Large dari arsip tersebut tidak masuk ke Scale Small.
 
 Dengan demikian, dataset terpilih memuat **256 pasangan dan 512 episode**. Jumlah tersebut bukan keseluruhan riwayat pelaksanaan eksperimen, retry, Proof of Concept (PoC), Pilot, atau run lainnya.
 
@@ -80,7 +80,7 @@ Commit repository, commit Agent Controller, dan commit OpenApps merupakan identi
 | Kelompok | Protokol / arsip | Agent Controller | OpenApps |
 |---|---|---|---|
 | Main Large | `cdea_main_v1` / `main_observation_v1` | `ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1` | `6e6782794433c60468d65ac75bc3f03c56007f8c` |
-| Scale Small terpilih | `cdea_scale_v1` / `scale_reference_v4` | `ff655d1389bc84aa8100b6321220f5ec01c4e3b4` | `6e6782794433c60468d65ac75bc3f03c56007f8c` |
+| Scale Small-only | `cdea_small_extension_v1` / `scale_reference_small_v1` (subset dari `scale_reference_v4`) | `ff655d1389bc84aa8100b6321220f5ec01c4e3b4` | `6e6782794433c60468d65ac75bc3f03c56007f8c` |
 
 Kedua kelompok menggunakan seed 233, batas 40 langkah, timeout model 240 detik, temperature 0, `num_predict` 640, dan `think=false`.
 
@@ -92,7 +92,8 @@ Digest checkpoint model disalin dari manifest sumber. Digest tersebut tidak memb
 
 Arsip sumber dan snapshot aplikasi tidak disimpan di repository. Paket dataset yang diberikan memuat:
 - `main_observation.zip`: arsip Main Study dengan 128 pasangan Large.
-- `scale_reference.zip`: arsip Scale dengan 256 pasangan, yaitu 128 Large dan 128 Small.
+- `scale_reference_small_v1.zip`: arsip analisis Small-only dengan 128 pasangan Small dan 256 episode.
+- Arsip sumber lengkap `scale_reference.zip` (256 pasangan / 512 episode) disimpan di dalam paket pada `source_archives/scale_reference_v4_full_source.zip` untuk audit; arsip ini tidak digunakan sebagai input Scale pada notebook.
 
 Tabel hasil olahan yang dipublikasikan di repository meliputi:
 - keberhasilan per model;
@@ -115,11 +116,11 @@ Kedua format harus memiliki 32 tugas dan 4 model Small pada kelompok yang dipili
 
 ### Menyiapkan data untuk notebook
 
-Letakkan `main_observation.zip` dan `scale_reference.zip` di direktori kerja notebook. Nama file dapat diubah melalui variabel `MAIN_ZIP` dan `SCALE_ZIP` pada sel konfigurasi notebook.
+Letakkan `main_observation.zip` dan `scale_reference_small_v1.zip` di direktori kerja notebook. Untuk paket dataset terbaru, gunakan `Dataset_CDEA_small_only.zip`; notebook akan mengekstrak kedua arsip analisis dari `DATASET_CDEA.json` dan memeriksa checksum.
 
 Notebook juga dapat menemukan paket `Dataset_CDEA*.zip` di direktori kerja atau `/content` (misalnya Google Colab). Paket dapat berisi:
 1. `DATASET_CDEA.json` yang mencantumkan nama dan SHA-256 arsip sumber; atau
-2. folder `Dataset_CDEA/` yang berisi `main_observation.zip` dan `scale_reference.zip`.
+2. folder `Dataset_CDEA/` yang berisi `main_observation.zip` dan `scale_reference_small_v1.zip` (paket lama dengan `scale_reference.zip` tetap dapat diaudit menggunakan format arsip penuh).
 
 Notebook mengekstrak hanya 2 arsip sumber yang diperlukan. Jika file dengan nama yang sama sudah tersedia, SHA-256 harus cocok dengan isi paket. Protokol setiap arsip juga diperiksa sebelum analisis dijalankan.
 
@@ -134,7 +135,7 @@ python -m pip install -r requirements-analysis.txt
 Setelah mengekstrak kedua arsip sumber dari paket dataset, jalankan:
 
 ```bash
-python scripts/analysis/audit_archives.py --main main_observation.zip --small scale_reference.zip --output archive_audit.json
+python scripts/analysis/audit_archives.py --main main_observation.zip --small scale_reference_small_v1.zip --output archive_audit.json
 ```
 
 Audit memeriksa integritas ZIP, manifest, protokol, jumlah pasangan dan episode, identitas pasangan, kesesuaian hasil pasangan dengan hasil episode, serta kesamaan roster 32 tugas dan 4 model pada kelompok yang dipilih.
@@ -142,7 +143,7 @@ Audit memeriksa integritas ZIP, manifest, protokol, jumlah pasangan dan episode,
 Untuk membangun ulang tabel pasangan dan ringkasan keputusan pencarian dari paket dataset, jalankan:
 
 ```bash
-python scripts/analysis/build_public_results.py --package "Dataset_CDEA(1).zip" --output-dir results
+python scripts/analysis/build_public_results.py --package "Dataset_CDEA_small_only.zip" --output-dir results
 ```
 
 Skrip memeriksa SHA-256 paket terhadap `results/provenance.json`, memvalidasi catatan sumber, lalu membuat ulang `pair_outcomes.csv.gz` dan `decision_comparison_by_group.csv`. Skrip ini tidak menjalankan eksperimen dan tidak mengubah arsip sumber.
