@@ -11,7 +11,7 @@ Penelitian membandingkan CDEA dengan Baseline `progress-score` pada lingkungan O
 | Kelompok | Pasangan | Baseline | CDEA | Selisih |
 |---|---:|---:|---:|---:|
 | Main Study | 128 | 73/128 (57,03%) | 97/128 (75,78%) | +18,75 pp |
-| Small-Model Study — Small | 128 | 43/128 (33,59%) | 54/128 (42,19%) | +8,59 pp |
+| Small-Model Study | 128 | 43/128 (33,59%) | 54/128 (42,19%) | +8,59 pp |
 
 Pada tingkat tugas, Main Study menunjukkan 11 tugas membaik, tidak ada yang memburuk, dan 21 tidak berubah (uji tanda dua sisi, p = 0,00098; interval task-cluster bootstrap 95%: 9,38–29,69 pp). Pada Small-Model Study, 10 tugas membaik, 5 memburuk, dan 17 tidak berubah (p = 0,30176; interval 95%: 0,00–17,97 pp).
 
@@ -65,7 +65,7 @@ Dengan demikian, dataset terpilih memuat **256 pasangan dan 512 episode**. Jumla
 - `granite4.1-8b`
 - `xlam2-8b`
 
-**Small-Model Study — Small** (`config/models_small_extension.json`):
+**Small-Model Study** (`config/models_small_extension.json`):
 - `qwen3.5-4b`
 - `ministral3-3b`
 - `granite4.1-3b`

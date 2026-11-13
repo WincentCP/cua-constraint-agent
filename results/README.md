@@ -26,7 +26,7 @@ Distribusi tugas terdiri atas 9 tugas dasar, 18 tugas lintas aplikasi, dan 5 tug
 | Kelompok | Pasangan | Baseline | CDEA | Selisih |
 |---|---:|---:|---:|---:|
 | Main Study | 128 | 73/128 (57,03%) | 97/128 (75,78%) | +18,75 pp |
-| Small-Model Study — Small | 128 | 43/128 (33,59%) | 54/128 (42,19%) | +8,59 pp |
+| Small-Model Study | 128 | 43/128 (33,59%) | 54/128 (42,19%) | +8,59 pp |
 
 ### Analisis tingkat tugas
 
