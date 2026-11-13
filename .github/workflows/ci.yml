@@ -1,4 +1,4 @@
-name: CUA Contracts and Small Extension
+name: CDEA Contracts and Study Validation
 on: [push, pull_request]
 jobs:
   contract:
