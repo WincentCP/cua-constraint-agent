@@ -178,3 +178,8 @@ File dalam folder ini adalah **hasil penelitian turunan**, bukan fixture sinteti
 ## Pemetaan sumber skripsi
 
 Lihat [THESIS_SOURCE_MAP.md](THESIS_SOURCE_MAP.md) untuk lokasi file yang mendukung setiap tabel dan lampiran, identitas arsip, serta SHA-256 yang perlu dicocokkan sebelum audit.
+
+
+## Paket CSV analisis rinci
+
+`analysis_csv_bundle.zip` berisi 27 CSV ekspor: 20 file analisis rinci, 6 tabel utama Bab IV, dan 1 ringkasan statistik. Paket ini memudahkan pemeriksaan tabel tanpa perlu mengekstrak arsip hasil yang lebih besar. Paket ini **bukan** arsip episode mentah dan tidak menggantikan `scale_reference_small_v1.zip` atau `main_observation.zip` untuk audit trace, AXTree, dan snapshot database.

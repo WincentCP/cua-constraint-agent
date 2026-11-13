@@ -32,6 +32,8 @@ Dokumen ini memetakan tabel dan lampiran skripsi ke file implementasi, hasil tur
 
 ## 3. Analisis rinci Bab IV
 
+Paket CSV yang dapat diunduh langsung dari repository adalah `results/analysis_csv_bundle.zip` (SHA-256 `470dd495ee1d3fbf0103f56b65bc986811fd18e1d4f6294ac068a121bc738790`). Paket tersebut berisi 27 CSV: 20 analisis rinci, 6 tabel utama Bab IV, dan 1 ringkasan statistik. Paket ini tidak mencakup episode mentah, trace, AXTree, atau snapshot database.
+
 Notebook analisis utama hanya satu, yaitu `notebooks/main_analysis.ipynb`. Notebook tersebut membaca arsip Main dan Small-Model Study, lalu menghasilkan 6 tabel utama, 9 gambar, ringkasan statistik, dan file CSV analisis rinci.
 
 Hasil ekspor yang disediakan dalam paket analisis mencakup folder:

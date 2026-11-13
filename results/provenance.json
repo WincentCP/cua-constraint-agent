@@ -298,5 +298,18 @@
       "method_count": 2,
       "note": "Derived archive for the Small-Model Study; it contains only 4 Small models and 128 pairs. The original full Scale source archive is preserved separately and remains unchanged."
     }
-  ]
+  ],
+  "analysis_exports": {
+    "analysis_csv_bundle.zip": {
+      "sha256": "470dd495ee1d3fbf0103f56b65bc986811fd18e1d4f6294ac068a121bc738790",
+      "size_bytes": 11915,
+      "csv_file_count": 27,
+      "detailed_analysis_csv_count": 20,
+      "main_table_csv_count": 6,
+      "summary_csv_count": 1,
+      "source_archive": "Hasil_Analisis_CDEA_small_only.zip",
+      "source_archive_sha256": "b681d9f5bb6098b5cec8dec154bbf7685ae00bfb88f15da2399aa2f3f300b404",
+      "note": "CSV exports only; does not include raw episodes, traces, AXTree observations, or SQLite snapshots."
+    }
+  }
 }
