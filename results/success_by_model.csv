@@ -1,9 +1,9 @@
 size,model_label,n,baseline_n,proposed_n,baseline_pct,proposed_pct,delta_pp
-large,qwen3.5-9b,32,19,25,59.38,78.12,18.75
-large,ministral3-8b,32,18,24,56.25,75.0,18.75
-large,granite4.1-8b,32,16,24,50.0,75.0,25.0
-large,xlam2-8b,32,20,24,62.5,75.0,12.5
-small,qwen3.5-4b,32,14,17,43.75,53.12,9.38
-small,ministral3-3b,32,11,16,34.38,50.0,15.62
-small,granite4.1-3b,32,10,13,31.25,40.62,9.38
-small,xlam2-3b,32,8,8,25.0,25.0,0.0
+large,qwen3.5-9b,32,19,25,59.38,78.13,18.75
+large,ministral3-8b,32,18,24,56.25,75.00,18.75
+large,granite4.1-8b,32,16,24,50.00,75.00,25.00
+large,xlam2-8b,32,20,24,62.50,75.00,12.50
+small,qwen3.5-4b,32,14,17,43.75,53.13,9.38
+small,ministral3-3b,32,11,16,34.38,50.00,15.63
+small,granite4.1-3b,32,10,13,31.25,40.63,9.38
+small,xlam2-3b,32,8,8,25.00,25.00,0.00

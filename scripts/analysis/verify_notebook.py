@@ -142,9 +142,9 @@ def verify(protocol, package_mode=False):
                 encoding='utf-8') as f:
             tests = list(csv.DictReader(f))
         assert {(t['study'], t['cohort']) for t in tests} == {
-            ('Main Large', 'primary_bank_5_tasks'),
-            ('Main Large', 'all_32_tasks'),
-            ('Scale Small', 'all_32_tasks'),
+            ('Main Study', 'primary_bank_5_tasks'),
+            ('Main Study', 'all_32_tasks'),
+            ('Small-Model Study', 'all_32_tasks'),
         }
         for t in tests:
             assert (int(t['improved_tasks']) + int(t['worsened_tasks'])

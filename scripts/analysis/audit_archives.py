@@ -70,7 +70,7 @@ def read_source(path, role):
         if role == 'main' or pair.get('size') == 'small':
             selected.append(pair)
     if role == 'small' and protocol == 'cdea_small_extension_v1' and len(selected) != count:
-        raise ValueError('Protokol Small-only memuat pasangan Large')
+        raise ValueError('Arsip Small-Model Study memuat pasangan Large')
     if len(selected) != 128:
         raise ValueError('Harus ada 128 pasangan terjadwal per kelompok terpilih')
     groups = {(p['task_group'], p['task']) for p in selected}

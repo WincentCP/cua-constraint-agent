@@ -2,7 +2,7 @@
 
 Folder ini berisi tabel hasil turunan untuk skripsi CDEA. Tabel diekstrak dari paket `Dataset_CDEA_small_only.zip` dan dicocokkan dengan catatan pasangan pada arsip sumber. Arsip mentah tidak disimpan di repository.
 
-Dalam kode dan arsip, metode CDEA menggunakan label internal `Proposed`. Dengan demikian, kolom `proposed` pada file CSV merujuk pada CDEA.
+Dalam kode dan arsip, metode CDEA menggunakan label internal `Proposed`. Dengan demikian, kolom `proposed` pada file CSV merujuk pada CDEA. Nama kelompok yang digunakan dalam penulisan skripsi adalah `Main Study` dan `Small-Model Study`; ID protokol dan nama file teknis tetap dipertahankan untuk menjaga keterlacakan.
 
 ## 1. Cakupan data terpilih
 
@@ -25,15 +25,15 @@ Distribusi tugas terdiri atas 9 tugas dasar, 18 tugas lintas aplikasi, dan 5 tug
 
 | Kelompok | Pasangan | Baseline | CDEA | Selisih |
 |---|---:|---:|---:|---:|
-| Main Study — Large | 128 | 73/128 (57,03%) | 97/128 (75,78%) | +18,75 pp |
-| Small-Model Extension — Small | 128 | 43/128 (33,59%) | 54/128 (42,19%) | +8,59 pp |
+| Main Study | 128 | 73/128 (57,03%) | 97/128 (75,78%) | +18,75 pp |
+| Small-Model Study — Small | 128 | 43/128 (33,59%) | 54/128 (42,19%) | +8,59 pp |
 
 ### Analisis tingkat tugas
 
 | Kelompok | Tugas membaik | Tugas memburuk | Tidak berubah | Uji tanda dua sisi | Interval task-cluster bootstrap 95% |
 |---|---:|---:|---:|---:|---:|
-| Main Large | 11 | 0 | 21 | p = 0,00098 | 9,38–29,69 pp |
-| Scale Small | 10 | 5 | 17 | p = 0,30176 | 0,00–17,97 pp |
+| Main Study | 11 | 0 | 21 | p = 0,00098 | 9,38–29,69 pp |
+| Small-Model Study | 10 | 5 | 17 | p = 0,30176 | 0,00–17,97 pp |
 
 Unit analisis inferensial adalah tugas unik, bukan 128 pasangan model–tugas yang dianggap independen. Empat model pada setiap kelompok menjalankan tugas yang sama sehingga hasilnya memiliki pengelompokan berdasarkan tugas.
 
@@ -49,7 +49,7 @@ Angka 20 pasangan digunakan untuk ringkasan keberhasilan, sedangkan analisis inf
 ## 3. Keputusan pencarian informasi dan evidence ledger
 
 - **Main Study:** 48 pasangan memiliki keputusan pencarian yang dapat dibandingkan; 33 di antaranya menunjukkan tindakan berbeda antara Baseline dan CDEA.
-- **Small-Model Extension:** 75 pasangan memiliki keputusan yang dapat dibandingkan; 49 di antaranya menunjukkan tindakan berbeda.
+- **Small-Model Study:** 75 pasangan memiliki keputusan yang dapat dibandingkan; 49 di antaranya menunjukkan tindakan berbeda.
 - **Evidence ledger Main:** terdapat 96 transisi status ke `SATISFIED`; seluruh kutipan dan hash observasinya dapat ditelusuri ke AXTree tersimpan.
 - Dari 96 pembaruan tersebut, 40 peristiwa informasi perbankan juga sesuai dengan pemeriksaan fakta sederhana pada snapshot database. Sebanyak 56 lainnya hanya dapat diperiksa berdasarkan keterlihatan kutipan.
 - **Evidence ledger Small:** terdapat 8 transisi status ke `SATISFIED` pada 4 pasangan (`pair_128`, `pair_201`, `pair_220`, dan `pair_232`), masing-masing pada episode Baseline dan Proposed. Tidak ditemukan transisi `REFUTED`. Kedelapan catatan memiliki kutipan dan hash observasi; 7 memiliki entri `grounded_in_axtree=true`, sedangkan tidak ada yang mencatat `verified_correctness=true`. Pada `pair_232`, episode Proposed mencatat status `SATISFIED` meskipun tugas tidak berhasil.
@@ -60,8 +60,8 @@ Keterlihatan kutipan pada AXTree menunjukkan bahwa kutipan tercatat dalam pengam
 
 | Kelompok | Pasangan kedua metode berhasil | Selisih rata-rata tindakan CDEA terhadap Baseline | Selisih rata-rata waktu CDEA terhadap Baseline |
 |---|---:|---:|---:|
-| Main Large | 72 | −0,19 tindakan | −1,30 detik |
-| Scale Small | 33 | +0,06 tindakan | +0,69 detik |
+| Main Study | 72 | −0,19 tindakan | −1,30 detik |
+| Small-Model Study | 33 | +0,06 tindakan | +0,69 detik |
 
 Nilai negatif berarti CDEA menggunakan lebih sedikit tindakan atau waktu daripada Baseline. Analisis ini hanya mencakup pasangan ketika kedua metode sama-sama berhasil; hasilnya tidak menggambarkan efisiensi seluruh episode. Selisih waktu Small dihitung dari `total_seconds` pada 33 pasangan yang sama-sama berhasil dan bernilai +0,69 detik.
 
@@ -74,7 +74,7 @@ Nilai negatif berarti CDEA menggunakan lebih sedikit tindakan atau waktu daripad
 | `model_size_comparison_by_task.csv` | Jumlah model Large dan Small yang berhasil pada setiap tugas dan metode | `derived/lampiran_E4_ukuran_model_32.csv` |
 | `small_model_higher_uplift_tasks.csv` | 5 tugas dengan peningkatan CDEA yang lebih besar pada Small daripada Large | `derived/analisis_peningkatan_cdea_small_5.csv` |
 | `small_model_success_comparison_examples.csv` | 6 tugas ketika Small memiliki lebih banyak model berhasil daripada Large pada setidaknya satu metode | `derived/tabel_4_7_small_menang_6.csv` |
-| `pair_outcomes.csv.gz` | Hasil tingkat pasangan untuk 128 Main Large dan 128 Scale Small terpilih, termasuk indikator keputusan pencarian per pasangan | `derived/selected_pairs.csv`, Main `results.csv`, dan Scale `pairs.csv` |
+| `pair_outcomes.csv.gz` | Hasil tingkat pasangan untuk 128 Main Study dan 128 Small-Model Study terpilih, termasuk indikator keputusan pencarian per pasangan | `derived/selected_pairs.csv`, Main `results.csv`, dan Scale `pairs.csv` |
 | `decision_comparison_by_group.csv` | Ringkasan jumlah pasangan dengan keputusan sebanding dan tindakan berbeda pada setiap kelompok | Main `results.csv` dan Scale `pairs.csv` |
 | `provenance.json` | Identitas arsip, checksum, konfigurasi, commit eksperimen, seleksi data, dan hasil pemeriksaan | Manifest arsip sumber |
 
@@ -88,9 +88,9 @@ Nilai negatif berarti CDEA menggunakan lebih sedikit tindakan atau waktu daripad
 - `comparable_probe_decisions`: indikator pasangan bernilai 1 jika terdapat keputusan pencarian yang dapat dibandingkan, dan 0 jika tidak.
 - `policy_action_divergences`: indikator pasangan bernilai 1 jika terdapat tindakan berbeda pada keputusan yang dapat dibandingkan, dan 0 jika tidak.
 
-Pada Main Study, kedua indikator tersebut diambil dari `results.csv`. Nilainya tercatat pada kedua baris episode (Baseline dan Proposed) untuk pasangan yang sama. Skrip `build_public_results.py` memeriksa kesamaan kedua catatan dan menghitungnya satu kali pada tingkat pasangan. Pada Scale Small, indikator dicocokkan langsung dengan `pairs.csv` arsip Scale. Ringkasan jumlah pasangan tersedia di `decision_comparison_by_group.csv`.
+Pada Main Study, kedua indikator tersebut diambil dari `results.csv`. Nilainya tercatat pada kedua baris episode (Baseline dan Proposed) untuk pasangan yang sama. Skrip `build_public_results.py` memeriksa kesamaan kedua catatan dan menghitungnya satu kali pada tingkat pasangan. Pada Small-Model Study, indikator dicocokkan langsung dengan `pairs.csv` arsip Scale. Ringkasan jumlah pasangan tersedia di `decision_comparison_by_group.csv`.
 
-Persentase dalam file turunan mengikuti nilai yang diekspor dari tabel sumber dan ditampilkan dengan presisi dua angka desimal. Jangan menghitung ulang atau mengganti angka sumber tanpa memperbarui proses pengolahan dan pemeriksaan kesesuaiannya.
+Persentase pada `success_by_model.csv` dan `success_by_task.csv` dihitung dari jumlah keberhasilan dan jumlah pasangan menggunakan pembulatan desimal `ROUND_HALF_UP` hingga 2 angka desimal agar konsisten dengan tabel skripsi. File sumber dalam paket ZIP tidak diubah. Skrip `build_public_results.py` menerapkan aturan yang sama saat membangun ulang tabel.
 
 ### Membangun ulang tabel pasangan dan keputusan
 
@@ -124,7 +124,7 @@ Kedua arsip menggunakan commit OpenApps `6e6782794433c60468d65ac75bc3f03c56007f8
 
 Konfigurasi Main pada `config/main_plan.json` mencantumkan `num_ctx=8192`, tetapi manifest arsip Main tidak mencatat nilai tersebut. Manifest Scale secara eksplisit mencatat `num_ctx=8192`. Perbedaan sumber pencatatan ini tidak boleh disamakan dengan verifikasi independen atas runtime.
 
-SHA-256 paket analisis `Dataset_CDEA_small_only.zip` adalah `cccbb4608aab683d089341142c86644463e292b86f04e4d607a099bc3f7f7d5f` (15.774.265 byte). Paket mempertahankan arsip Scale lengkap sebagai sumber audit dan menggunakan `scale_reference_small_v1.zip` sebagai input Scale Small-only. Rincian lengkap tersedia pada `provenance.json`.
+SHA-256 paket analisis `Dataset_CDEA_small_only.zip` adalah `cccbb4608aab683d089341142c86644463e292b86f04e4d607a099bc3f7f7d5f` (15.774.265 byte). Paket mempertahankan arsip Scale lengkap sebagai sumber audit dan menggunakan `scale_reference_small_v1.zip` sebagai input Small-Model Study. Rincian lengkap tersedia pada `provenance.json`.
 
 
 ### Perbaikan arsip Scale (12 November 2026)
@@ -134,7 +134,7 @@ Arsip sumber Scale lengkap telah direkonsiliasi agar memuat **256/256 file `pair
 Nilai `total_seconds` pada 256 baris Scale di `derived/selected_results.csv` juga diperiksa dan diperbarui terhadap episode terbaru (148 nilai berubah). Checksum baru untuk arsip Scale dan paket luar tercatat di `provenance.json`. Pemeriksaan tersebut menguji konsistensi internal; bukan verifikasi independen atas runtime atau host eksperimen.
 
 
-### Subset Scale Small-only
+### Subset Small-Model Study
 
 Arsip turunan `scale_reference_small_v1.zip` memakai protokol arsip `cdea_small_extension_v1` dan hanya memuat 4 model Small: Qwen 3.5 4B, Ministral 3 3B, Granite 4.1 3B, dan xLAM 2 3B. Cakupannya 128/128 pasangan, 256/256 episode, 128/128 `pair.json`, 256 trace, 14.018 file observasi, dan 1.280 database SQLite. Checksum inventori internal mencakup 17.508 file (tidak menghitung file inventori itu sendiri). Arsip ini merupakan subset data sumber, bukan eksperimen baru.
 
@@ -173,3 +173,8 @@ Batas interpretasi utama:
 6. Arsip sumber tidak memuat seluruh riwayat retry, PoC, Pilot, dan run lainnya.
 
 File dalam folder ini adalah **hasil penelitian turunan**, bukan fixture sintetis untuk Continuous Integration (CI). GitHub Actions menggunakan fixture terpisah hanya untuk pengujian otomatis perangkat lunak.
+
+
+## Pemetaan sumber skripsi
+
+Lihat [THESIS_SOURCE_MAP.md](THESIS_SOURCE_MAP.md) untuk lokasi file yang mendukung setiap tabel dan lampiran, identitas arsip, serta SHA-256 yang perlu dicocokkan sebelum audit.

@@ -30,6 +30,13 @@ class MainDecisionAggregationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             MODULE.aggregate_main_decisions(rows)
 
+    def test_thesis_percentage_rounding_uses_half_up(self):
+        self.assertEqual(MODULE._round_percentage(25, 32), "78.13")
+        self.assertEqual(MODULE._round_percentage(17, 32), "53.13")
+        self.assertEqual(MODULE._round_percentage(16, 32), "50.00")
+        self.assertEqual(MODULE._round_percentage(16 - 11, 32), "15.63")
+        self.assertEqual(MODULE._round_percentage(11 - 16, 32), "-15.63")
+
     def test_summarizes_decision_comparison_at_pair_level(self):
         rows = [
             {"paired_valid": "true", "comparable_probe_decisions": "1", "policy_action_divergences": "1"},

@@ -1,3 +1,3 @@
 study_group,valid_pairs,pairs_with_comparable_decisions,pairs_with_different_actions,pairs_with_same_action_when_comparable,pairs_without_comparable_decision
-Main Study — Large,128,48,33,15,80
-Scale Small,128,75,49,26,53
+Main Study,128,48,33,15,80
+Small-Model Study,128,75,49,26,53

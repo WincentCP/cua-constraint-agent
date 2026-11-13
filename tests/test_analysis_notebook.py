@@ -40,7 +40,7 @@ class AnalysisNotebookContracts(unittest.TestCase):
     def test_selected_source_and_exclusions(self):
         for token in ('main_observation.zip', 'scale_reference.zip',
                       'cdea_main_v1', 'cdea_scale_v1', "scale_sizes.eq('small')",
-                      'raw_excluded', 'origin_archive', 'Main Large', 'Scale Small'):
+                      'raw_excluded', 'origin_archive', 'Main Study', 'Small-Model Study'):
             self.assertIn(token, self.code)
         # Notebook harus menerima arsip Scale gabungan maupun Small-only.
         self.assertIn('cdea_small_extension_v1', self.code)
@@ -54,7 +54,7 @@ class AnalysisNotebookContracts(unittest.TestCase):
                       'cause_verified', 'policy_override_steps'):
             self.assertIn(token, self.code)
         self.assertEqual(self.notebook['metadata'].get('cdea_revision'),
-                         'v2_model_wording_size_comparison')
+                         'v3_main_and_small_model_study_labels')
 
 
 if __name__ == '__main__':

@@ -46,5 +46,5 @@
   "proposed_success_rate": 0.421875,
   "paired_difference_pp": 8.59375,
   "integrity": "passed",
-  "note": "Derived analysis subset only; original full Scale archive is retained unchanged for audit."
+  "note": "Derived subset for the Small-Model Study; the original full Scale source archive is retained unchanged for audit."
 }

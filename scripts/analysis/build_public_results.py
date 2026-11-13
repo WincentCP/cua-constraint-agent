@@ -13,11 +13,12 @@ import hashlib
 import io
 import json
 from collections import defaultdict
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 import zipfile
 
-MAIN_GROUP = "Main Study — Large"
-SMALL_GROUP = "Scale Small"
+MAIN_GROUP = "Main Study"
+SMALL_GROUP = "Small-Model Study"
 SELECTED_PER_GROUP = 128
 
 
@@ -108,6 +109,56 @@ def summarize_decisions(group_name: str, rows: list[dict[str, str]]) -> dict[str
     }
 
 
+def _round_percentage(numerator: int, denominator: int) -> str:
+    """Format a rate or difference using decimal ROUND_HALF_UP to 2 places."""
+    if denominator <= 0:
+        raise ValueError("Percentage denominator must be positive")
+    value = (Decimal(numerator) * Decimal("100") / Decimal(denominator)).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+    return format(value, ".2f")
+
+
+def publish_source_tables(package: zipfile.ZipFile, names: list[str], output_dir: Path) -> dict[str, str]:
+    """Publish thesis-facing CSVs from the exact derived files in the dataset package."""
+    sources = {
+        "success_by_model.csv": "derived/lampiran_D_per_model_8.csv",
+        "success_by_task.csv": "derived/lampiran_E_per_task_32.csv",
+        "model_size_comparison_by_task.csv": "derived/lampiran_E4_ukuran_model_32.csv",
+        "small_model_higher_uplift_tasks.csv": "derived/analisis_peningkatan_cdea_small_5.csv",
+        "small_model_success_comparison_examples.csv": "derived/tabel_4_7_small_menang_6.csv",
+    }
+    hashes: dict[str, str] = {}
+    for output_name, source_suffix in sources.items():
+        rows = _read_csv_member(package, _find_one(names, source_suffix))
+        expected_rows = {
+            "success_by_model.csv": 8,
+            "success_by_task.csv": 32,
+            "model_size_comparison_by_task.csv": 32,
+            "small_model_higher_uplift_tasks.csv": 5,
+            "small_model_success_comparison_examples.csv": 6,
+        }[output_name]
+        if len(rows) != expected_rows:
+            raise ValueError(f"{output_name} must contain {expected_rows} rows")
+
+        if output_name in {"success_by_model.csv", "success_by_task.csv"}:
+            for row in rows:
+                denominator = int(row["n"])
+                baseline = int(row["baseline_n"])
+                cdea = int(row["proposed_n"])
+                row["baseline_pct"] = _round_percentage(baseline, denominator)
+                row["proposed_pct"] = _round_percentage(cdea, denominator)
+                row["delta_pp"] = _round_percentage(cdea - baseline, denominator)
+
+        output_path = output_dir / output_name
+        with output_path.open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(rows)
+        hashes[output_name] = hashlib.sha256(output_path.read_bytes()).hexdigest()
+    return hashes
+
+
 def build(package_path: Path, output_dir: Path, *, skip_package_hash_check: bool = False) -> dict:
     if not package_path.is_file():
         raise FileNotFoundError(package_path)
@@ -155,7 +206,7 @@ def build(package_path: Path, output_dir: Path, *, skip_package_hash_check: bool
         or len(small_selected) != SELECTED_PER_GROUP
         or len(selected) != 2 * SELECTED_PER_GROUP
     ):
-        raise ValueError("Selected dataset must contain 128 Main Large and 128 Scale Small pairs")
+        raise ValueError("Selected dataset must contain 128 Main Large and 128 Small-Model Study pairs")
 
     for row in selected:
         source_pair_id = row["source_pair_id"]
@@ -170,11 +221,11 @@ def build(package_path: Path, output_dir: Path, *, skip_package_hash_check: bool
         elif row.get("source_archive") == "scale_reference.zip" and row.get("size") == "small":
             source = scale_pairs.get(source_pair_id)
             if source is None or source.get("size") != "small":
-                raise ValueError(f"Missing Scale Small source record for {source_pair_id}")
-            _check_selected_pair(row, source, "Scale Small")
+                raise ValueError(f"Missing Small-Model Study source record for {source_pair_id}")
+            _check_selected_pair(row, source, "Small-Model Study")
             for field in ("comparable_probe_decisions", "policy_action_divergences"):
                 if _as_nonnegative_int(row.get(field), field=field) != _as_nonnegative_int(source.get(field), field=field):
-                    raise ValueError(f"{field} mismatch for Scale Small:{source_pair_id}")
+                    raise ValueError(f"{field} mismatch for Small-Model Study:{source_pair_id}")
         else:
             raise ValueError(f"Unexpected selected source or size: {row.get('source_archive')} / {row.get('size')}")
 
@@ -213,12 +264,16 @@ def build(package_path: Path, output_dir: Path, *, skip_package_hash_check: bool
         writer.writeheader()
         writer.writerows(summary_rows)
 
+    with zipfile.ZipFile(package_path) as package:
+        source_table_hashes = publish_source_tables(package, package.namelist(), output_dir)
+
     return {
         "package_sha256": package_sha,
         "selected_pairs": len(selected),
         "outputs": {
             "pair_outcomes.csv.gz": hashlib.sha256(pair_outcomes_path.read_bytes()).hexdigest(),
             "decision_comparison_by_group.csv": hashlib.sha256(decision_path.read_bytes()).hexdigest(),
+            **source_table_hashes,
         },
         "decision_summary": summary_rows,
     }

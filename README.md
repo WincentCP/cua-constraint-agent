@@ -10,10 +10,10 @@ Penelitian membandingkan CDEA dengan Baseline `progress-score` pada lingkungan O
 
 | Kelompok | Pasangan | Baseline | CDEA | Selisih |
 |---|---:|---:|---:|---:|
-| Main Study — Large | 128 | 73/128 (57,03%) | 97/128 (75,78%) | +18,75 pp |
-| Small-Model Extension — Small | 128 | 43/128 (33,59%) | 54/128 (42,19%) | +8,59 pp |
+| Main Study | 128 | 73/128 (57,03%) | 97/128 (75,78%) | +18,75 pp |
+| Small-Model Study — Small | 128 | 43/128 (33,59%) | 54/128 (42,19%) | +8,59 pp |
 
-Pada tingkat tugas, Main Study menunjukkan 11 tugas membaik, tidak ada yang memburuk, dan 21 tidak berubah (uji tanda dua sisi, p = 0,00098; interval task-cluster bootstrap 95%: 9,38–29,69 pp). Pada Small-Model Extension, 10 tugas membaik, 5 memburuk, dan 17 tidak berubah (p = 0,30176; interval 95%: 0,00–17,97 pp).
+Pada tingkat tugas, Main Study menunjukkan 11 tugas membaik, tidak ada yang memburuk, dan 21 tidak berubah (uji tanda dua sisi, p = 0,00098; interval task-cluster bootstrap 95%: 9,38–29,69 pp). Pada Small-Model Study, 10 tugas membaik, 5 memburuk, dan 17 tidak berubah (p = 0,30176; interval 95%: 0,00–17,97 pp).
 
 Angka tersebut berasal dari arsip terpilih yang dijelaskan dalam [results/README.md](results/README.md). Hasil Main dan Small dilaporkan terpisah; keduanya tidak diperlakukan sebagai satu eksperimen dengan konfigurasi identik.
 
@@ -25,8 +25,8 @@ Kumpulan tugas berisi 32 tugas:
 - 5 tugas informasi perbankan (`bank_information`).
 
 Analisis menggunakan:
-- **Main Large:** 128 pasangan valid atau 256 episode dari `main_observation.zip`.
-- **Scale Small:** 128 pasangan atau 256 episode dari `scale_reference_small_v1.zip`, yang hanya memuat 4 model Small (3B–4B). Arsip sumber lengkap `scale_reference.zip` tetap dipertahankan untuk audit; 128 pasangan Large dari arsip tersebut tidak masuk ke Scale Small.
+- **Main Study:** 128 pasangan valid atau 256 episode dari `main_observation.zip`.
+- **Small-Model Study:** 128 pasangan atau 256 episode dari `scale_reference_small_v1.zip`, yang hanya memuat 4 model Small (3B–4B). Arsip sumber lengkap `scale_reference.zip` tetap dipertahankan untuk audit; 128 pasangan Large dari arsip tersebut tidak masuk ke Small-Model Study.
 
 Dengan demikian, dataset terpilih memuat **256 pasangan dan 512 episode**. Jumlah tersebut bukan keseluruhan riwayat pelaksanaan eksperimen, retry, Proof of Concept (PoC), Pilot, atau run lainnya.
 
@@ -59,13 +59,13 @@ Dengan demikian, dataset terpilih memuat **256 pasangan dan 512 episode**. Jumla
 
 ## Konfigurasi model
 
-**Main Study — Large** (`config/models.json`):
+**Main Study** (`config/models.json`):
 - `qwen3.5-9b`
 - `ministral3-8b`
 - `granite4.1-8b`
 - `xlam2-8b`
 
-**Small-Model Extension — Small** (`config/models_small_extension.json`):
+**Small-Model Study — Small** (`config/models_small_extension.json`):
 - `qwen3.5-4b`
 - `ministral3-3b`
 - `granite4.1-3b`
@@ -79,8 +79,8 @@ Commit repository, commit Agent Controller, dan commit OpenApps merupakan identi
 
 | Kelompok | Protokol / arsip | Agent Controller | OpenApps |
 |---|---|---|---|
-| Main Large | `cdea_main_v1` / `main_observation_v1` | `ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1` | `6e6782794433c60468d65ac75bc3f03c56007f8c` |
-| Scale Small-only | `cdea_small_extension_v1` / `scale_reference_small_v1` (subset dari `scale_reference_v4`) | `ff655d1389bc84aa8100b6321220f5ec01c4e3b4` | `6e6782794433c60468d65ac75bc3f03c56007f8c` |
+| Main Study | `cdea_main_v1` / `main_observation_v1` | `ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1` | `6e6782794433c60468d65ac75bc3f03c56007f8c` |
+| Small-Model Study | `cdea_small_extension_v1` / `scale_reference_small_v1` (subset dari `scale_reference_v4`) | `ff655d1389bc84aa8100b6321220f5ec01c4e3b4` | `6e6782794433c60468d65ac75bc3f03c56007f8c` |
 
 Kedua kelompok menggunakan seed 233, batas 40 langkah, timeout model 240 detik, temperature 0, `num_predict` 640, dan `think=false`.
 
@@ -191,7 +191,7 @@ Pelaksanaan eksperimen penuh berbeda dari pemeriksaan offline. Eksekusi memerluk
 
 Main Study memiliki pemeriksaan kesiapan (*readiness gate*) dan menggunakan [template readiness Main](docs/MAIN_READINESS_TEMPLATE.json). File readiness yang dibuat melalui opsi `-InitReadiness` berstatus `pending` dan **bukan** persetujuan menjalankan eksperimen. Main hanya dapat dijalankan setelah persyaratan readiness dipenuhi dan disetujui.
 
-Small-Model Extension menggunakan identitas pengujian (`ExtensionId`) tersendiri. Runner memeriksa commit OpenApps dan konfigurasi sebelum menjalankan pasangan.
+Small-Model Study menggunakan identitas pengujian (`ExtensionId`) tersendiri. Runner memeriksa commit OpenApps dan konfigurasi sebelum menjalankan pasangan.
 
 Skrip PowerShell:
 - [run_main.ps1](scripts/browsergym/run_main.ps1)
@@ -211,3 +211,8 @@ Jangan menjalankan eksperimen baru jika tujuannya hanya memeriksa atau mengolah 
 ## Lisensi dan penggunaan
 
 Repository ini tidak menyertakan arsip data eksperimen atau salinan lingkungan OpenApps. Periksa lisensi dan ketentuan penggunaan setiap dependensi serta lingkungan eksternal sebelum penggunaan atau distribusi lebih lanjut.
+
+
+## Pemetaan sumber skripsi
+
+Lihat [results/THESIS_SOURCE_MAP.md](results/THESIS_SOURCE_MAP.md) untuk pemetaan tabel dan lampiran ke file kode, hasil turunan, arsip sumber, serta checksum yang digunakan.

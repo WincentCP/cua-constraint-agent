@@ -36,3 +36,7 @@ node_modules/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Additional author-held source bundles (kept outside Git history)
+scale_reference_small_v1.zip
+Hasil_Analisis_CDEA_small_only.zip
