@@ -32,30 +32,56 @@ Dengan demikian, dataset terpilih memuat **256 pasangan dan 512 episode**. Jumla
 
 ## Struktur repository
 
+Repository Git memisahkan source code, konfigurasi, analisis, hasil turunan, dan pengujian. Arsip eksperimen mentah serta keluaran runtime berukuran besar disimpan secara lokal atau dalam paket data terpisah, bukan di-commit ke Git.
+
 ```text
 .
-├── .github/workflows/       # Pengujian otomatis
-├── config/                  # Rencana eksperimen, task set, dan konfigurasi model
-├── docs/                    # Template readiness Main
-├── notebooks/               # Notebook analisis hasil
-├── results/                 # Tabel hasil olahan dan provenance
+├── .github/workflows/       # CI: compile, offline tests, dan validasi kontrak
+├── config/                  # Rencana Main/Pilot/Small, task set, konfigurasi model
+├── docs/                    # Readiness template dan panduan struktur/penelusuran
+├── notebooks/               # Notebook analisis penelitian
+├── results/                 # Tabel hasil turunan yang dilacak + provenance
 ├── scripts/
-│   ├── analysis/            # Audit arsip dan pemeriksaan notebook
-│   └── browsergym/          # Runner, kebijakan, dan skrip pendukung
-├── tests/                   # Pengujian offline
+│   ├── analysis/            # Audit arsip, build tabel turunan, verifikasi notebook
+│   └── browsergym/          # Development runner, Pilot, Main, Small, dan utilitas
+├── tests/                   # Pengujian offline berbasis kontrak/fixture
 ├── requirements-analysis.txt
+├── .gitignore
 └── README.md
 ```
 
-| Lokasi | Isi |
+| Lokasi | Isi dan fungsi |
 |---|---|
-| `config/` | Rencana Main dan Small, daftar 32 tugas, serta konfigurasi model. |
-| `scripts/browsergym/` | Implementasi Baseline dan CDEA, runner, pemeriksaan kesiapan, dan utilitas eksperimen. |
-| `scripts/analysis/` | Audit konsistensi arsip dan verifikasi notebook. |
-| `notebooks/` | Analisis statistik, tabel, dan grafik. |
-| `results/` | Tabel hasil turunan yang dicocokkan dengan catatan arsip serta metadata provenance. |
-| `tests/` | Pengujian kontrak sistem tanpa menjalankan browser atau inferensi model. |
-| `docs/` | Template readiness; bukan persetujuan untuk menjalankan eksperimen. |
+| `config/` | Rencana eksperimen, task set 32 tugas, dan konfigurasi model Main/Small. |
+| `scripts/browsergym/` | Runner untuk Development, Pilot, Main Study, dan Small-Model Study; termasuk kebijakan serta pemeriksaan kesiapan. |
+| `scripts/analysis/` | Audit arsip, pembuatan tabel hasil turunan, dan verifikasi notebook menggunakan fixture. |
+| `notebooks/main_analysis.ipynb` | Analisis statistik, pembuatan grafik, tabel, dan analisis rinci dari arsip Main dan Small. |
+| `results/` | Hasil turunan terpilih yang dilacak Git beserta provenance; bukan arsip episode mentah. |
+| `docs/` | Template readiness dan panduan untuk menelusuri source code, data, serta keluaran lokal. |
+| `tests/` | Pengujian offline; fixture sintetis bukan data hasil penelitian. |
+| `.github/workflows/` | Otomatisasi pemeriksaan pada GitHub Actions; tidak menjalankan episode penelitian. |
+
+### Keluaran lokal yang tidak disimpan di Git
+
+Folder berikut dibuat saat runner atau notebook dijalankan. Folder tersebut sengaja dikecualikan oleh `.gitignore`, sehingga tidak muncul pada tampilan repository GitHub yang baru di-clone.
+
+```text
+output/
+├── browsergym/matched_dev/<run_id>/  # artefak Development
+├── pilot/<pilot_id>/                 # artefak Pilot
+├── main/<main_id>/                   # artefak Main Study
+├── small_extension/<scale_id>/       # artefak Small-Model Study
+└── preflight/main_models/            # bukti pemeriksaan model sebelum Main
+
+CDEA_Analysis_Results/                # grafik, tabel, dan analisis dari notebook
+CDEA_Analysis_Results.zip             # paket hasil notebook
+```
+
+Arsip input seperti `main_observation.zip`, `scale_reference_small_v1.zip`, dan `Dataset_CDEA_small_only.zip` juga disimpan terpisah dari source code. Karena itu, tidak adanya folder `output/` atau arsip dataset di GitHub bukan berarti runner tidak memiliki mekanisme untuk membuat atau membaca artefak tersebut.
+
+**Penting:** `results/` adalah tabel hasil turunan yang memang dilacak Git; `output/` berisi rekaman run yang dibuat runner; sedangkan `CDEA_Analysis_Results/` berisi keluaran notebook. Ketiganya memiliki fungsi berbeda dan tidak boleh dianggap sebagai satu jenis output.
+
+Lihat [docs/REPOSITORY_MAP.md](docs/REPOSITORY_MAP.md) untuk struktur artefak setiap runner, alur dari eksperimen hingga analisis, dan batas interpretasi bukti yang tersedia.
 
 ## Konfigurasi model
 
@@ -213,6 +239,3 @@ Jangan menjalankan eksperimen baru jika tujuannya hanya memeriksa atau mengolah 
 Repository ini tidak menyertakan arsip data eksperimen atau salinan lingkungan OpenApps. Periksa lisensi dan ketentuan penggunaan setiap dependensi serta lingkungan eksternal sebelum penggunaan atau distribusi lebih lanjut.
 
 
-## Pemetaan sumber skripsi
-
-Lihat [results/THESIS_SOURCE_MAP.md](results/THESIS_SOURCE_MAP.md) untuk pemetaan tabel dan lampiran ke file kode, hasil turunan, arsip sumber, serta checksum yang digunakan.
