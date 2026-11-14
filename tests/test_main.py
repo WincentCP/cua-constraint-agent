@@ -204,7 +204,7 @@ class MainContracts(unittest.TestCase):
 
     def test_readiness_template_is_not_approval(self):
         template = experiment.pilot.load_object(
-            experiment.ROOT / "docs" / "MAIN_READINESS_TEMPLATE.json"
+            experiment.READINESS_TEMPLATE
         )
         path = self.base / "attestation.json"
         experiment.pilot.atomic_json(path, template)
@@ -214,7 +214,7 @@ class MainContracts(unittest.TestCase):
 
     def test_readiness_requires_real_paths_and_controller_hash(self):
         template = experiment.pilot.load_object(
-            experiment.ROOT / "docs" / "MAIN_READINESS_TEMPLATE.json"
+            experiment.READINESS_TEMPLATE
         )
         path = self.base / "attestation.json"
         template.update(status="approved", approved_by="offline test",
@@ -402,7 +402,7 @@ class MainContracts(unittest.TestCase):
         evidence = path.parent / "evidence.txt"
         evidence.write_text("OFFLINE TEST EVIDENCE; NOT LIVE\n", encoding="utf-8")
         item = experiment.pilot.load_object(
-            experiment.ROOT / "docs" / "MAIN_READINESS_TEMPLATE.json"
+            experiment.READINESS_TEMPLATE
         )
         item.update(status="approved", approved_by="test-fixture",
                     approved_utc="2026-10-20T09:00:00Z",

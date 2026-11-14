@@ -29,6 +29,7 @@ ROOT = Path(__file__).resolve().parents[2]
 MAIN_PLAN = ROOT / "config" / "main_plan.json"
 TASKSET = ROOT / "config" / "main_taskset_v1.json"
 PILOT_PLAN = ROOT / "config" / "pilot_plan.json"
+READINESS_TEMPLATE = ROOT / "config" / "main_readiness_template.json"
 OUTPUT_ROOT = ROOT / "output" / "main"
 MODEL_PREFLIGHT_ROOT = ROOT / "output" / "preflight" / "main_models"
 MAIN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")
@@ -235,7 +236,7 @@ def verify_readiness(path: Path, plan: dict, controller_sha: str) -> dict:
 def initialize_readiness(path: Path, plan: dict, controller_sha: str) -> Path:
     """Prepare a PENDING evidence checklist; NEVER grant approval automatically."""
     path = path.expanduser().resolve()
-    template = pilot.load_object(ROOT / "docs" / "MAIN_READINESS_TEMPLATE.json")
+    template = pilot.load_object(READINESS_TEMPLATE)
     if (template.get("protocol") != plan["readiness_protocol"]
             or set(template.get("checks", {})) != set(plan["readiness_checks"])):
         raise ValueError("Readiness template differs from frozen gate list")

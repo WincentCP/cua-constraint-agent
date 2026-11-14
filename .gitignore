@@ -21,7 +21,11 @@ main_observation.zip
 scale_reference.zip
 Dataset_CDEA*.zip
 archive_audit.json
-output/
+# Keep only empty runtime directory markers; generated experiment artifacts stay local.
+output/**
+!output/
+!output/**/
+!output/**/.gitkeep
 log_outputs/
 CDEA_Analysis_Results/
 CDEA_Analysis_Results.zip
