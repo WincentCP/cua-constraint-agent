@@ -51,7 +51,7 @@ class AnalysisNotebookContracts(unittest.TestCase):
         self.assertNotIn("audit_only", self.code)
         self.assertNotIn("CDEA_Analysis_Results", self.code)
 
-    def test_trace_outputs_are_part_of_official_notebook_without_ledger_audit_notes(self):
+    def test_trace_outputs_are_part_of_official_notebook(self):
         for token in ("29_failure_trace_audit", "cause_verified", "policy_override_steps"):
             self.assertIn(token, self.code)
         for token in ("verified_correctness", "factual_evidence_verified",
