@@ -134,9 +134,10 @@
     "baseline_only_failure_trace_audit": "passed: Main 1 Baseline-only pair and Small-Model Study 10 Baseline-only pairs; both episode traces are available for all 11 pairs (22 episode rows); descriptive only, no causal attribution",
     "small_success_pair_efficiency_reconciled": "passed: 33 Small-Model Study pairs where both methods succeeded; mean Proposed minus Baseline total_seconds = 0.6945757576 seconds; mean steps difference = 0.0606060606",
     "published_summary_csvs": "passed: 5 CSVs; success percentages and percentage-point differences recomputed from integer counts with ROUND_HALF_UP to 2 decimal places",
-    "full_scale_source_archive_zip_integrity": "passed",
-    "small_model_study_archive_integrity": "passed: renamed archive root and 17,508 internal file hashes rechecked",
-    "single_official_notebook": "passed: notebooks/main_analysis.ipynb is the only notebook in the repository"
+    "small_model_study_archive_integrity": "passed: renamed archive root and all 17,508 internal file hashes rechecked",
+    "single_official_notebook": "passed: notebooks/main_analysis.ipynb is the only notebook in the repository",
+    "real_source_notebook_execution": "passed: the official notebook ran against main_study.zip and small_model_study.zip; 9 figures, 6 primary tables, 28 detailed CSVs and 1 summary CSV exported",
+    "repository_results_rebuild": "passed: 256 selected pairs and 512 episodes; Main and Small-Model Study decision summaries reconciled to 48/33 and 75/49 pairs respectively"
   },
   "interpretation_notes": [
     "The Main Study and full Scale source archives use different Agent Controller commits.",
@@ -156,11 +157,12 @@
     "The selected Small archive contains 8 status transitions to SATISFIED across 4 pair IDs and no REFUTED transitions. All 8 ledger records have a quote and observation hash; 7 have a matching grounded_in_axtree=true entry, and none records verified_correctness=true. One Proposed episode (pair_232) has a SATISFIED ledger state while the official task outcome remains unsuccessful. Ledger status is not factual verification or task completion.",
     "Small success-conditioned efficiency was recalculated from 33 matched pairs with both methods successful using total_seconds from episode.json: mean Proposed minus Baseline is +0.6945757576 seconds and +0.0606060606 steps.",
     "The notebook's Baseline-only trace audit includes both episode arms for 1 Main pair and 10 Small-Model Study pairs. The trace summaries are descriptive and do not establish causal reasons for the outcome differences.",
+    "The display filename small_model_study.zip replaces the older small_model_study.zip. Historical archive ID scale_reference_small_v1 and protocol cdea_small_extension_v1 remain unchanged inside metadata for provenance and compatibility.",
     "The display filename small_model_study.zip replaces the older scale_reference_small_v1.zip. Historical archive ID scale_reference_small_v1 and protocol cdea_small_extension_v1 remain unchanged inside metadata for provenance and compatibility."
   ],
   "derived_outputs": {
     "pair_outcomes.csv.gz": {
-      "sha256": "7c25f124b52d459e3b22b87947abd7c079723b37090427d1ad3bcd2ecc7c8de4",
+      "sha256": "578327b8c9eb77fd30755ad9382acdddf4e3bc717f0da0038a22d3bbca03ff45",
       "rows": 256,
       "generated_by": "scripts/analysis/build_public_results.py",
       "source_files": [
@@ -200,7 +202,7 @@
       "transformation": "Main decision indicators are aggregated once per pair from mirrored episode rows. Small-Model Study decision indicators are cross-checked against the Small subset and full source archive."
     },
     "selected_results.csv": {
-      "sha256": "71b603f71d0c62f40bb4512b236100fc59a668e69c58d3a6f25a644e61444f58",
+      "sha256": "4c7a5f6892b7e4835f2d097acb25f0e557cd42efc2cbb2aae9909b16bc59c09e",
       "rows": 512,
       "source_files": [
         "derived/selected_pairs.csv",
@@ -229,7 +231,7 @@
       "transformation": "Counts are retained from the source. Baseline percentage, CDEA percentage, and percentage-point difference are recomputed from integer counts using decimal ROUND_HALF_UP to 2 decimal places."
     },
     "model_size_comparison_by_task.csv": {
-      "sha256": "00410f14d9a15d7de4b9c5c56edfebc130b78926cfc696c706f27d5a4d3a0799",
+      "sha256": "fb67c78fc0fd25c5d184116710615144d377dfdd839dc25c241ec90ab9aa616d",
       "rows": 32,
       "generated_by": "scripts/analysis/build_public_results.py",
       "source_files": [
@@ -238,7 +240,7 @@
       "transformation": "Copied without changing task-level model success counts."
     },
     "small_model_higher_uplift_tasks.csv": {
-      "sha256": "12392f3630145529a35fc7a29c2d6ddc2767f344264a12d5f059e8dc0ce1e62e",
+      "sha256": "872c04bc27fe0f01a644f5922cef36ba0c2b9af408909bc27d17f23a1d7a240d",
       "rows": 5,
       "generated_by": "scripts/analysis/build_public_results.py",
       "source_files": [
@@ -247,13 +249,20 @@
       "transformation": "Copied without changing task-level model success counts."
     },
     "small_model_success_comparison_examples.csv": {
-      "sha256": "df491710b5b1212eb6f67cd261976d0561c09fcdb3d3f3440bc9229d01af1934",
+      "sha256": "4401e09c266e677a5ec5be45b25342508e0721a00cdfbac16da72ffe6027588e",
       "rows": 6,
       "generated_by": "scripts/analysis/build_public_results.py",
       "source_files": [
         "derived/tabel_4_7_small_menang_6.csv"
       ],
       "transformation": "Copied without changing task-level model success counts."
+    },
+    "build_manifest.json": {
+      "sha256": "7be657c6bc97e2026e0ce463aced3e787c213e371f485b67ab6ea72775955027",
+      "generated_by": "scripts/analysis/build_public_results.py",
+      "source_file": "dataset_bundle.zip",
+      "selected_pairs": 256,
+      "selected_episodes": 512
     }
   },
   "archive_repair": {
@@ -301,5 +310,21 @@
       "method_count": 2,
       "note": "Renamed display archive for the Small-Model Study. The historical archive ID and protocol remain unchanged for provenance and compatibility."
     }
-  ]
+  ],
+  "analysis_exports": {
+    "analysis_results.zip": {
+      "sha256": "9cd7c1f660dd1f28cd2d7d5afe410acaeff8ca09e12a338de1a56d5847d9ab19",
+      "size_bytes": 480387,
+      "figures_png": 9,
+      "primary_tables_csv": 6,
+      "detailed_analysis_csv": 28,
+      "summary_csv": 1,
+      "notebook": "notebooks/main_analysis.ipynb",
+      "source_archives": [
+        "main_study.zip",
+        "small_model_study.zip"
+      ],
+      "note": "Actual notebook output generated from the preserved experiment archives. The full Scale source archive is retained separately for audit and is not used as the Small-Model Study input."
+    }
+  }
 }

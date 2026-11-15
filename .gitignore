@@ -17,6 +17,10 @@ coverage.xml
 htmlcov/
 
 # Local experiment inputs and generated research artifacts
+results/*.csv
+results/*.csv.gz
+results/build_manifest.json
+results/*.zip
 main_study.zip
 small_model_study.zip
 scale_full_source_archive.zip
