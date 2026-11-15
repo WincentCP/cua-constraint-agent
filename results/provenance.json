@@ -1,16 +1,17 @@
 {
+  "schema_version": 1,
   "dataset_package": {
     "filename": "dataset_bundle.zip",
-    "size_bytes": 15408302,
-    "sha256": "819089e992e7d73ca5ad5e5dcc7fbcf62fa7946365cee5889470d96b4343ab24"
+    "size_bytes": 6336217,
+    "sha256": "1a2b6be5a8df410f012955bea9e7e3517f5906bb2b4dc2aa80a26383e2934da4"
   },
   "source_archives": [
     {
       "filename": "main_study.zip",
-      "size_bytes": 3971324,
-      "sha256": "74f48100b4dc6ae074573596dc87beed18770d4c3740f2c01f5efcd57a2d885c",
+      "archive_id": "main_study",
       "protocol": "cdea_main_v1",
-      "archive_id": "main_observation_v1",
+      "size_bytes": 3169436,
+      "sha256": "762f041c8bc4edc24e7b92c88cc671fc207e47449e37b7ba37d92e9cbc85b26f",
       "created_utc": "2026-10-20T10:00:00+00:00",
       "controller_git_commit": "ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1",
       "openapps_git_commit": "6e6782794433c60468d65ac75bc3f03c56007f8c",
@@ -19,16 +20,27 @@
       "valid_pairs": 128,
       "invalid_pairs": 0,
       "not_started_pairs": 0,
+      "model_labels": [
+        "granite4.1-8b",
+        "ministral3-8b",
+        "qwen3.5-9b",
+        "xlam2-8b"
+      ],
       "shared_parameters": {
         "seed": 233,
         "max_steps": 40,
-        "model_timeout_seconds": 240,
+        "model_timeout": 240,
         "temperature": 0,
         "num_predict": 640,
         "think": false,
-        "num_ctx": "not explicitly recorded in Main manifest"
+        "action_subsets": [
+          "bid",
+          "nav"
+        ],
+        "bid_click_timeout_ms": 3000,
+        "bounded_shared_repairs": 1,
+        "click_force_retry": false
       },
-      "manifest_sha256": "4fd509296c655dd41841945c9f76a4886e036cdb582822d6df94834334528a1f",
       "model_checkpoint_digests": {
         "qwen3.5-9b": "8570bc3f191c06144a95b9e8f201e9c55ac519d13abed1b5ff5eff8b7e9da481",
         "ministral3-8b": "0f77b3dc63f5602561bff3df86c5416cabe9e05689e52dc577b5899c95139db5",
@@ -37,38 +49,39 @@
       }
     },
     {
-      "filename": "scale_full_source_archive.zip",
-      "size_bytes": 23343948,
-      "sha256": "25d4ae4f6c595bb8658d6d0dcbf0b6017e3f2b9d0f1ce7de3b80d582eadbb0b5",
-      "protocol": "cdea_scale_v1",
-      "archive_id": "scale_reference_v4",
+      "filename": "small_model_study.zip",
+      "archive_id": "small_model_study",
+      "protocol": "cdea_small_study",
+      "size_bytes": 11410790,
+      "sha256": "9ac983982d1b6e0af8f1f5f2566de6945cc190a851596c56da0736c84e4db02a",
       "created_utc": "2026-10-24T03:12:00Z",
       "controller_git_commit": "ff655d1389bc84aa8100b6321220f5ec01c4e3b4",
       "openapps_git_commit": "6e6782794433c60468d65ac75bc3f03c56007f8c",
-      "planned_pairs": 256,
-      "planned_episodes": 512,
-      "valid_pairs": 256,
+      "planned_pairs": 128,
+      "planned_episodes": 256,
+      "valid_pairs": 128,
       "invalid_pairs": 0,
       "not_started_pairs": 0,
+      "model_labels": [
+        "qwen3.5-4b",
+        "ministral3-3b",
+        "granite4.1-3b",
+        "xlam2-3b"
+      ],
       "shared_parameters": {
         "seed": 233,
         "max_steps": 40,
-        "model_timeout_seconds": 240,
+        "model_timeout": 240,
         "temperature": 0,
         "num_predict": 640,
         "num_ctx": 8192,
         "think": false
       },
-      "manifest_sha256": "07c4a01fa3acad1cf3faa5e03ca76b9a676708a8d65b120d4f298c095ccbc386",
       "model_checkpoint_digests": {
         "qwen3.5-4b": "sha256:2ba0733f9830f2dfaf2c46d35377258216a2018041077130059da6dc6c9fa0dc",
-        "qwen3.5-9b": "sha256:c5b1f587bcbb582bf8d899ff74309e17b6a410999b2cb69634938d4e042c9c3c",
         "ministral3-3b": "sha256:2d53e2711c70372f488b3c5ede875869dc13dd2e4020402a4d64ce32ec55c755",
-        "ministral3-8b": "sha256:bdb437803289777b9370b8d08dd0ff8faa73348c17dba9fc3bb6a5211a1d5403",
         "granite4.1-3b": "sha256:77b069d7974ff9f832e448b113b1681a5d39cd27f72b7e9295cb8d7b9bf295bd",
-        "granite4.1-8b": "sha256:495fc26364324fcd962eedde747b26bf577d91dd5a74e9389a214624f08c0a2e",
-        "xlam2-3b": "sha256:b31994c19a790d8a111d7f9619bddadb65de6d2899ceedd6b920b772be18bf27",
-        "xlam2-8b": "sha256:7fe60a6308e6312196013d0108c7fb9e3ab1ca4b4ac3a3e55050bbd720d18fba"
+        "xlam2-3b": "sha256:b31994c19a790d8a111d7f9619bddadb65de6d2899ceedd6b920b772be18bf27"
       }
     }
   ],
@@ -77,112 +90,85 @@
       "source_archive": "main_study.zip",
       "size": "large",
       "selected_pairs": 128,
-      "selected_episodes": 256
+      "selected_episodes": 256,
+      "model_count": 4
     },
     "small": {
       "source_archive": "small_model_study.zip",
       "size": "small",
       "selected_pairs": 128,
       "selected_episodes": 256,
-      "source_provenance_archive": "scale_full_source_archive.zip",
-      "archive_id": "scale_reference_small_v1"
-    },
-    "excluded": {
-      "source_archive": "scale_full_source_archive.zip",
-      "size": "large",
-      "excluded_pairs": 128,
-      "excluded_episodes": 256
+      "model_count": 4
     },
     "total_selected_pairs": 256,
     "total_selected_episodes": 512,
+    "task_count": 32,
+    "model_count": 8,
     "methods": [
       "Baseline",
       "Proposed"
-    ],
-    "task_count": 32,
-    "model_count": 8
+    ]
   },
   "validation": {
-    "outer_zip_integrity": "passed",
-    "main_source_zip_integrity": "passed",
-    "selected_pair_ids_match_source": "passed",
-    "selected_episode_records_match_source": "passed for validity, success, steps, model calls, model time, total time, probe opportunities, and policy overrides",
-    "success_by_task_matches_source_pairs": "passed",
-    "success_by_model_matches_source_pairs": "passed",
-    "model_size_comparison_by_task_matches_source_pairs": "passed",
-    "small_model_higher_uplift_tasks_matches_source": "passed",
-    "small_model_success_comparison_examples_match_source": "passed",
-    "selected_pair_success_outcomes_match_source_pairs": "passed",
-    "main_pair_decision_metrics_match_mirrored_episode_records": "passed",
-    "scale_pair_decision_metrics_match_source_pair_records": "passed",
-    "decision_comparison_by_group_matches_pair_level_records": "passed",
-    "scale_pair_json_coverage": "passed: 256/256",
-    "scale_pair_json_metadata_match": "passed: pair_001–pair_108 byte-identical; pair_109–pair_256 rebuilt/updated from current episode records",
-    "scale_trace_jsonl_matches_episode_json": "passed for 512 episodes",
-    "scale_observation_sha256": "passed for 24,656 observation references",
-    "scale_file_hash_inventory": "passed",
-    "selected_results_total_seconds_match_episode_json": "passed for all 512 selected episodes",
-    "small_only_model_roster": "passed: 4/4 Small models",
-    "small_only_pair_json_coverage": "passed: 128/128",
-    "small_only_episode_records": "passed: 256/256",
-    "small_only_trace_jsonl": "passed: 256/256",
-    "small_only_observation_artifact_files": "passed: 14,018",
-    "small_only_sqlite_database_files": "passed: 1,280",
-    "small_only_file_hash_inventory": "passed: 17,508 entries; inventory file excludes its own hash",
-    "small_only_notebook_execution": "passed: 25 code cells executed with synthetic fixtures; 6 main tables and 9 figures exported; detailed outputs 28 and 29 included",
-    "ledger_status_transition_audit": "passed: Main 96 status transitions to SATISFIED across 48 pairs; Small-Model Study 8 status transitions to SATISFIED across 4 pairs; no REFUTED transitions; all 8 Small events have quotes and observation hashes, 7 have grounded_in_axtree=true, and none has verified_correctness=true",
-    "baseline_only_failure_trace_audit": "passed: Main 1 Baseline-only pair and Small-Model Study 10 Baseline-only pairs; both episode traces are available for all 11 pairs (22 episode rows); descriptive only, no causal attribution",
-    "small_success_pair_efficiency_reconciled": "passed: 33 Small-Model Study pairs where both methods succeeded; mean Proposed minus Baseline total_seconds = 0.6945757576 seconds; mean steps difference = 0.0606060606",
-    "published_summary_csvs": "passed: 5 CSVs; success percentages and percentage-point differences recomputed from integer counts with ROUND_HALF_UP to 2 decimal places",
-    "small_model_study_archive_integrity": "passed: renamed archive root and all 17,508 internal file hashes rechecked",
-    "single_official_notebook": "passed: notebooks/main_analysis.ipynb is the only notebook in the repository",
-    "real_source_notebook_execution": "passed: the official notebook ran against main_study.zip and small_model_study.zip; 9 figures, 6 primary tables, 28 detailed CSVs and 1 summary CSV exported",
-    "repository_results_rebuild": "passed: 256 selected pairs and 512 episodes; Main and Small-Model Study decision summaries reconciled to 48/33 and 75/49 pairs respectively",
-    "deterministic_notebook_export": "passed: two executions of the official notebook produced identical analysis_results.zip SHA-256"
+    "dataset_bundle_integrity": "passed",
+    "main_archive_integrity": "passed",
+    "small_model_study_archive_integrity": "passed",
+    "main_pair_and_episode_coverage": "passed: 128 pairs / 256 episodes",
+    "small_pair_and_episode_coverage": "passed: 128 pairs / 256 episodes",
+    "task_roster_alignment": "passed: same 32 tasks in both study groups",
+    "main_model_roster": "passed: 4 Large models",
+    "small_model_roster": "passed: 4 Small models",
+    "small_pair_json_coverage": "passed: 128/128",
+    "small_trace_jsonl_coverage": "passed: 256/256",
+    "small_observation_artifacts": "passed: 14,018 files",
+    "small_sqlite_databases": "passed: 1,280 files",
+    "small_file_hash_inventory": "passed: 17,508 entries",
+    "repository_analysis_rebuild": "passed: 256 selected pairs and 512 episodes",
+    "decision_comparison_main": "passed: 48 comparable pairs; 33 different actions; 15 same actions",
+    "decision_comparison_small": "passed: 75 comparable pairs; 49 different actions; 26 same actions",
+    "official_notebook_execution": "passed against the two delivered study archives",
+    "notebook_figures": "passed: 9 PNG files",
+    "notebook_primary_tables": "passed: 6 CSV files",
+    "notebook_detailed_analysis": "passed: 28 CSV files",
+    "notebook_summary": "passed: 1 CSV file",
+    "ledger_status_transition_audit": "passed: Main Study 96 transitions to SATISFIED; Small-Model Study 8 transitions to SATISFIED; no REFUTED transitions",
+    "small_ledger_grounding_flags": "8 records with quotes and observation hashes; 7 grounded_in_axtree=true; 0 verified_correctness=true"
   },
   "interpretation_notes": [
-    "The Main Study and full Scale source archives use different Agent Controller commits.",
-    "The Main manifest does not explicitly record num_ctx; Scale explicitly records num_ctx=8192.",
-    "The thesis comparison uses Main Study and Small-Model Study only; Scale Large is excluded from the selected comparison dataset.",
-    "Archive checks establish internal integrity and record consistency, not independent verification of the execution host or runtime.",
-    "Model checkpoint digests are copied exactly from each source archive manifest; the Main and Scale manifests use different string formatting.",
-    "Main decision-comparison indicators in pair_outcomes.csv.gz are aggregated from the two source episode rows per pair after verifying that the Baseline and Proposed records match; each pair is counted once.",
-    "Small-Model Study decision-comparison indicators are copied from the Scale pair records and retained for the selected 128 Small pairs.",
-    "The repaired Scale archive retains the newer episode artifacts supplied for pair_109–pair_256; pairs.csv, results.csv, and analysis.json remain unchanged.",
-    "Pair-level metadata is complete at 256/256 pair.json files. The 148 records for pair_109–pair_256 were rebuilt or reconciled from existing manifest, pair, result, and episode records; no episode traces or observations were fabricated.",
-    "The selected_results.csv total_seconds values were refreshed against the current episode.json records; 148 of the 256 selected Scale values changed.",
-    "The repaired Scale validation report verifies internal consistency only and does not independently attest live runtime, host process ownership, or the model checkpoint loaded.",
-    "The current analysis package uses small_model_study.zip, a derived subset with 4 Small models and 128 pairs; the historical protocol ID cdea_small_extension_v1 is retained only for provenance.",
-    "The original full scale_reference_v4 archive remains unchanged as an audit source; its 128 Large pairs are excluded from the Small-Model Study-only analysis archive.",
-    "Main Study remains a separate experiment. Cross-cohort Large-versus-Small charts are descriptive because the two source archives use different Agent Controller commits.",
-    "The selected Small archive contains 8 status transitions to SATISFIED across 4 pair IDs and no REFUTED transitions. All 8 ledger records have a quote and observation hash; 7 have a matching grounded_in_axtree=true entry, and none records verified_correctness=true. One Proposed episode (pair_232) has a SATISFIED ledger state while the official task outcome remains unsuccessful. Ledger status is not factual verification or task completion.",
-    "Small success-conditioned efficiency was recalculated from 33 matched pairs with both methods successful using total_seconds from episode.json: mean Proposed minus Baseline is +0.6945757576 seconds and +0.0606060606 steps.",
-    "The notebook's Baseline-only trace audit includes both episode arms for 1 Main pair and 10 Small-Model Study pairs. The trace summaries are descriptive and do not establish causal reasons for the outcome differences.",
-    "The display filename small_model_study.zip replaces the older small_model_study.zip. Historical archive ID scale_reference_small_v1 and protocol cdea_small_extension_v1 remain unchanged inside metadata for provenance and compatibility.",
-    "The display filename small_model_study.zip replaces the older scale_reference_small_v1.zip. Historical archive ID scale_reference_small_v1 and protocol cdea_small_extension_v1 remain unchanged inside metadata for provenance and compatibility."
+    "The two study archives use different Agent Controller commits; cross-group model-size comparisons are descriptive and exploratory.",
+    "The Main manifest does not explicitly record num_ctx in its shared_parameters field.",
+    "Archive integrity checks establish internal consistency, not independent attestation of the execution host, runtime process, or loaded model checkpoint.",
+    "The Small-Model Study archive contains the four Small checkpoints and 32 tasks; it is an archive of existing experiment records, not a new experiment.",
+    "Archive identity and path labels were normalized for this two-study package. Episode outcomes, traces, observations, server logs, and database contents were retained.",
+    "The single official notebook is notebooks/main_analysis.ipynb and analyzes both study groups."
   ],
-  "derived_outputs": {
-    "pair_outcomes.csv.gz": {
-      "sha256": "578327b8c9eb77fd30755ad9382acdddf4e3bc717f0da0038a22d3bbca03ff45",
-      "rows": 256,
-      "generated_by": "scripts/analysis/build_public_results.py",
-      "source_files": [
-        "derived/selected_pairs.csv",
-        "main_study.zip!/main_observation_v1/results.csv",
-        "audit_only/scale_full_source_archive.zip!/scale_reference_v4/pairs.csv"
-      ],
-      "transformation": "Main decision indicators are aggregated once per pair from mirrored Baseline and Proposed episode rows. Small-Model Study indicators are checked against both the renamed Small subset and the original full Scale source archive."
-    },
-    "decision_comparison_by_group.csv": {
-      "sha256": "9ac7630f0e5609fe917e526b562affde5230f45d59880c4cd3fb96f5a807fc21",
-      "rows": 2,
-      "generated_by": "scripts/analysis/build_public_results.py",
-      "source_files": [
-        "main_study.zip!/main_observation_v1/results.csv",
-        "small_model_study.zip!/small_model_study/pairs.csv",
-        "audit_only/scale_full_source_archive.zip!/scale_reference_v4/pairs.csv"
-      ],
-      "summary": [
+  "repository_analysis_outputs": {
+    "generated_by": "scripts/analysis/build_public_results.py",
+    "build_manifest": {
+      "dataset_bundle": "dataset_bundle.zip",
+      "dataset_bundle_sha256": "1a2b6be5a8df410f012955bea9e7e3517f5906bb2b4dc2aa80a26383e2934da4",
+      "selected_pairs": 256,
+      "selected_episodes": 512,
+      "source_archives": {
+        "main_study.zip": {
+          "sha256": "762f041c8bc4edc24e7b92c88cc671fc207e47449e37b7ba37d92e9cbc85b26f",
+          "size_bytes": 3169436
+        },
+        "small_model_study.zip": {
+          "sha256": "9ac983982d1b6e0af8f1f5f2566de6945cc190a851596c56da0736c84e4db02a",
+          "size_bytes": 11410790
+        }
+      },
+      "outputs": {
+        "pair_outcomes.csv.gz": "8ec4e88bf8c8815f4279cf4d7dc0e6ecbde9ffff697ba418ba02911faee40258",
+        "decision_comparison_by_group.csv": "9ac7630f0e5609fe917e526b562affde5230f45d59880c4cd3fb96f5a807fc21",
+        "success_by_model.csv": "1b92dfdfda87ae3a60f49d738f91424ae6be2feb944bbe7bc62c6a534fd22cd1",
+        "success_by_task.csv": "4e2886286ebc7da7cd67cf126361d7227da73a9a9d5d810c628ab467b781847f",
+        "model_size_comparison_by_task.csv": "fb67c78fc0fd25c5d184116710615144d377dfdd839dc25c241ec90ab9aa616d",
+        "small_model_higher_uplift_tasks.csv": "872c04bc27fe0f01a644f5922cef36ba0c2b9af408909bc27d17f23a1d7a240d",
+        "small_model_success_comparison_examples.csv": "4401e09c266e677a5ec5be45b25342508e0721a00cdfbac16da72ffe6027588e"
+      },
+      "decision_summary": [
         {
           "study_group": "Main Study",
           "valid_pairs": 128,
@@ -200,132 +186,18 @@
           "pairs_without_comparable_decision": 53
         }
       ],
-      "transformation": "Main decision indicators are aggregated once per pair from mirrored episode rows. Small-Model Study decision indicators are cross-checked against the Small subset and full source archive."
-    },
-    "selected_results.csv": {
-      "sha256": "4c7a5f6892b7e4835f2d097acb25f0e557cd42efc2cbb2aae9909b16bc59c09e",
-      "rows": 512,
-      "source_files": [
-        "derived/selected_pairs.csv",
-        "main_study.zip!/main_observation_v1/results.csv",
-        "audit_only/scale_full_source_archive.zip!/scale_reference_v4/results.csv",
-        "audit_only/scale_full_source_archive.zip!/scale_reference_v4/episodes/{pair_id}/{method}/episode/episode.json"
-      ],
-      "transformation": "Selected Main Study and Small-Model Study episode rows; total_seconds reconciled to current episode.json values. Other selected fields were checked against source records."
-    },
-    "success_by_model.csv": {
-      "sha256": "1b92dfdfda87ae3a60f49d738f91424ae6be2feb944bbe7bc62c6a534fd22cd1",
-      "rows": 8,
-      "generated_by": "scripts/analysis/build_public_results.py",
-      "source_files": [
-        "derived/lampiran_D_per_model_8.csv"
-      ],
-      "transformation": "Counts are retained from the source. Baseline percentage, CDEA percentage, and percentage-point difference are recomputed from integer counts using decimal ROUND_HALF_UP to 2 decimal places."
-    },
-    "success_by_task.csv": {
-      "sha256": "4e2886286ebc7da7cd67cf126361d7227da73a9a9d5d810c628ab467b781847f",
-      "rows": 32,
-      "generated_by": "scripts/analysis/build_public_results.py",
-      "source_files": [
-        "derived/lampiran_E_per_task_32.csv"
-      ],
-      "transformation": "Counts are retained from the source. Baseline percentage, CDEA percentage, and percentage-point difference are recomputed from integer counts using decimal ROUND_HALF_UP to 2 decimal places."
-    },
-    "model_size_comparison_by_task.csv": {
-      "sha256": "fb67c78fc0fd25c5d184116710615144d377dfdd839dc25c241ec90ab9aa616d",
-      "rows": 32,
-      "generated_by": "scripts/analysis/build_public_results.py",
-      "source_files": [
-        "derived/lampiran_E4_ukuran_model_32.csv"
-      ],
-      "transformation": "Copied without changing task-level model success counts."
-    },
-    "small_model_higher_uplift_tasks.csv": {
-      "sha256": "872c04bc27fe0f01a644f5922cef36ba0c2b9af408909bc27d17f23a1d7a240d",
-      "rows": 5,
-      "generated_by": "scripts/analysis/build_public_results.py",
-      "source_files": [
-        "derived/analisis_peningkatan_cdea_small_5.csv"
-      ],
-      "transformation": "Copied without changing task-level model success counts."
-    },
-    "small_model_success_comparison_examples.csv": {
-      "sha256": "4401e09c266e677a5ec5be45b25342508e0721a00cdfbac16da72ffe6027588e",
-      "rows": 6,
-      "generated_by": "scripts/analysis/build_public_results.py",
-      "source_files": [
-        "derived/tabel_4_7_small_menang_6.csv"
-      ],
-      "transformation": "Copied without changing task-level model success counts."
-    },
-    "build_manifest.json": {
-      "sha256": "7be657c6bc97e2026e0ce463aced3e787c213e371f485b67ab6ea72775955027",
-      "generated_by": "scripts/analysis/build_public_results.py",
-      "source_file": "dataset_bundle.zip",
-      "selected_pairs": 256,
-      "selected_episodes": 512
+      "scope": "Derived result tables; source archives are read-only and are not modified."
     }
   },
-  "archive_repair": {
-    "repair_date": "2026-11-12",
-    "scale_archive": "scale_full_source_archive.zip",
-    "scale_pair_json_total": 256,
-    "pair_json_byte_identical_and_retained": 108,
-    "pair_json_rebuilt_or_updated": 148,
-    "pair_json_rebuilt_range": "pair_109–pair_256",
-    "pair_json_source_records": [
-      "manifest.json",
-      "pairs.csv",
-      "results.csv",
-      "episodes/{pair_id}/{method}/episode/episode.json"
-    ],
-    "raw_episode_artifacts_modified": false,
-    "pairs_csv_results_csv_and_analysis_json_modified": false,
-    "selected_results_total_seconds_rows_checked": 256,
-    "selected_results_total_seconds_values_changed": 148,
-    "runtime_attestation": "not independently verified; launcher.json files are templates only"
+  "notebook_exports": {
+    "archive": "analysis_results.zip",
+    "size_bytes": 480387,
+    "sha256": "d7f2d9d2ef3c0fb294949b203aaca38e50158cb4b10d178c80651f2f1302ace2",
+    "figures_png": 9,
+    "primary_tables_csv": 6,
+    "detailed_analysis_csv": 28,
+    "summary_csv": 1,
+    "notebook": "notebooks/main_analysis.ipynb"
   },
-  "analysis_archives": [
-    {
-      "filename": "small_model_study.zip",
-      "size_bytes": 11513085,
-      "sha256": "bcd69fe60dbedc9dd90b7ae970e0266af5f44a1d9272e61440e8a125d9ff0bd5",
-      "protocol": "cdea_small_extension_v1",
-      "archive_id": "scale_reference_small_v1",
-      "source_protocol": "cdea_scale_v1",
-      "source_archive": "scale_full_source_archive.zip",
-      "source_archive_id": "scale_reference_v4",
-      "source_archive_sha256": "25d4ae4f6c595bb8658d6d0dcbf0b6017e3f2b9d0f1ce7de3b80d582eadbb0b5",
-      "planned_pairs": 128,
-      "planned_episodes": 256,
-      "valid_pairs": 128,
-      "invalid_pairs": 0,
-      "not_started_pairs": 0,
-      "model_labels": [
-        "qwen3.5-4b",
-        "ministral3-3b",
-        "granite4.1-3b",
-        "xlam2-3b"
-      ],
-      "task_count": 32,
-      "method_count": 2,
-      "note": "Renamed display archive for the Small-Model Study. The historical archive ID and protocol remain unchanged for provenance and compatibility."
-    }
-  ],
-  "analysis_exports": {
-    "analysis_results.zip": {
-      "sha256": "d7f2d9d2ef3c0fb294949b203aaca38e50158cb4b10d178c80651f2f1302ace2",
-      "size_bytes": 480387,
-      "figures_png": 9,
-      "primary_tables_csv": 6,
-      "detailed_analysis_csv": 28,
-      "summary_csv": 1,
-      "notebook": "notebooks/main_analysis.ipynb",
-      "source_archives": [
-        "main_study.zip",
-        "small_model_study.zip"
-      ],
-      "note": "Actual notebook output generated from the preserved experiment archives. The full Scale source archive is retained separately for audit and is not used as the Small-Model Study input."
-    }
-  }
+  "runtime_execution_note": "The package includes the preserved Main Study and Small-Model Study experiment archives and their episode-level logs/observations. It does not claim that the current repository runner was re-executed against live OpenApps and model services during package assembly."
 }
