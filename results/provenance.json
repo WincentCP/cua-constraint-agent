@@ -137,7 +137,8 @@
     "small_model_study_archive_integrity": "passed: renamed archive root and all 17,508 internal file hashes rechecked",
     "single_official_notebook": "passed: notebooks/main_analysis.ipynb is the only notebook in the repository",
     "real_source_notebook_execution": "passed: the official notebook ran against main_study.zip and small_model_study.zip; 9 figures, 6 primary tables, 28 detailed CSVs and 1 summary CSV exported",
-    "repository_results_rebuild": "passed: 256 selected pairs and 512 episodes; Main and Small-Model Study decision summaries reconciled to 48/33 and 75/49 pairs respectively"
+    "repository_results_rebuild": "passed: 256 selected pairs and 512 episodes; Main and Small-Model Study decision summaries reconciled to 48/33 and 75/49 pairs respectively",
+    "deterministic_notebook_export": "passed: two executions of the official notebook produced identical analysis_results.zip SHA-256"
   },
   "interpretation_notes": [
     "The Main Study and full Scale source archives use different Agent Controller commits.",
@@ -313,7 +314,7 @@
   ],
   "analysis_exports": {
     "analysis_results.zip": {
-      "sha256": "9cd7c1f660dd1f28cd2d7d5afe410acaeff8ca09e12a338de1a56d5847d9ab19",
+      "sha256": "d7f2d9d2ef3c0fb294949b203aaca38e50158cb4b10d178c80651f2f1302ace2",
       "size_bytes": 480387,
       "figures_png": 9,
       "primary_tables_csv": 6,
