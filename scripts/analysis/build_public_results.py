@@ -1,8 +1,8 @@
 """Build thesis-facing CSV results from the clean CDEA dataset bundle.
 
 This script does not run experiments or modify source archives. It verifies the
-Main Study and Small-Model Study inputs, cross-checks the Small subset against
-the full Scale audit archive, and writes deterministic result tables.
+Main Study and Small-Model Study inputs independently and writes deterministic
+result tables from those two study archives.
 """
 from __future__ import annotations
 
@@ -174,8 +174,7 @@ def build(package_path: Path, output_dir: Path, *, skip_package_hash_check: bool
         records = {item["path"]: item for item in metadata.get("files", [])}
         required_archives = {
             "main_study.zip": "cdea_main_v1",
-            "small_model_study.zip": "cdea_small_extension_v1",
-            "audit_only/scale_full_source_archive.zip": "cdea_scale_v1",
+            "small_model_study.zip": "cdea_small_study",
         }
         payloads: dict[str, bytes] = {}
         manifests: dict[str, dict] = {}
@@ -208,30 +207,21 @@ def build(package_path: Path, output_dir: Path, *, skip_package_hash_check: bool
 
     main_manifest = manifests["main_study.zip"]
     small_manifest = manifests["small_model_study.zip"]
-    full_manifest = manifests["audit_only/scale_full_source_archive.zip"]
-    if int(main_manifest.get("planned_pairs", -1)) != 128 or int(main_manifest.get("planned_episodes", -1)) != 256:
-        raise ValueError("Main Study archive must declare 128 pairs and 256 episodes")
-    if int(small_manifest.get("planned_pairs", -1)) != 128 or int(small_manifest.get("planned_episodes", -1)) != 256:
-        raise ValueError("Small-Model Study archive must declare 128 pairs and 256 episodes")
-    if int(full_manifest.get("planned_pairs", -1)) != 256 or int(full_manifest.get("planned_episodes", -1)) != 512:
-        raise ValueError("Full Scale audit archive must declare 256 pairs and 512 episodes")
+    for label, manifest in (("Main Study", main_manifest), ("Small-Model Study", small_manifest)):
+        if int(manifest.get("planned_pairs", -1)) != 128 or int(manifest.get("planned_episodes", -1)) != 256:
+            raise ValueError(f"{label} archive must declare 128 pairs and 256 episodes")
 
     main_pairs_rows = _read_nested_csv(payloads["main_study.zip"], "pairs.csv")
     main_results_rows = _read_nested_csv(payloads["main_study.zip"], "results.csv")
     small_pairs_rows = _read_nested_csv(payloads["small_model_study.zip"], "pairs.csv")
-    full_pairs_rows = _read_nested_csv(payloads["audit_only/scale_full_source_archive.zip"], "pairs.csv")
-
     main_pairs = {row["pair_id"]: row for row in main_pairs_rows}
     main_decisions = aggregate_main_decisions(main_results_rows)
     small_pairs = {row["pair_id"]: row for row in small_pairs_rows}
-    full_pairs = {row["pair_id"]: row for row in full_pairs_rows}
 
     if len(main_pairs) != 128 or len(main_decisions) != 128:
-        raise ValueError("Main source must contain 128 pairs and 128 pair-level decision records")
-    if len(small_pairs) != 128 or sum(row.get("size") == "small" for row in small_pairs.values()) != 128:
+        raise ValueError("Main Study source must contain 128 pairs and 128 pair-level decision records")
+    if len(small_pairs) != 128 or any(row.get("size") != "small" for row in small_pairs.values()):
         raise ValueError("Small-Model Study archive must contain exactly 128 Small pairs")
-    if len(full_pairs) != 256 or sum(row.get("size") == "small" for row in full_pairs.values()) != 128:
-        raise ValueError("Full Scale audit source must contain 256 pairs, including 128 Small pairs")
 
     if len({row.get("selected_pair_id") for row in selected}) != len(selected):
         raise ValueError("Selected pair IDs must be unique")
@@ -239,36 +229,28 @@ def build(package_path: Path, output_dir: Path, *, skip_package_hash_check: bool
         raise ValueError("The selected publication dataset must contain only valid pairs")
 
     main_selected = [row for row in selected if row.get("source_archive") == "main_study.zip"]
-    small_selected = [
-        row for row in selected
-        if row.get("source_archive") == "scale_full_source_archive.zip" and row.get("size") == "small"
-    ]
+    small_selected = [row for row in selected if row.get("source_archive") == "small_model_study.zip"]
     if len(main_selected) != SELECTED_PER_GROUP or len(small_selected) != SELECTED_PER_GROUP or len(selected) != 256:
-        raise ValueError("Selected dataset must contain 128 Main Large and 128 Small-Model Study pairs")
+        raise ValueError("Selected dataset must contain 128 Main Study and 128 Small-Model Study pairs")
 
     for row in selected:
         source_pair_id = row["source_pair_id"]
         if row.get("source_archive") == "main_study.zip":
             source = main_pairs.get(source_pair_id)
             decisions = main_decisions.get(source_pair_id)
-            if source is None or decisions is None:
+            if source is None or decisions is None or row.get("size") != "large":
                 raise ValueError(f"Missing Main source record for {source_pair_id}")
             _check_selected_pair(row, source, "Main Study")
             row["comparable_probe_decisions"] = str(decisions["comparable_probe_decisions"])
             row["policy_action_divergences"] = str(decisions["policy_action_divergences"])
-        elif row.get("source_archive") == "scale_full_source_archive.zip" and row.get("size") == "small":
-            source_subset = small_pairs.get(source_pair_id)
-            source_full = full_pairs.get(source_pair_id)
-            if source_subset is None or source_full is None or source_full.get("size") != "small":
+        elif row.get("source_archive") == "small_model_study.zip":
+            source = small_pairs.get(source_pair_id)
+            if source is None or row.get("size") != "small":
                 raise ValueError(f"Missing Small-Model Study source record for {source_pair_id}")
-            _check_selected_pair(row, source_subset, "Small-Model Study subset")
-            _check_selected_pair(row, source_full, "Full Scale audit source")
+            _check_selected_pair(row, source, "Small-Model Study")
             for field in ("comparable_probe_decisions", "policy_action_divergences"):
-                selected_value = _as_nonnegative_int(row.get(field), field=field)
-                if selected_value != _as_nonnegative_int(source_subset.get(field), field=field):
+                if _as_nonnegative_int(row.get(field), field=field) != _as_nonnegative_int(source.get(field), field=field):
                     raise ValueError(f"{field} mismatch for Small-Model Study:{source_pair_id}")
-                if selected_value != _as_nonnegative_int(source_full.get(field), field=field):
-                    raise ValueError(f"{field} mismatch against full source for {source_pair_id}")
         else:
             raise ValueError(f"Unexpected selected source or size: {row.get('source_archive')} / {row.get('size')}")
 

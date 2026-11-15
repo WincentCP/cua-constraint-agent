@@ -54,7 +54,7 @@ def make_archive(path, protocol, sizes):
                         "model_label": label,
                         "family": family,
                         "size": size,
-                        "pair_status": "paired_scale_completed",
+                        "pair_status": "paired_small_study_completed,
                         "paired_valid": "true",
                         "baseline_success": str(baseline).lower(),
                         "proposed_success": str(proposed).lower(),
@@ -99,35 +99,22 @@ def make_archive(path, protocol, sizes):
 def build_fixture_bundle(work: Path) -> Path:
     main = work / "main_study.zip"
     small = work / "small_model_study.zip"
-    full = work / "scale_full_source_archive.zip"
     make_archive(main, "cdea_main_v1", ("large",))
-    make_archive(small, "cdea_small_extension_v1", ("small",))
-    make_archive(full, "cdea_scale_v1", ("small", "large"))
+    make_archive(small, "cdea_small_study", ("small",))
 
     report = audit(main, small)
     assert report["selected_pairs_total"] == 256
-    full_report = read_source(full, "small")
-    assert full_report["planned_pairs"] == 256
-    assert full_report["selected_pairs"] == 128
-    assert full_report["excluded_large_pairs"] == 128
 
     files = [
         {"path": "main_study.zip", "sha256": _sha(main.read_bytes()), "size_bytes": main.stat().st_size},
         {"path": "small_model_study.zip", "sha256": _sha(small.read_bytes()), "size_bytes": small.stat().st_size},
-        {"path": "audit_only/scale_full_source_archive.zip", "sha256": _sha(full.read_bytes()), "size_bytes": full.stat().st_size},
     ]
-    manifest = {
-        "schema_version": 1,
-        "package_id": "ci_fixture_only",
-        "files": files,
-        "derived_files": [],
-    }
+    manifest = {"schema_version": 1, "package_id": "ci_fixture_only", "files": files, "derived_files": []}
     bundle_path = work / "dataset_bundle.zip"
     with zipfile.ZipFile(bundle_path, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
         bundle.writestr("DATASET_BUNDLE.json", json.dumps(manifest))
         bundle.write(main, "main_study.zip")
         bundle.write(small, "small_model_study.zip")
-        bundle.write(full, "audit_only/scale_full_source_archive.zip")
     return bundle_path
 
 
