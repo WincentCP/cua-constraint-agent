@@ -19,7 +19,7 @@ class SmallStudyContracts(unittest.TestCase):
         cls.schedule = ext.schedule(cls.plan, cls.models, cls.tasks)
 
     def test_registry_contains_only_four_small_checkpoints(self):
-        self.assertEqual(self.plan["protocol"], "cdea_small_extension_v1")
+        self.assertEqual(self.plan["protocol"], "cdea_small_study")
         self.assertEqual(len(self.models), 4)
         self.assertEqual({m["size"] for m in self.models}, {"small"})
         self.assertEqual({m["family"] for m in self.models},
@@ -36,10 +36,10 @@ class SmallStudyContracts(unittest.TestCase):
         self.assertTrue(all(x["size"] == "small" for x in self.schedule))
         self.assertTrue(all(set(x["order"]) == {"Baseline","Proposed"} for x in self.schedule))
 
-    def test_reject_old_full_scale_configuration(self):
+    def test_reject_main_study_configuration(self):
         for key,value in (("num_ctx", 4096), ("max_steps",30),
                           ("planned_matched_pairs",256), ("planned_episodes",512),
-                          ("protocol","cdea_scale_v1")):
+                          ("protocol","cdea_main_v1")):
             bad=copy.deepcopy(self.plan)
             bad[key]=value
             with self.assertRaises(ValueError):
@@ -75,7 +75,7 @@ class SmallStudyContracts(unittest.TestCase):
             self.assertEqual(manifest["planned_episodes"],256)
             ext.pilot.atomic_json(folder/"manifest.json",manifest)
             result=ext.report_outputs(folder,manifest)
-            self.assertEqual(result["protocol"],"cdea_small_extension_v1")
+            self.assertEqual(result["protocol"],"cdea_small_study")
             self.assertEqual(result["valid_pairs"],0)
             self.assertEqual(result["not_started_pairs"],128)
             self.assertNotIn("interactions",result)

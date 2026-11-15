@@ -43,15 +43,13 @@ class AnalysisNotebookContracts(unittest.TestCase):
             "small_model_study.zip",
             "dataset_bundle.zip",
             "cdea_main_v1",
-            "cdea_small_extension_v1",
+            "cdea_small_study",
             "Main Study",
             "Small-Model Study",
         ):
             self.assertIn(token, self.code)
-        self.assertNotIn("scale_reference_small_v1.zip", self.code)
-        self.assertNotIn("main_observation.zip", self.code)
+        self.assertNotIn("audit_only", self.code)
         self.assertNotIn("CDEA_Analysis_Results", self.code)
-        self.assertNotIn("Small-Model Extension", self.code)
 
     def test_trace_audit_outputs_are_part_of_official_notebook(self):
         for token in (
@@ -65,7 +63,7 @@ class AnalysisNotebookContracts(unittest.TestCase):
             self.assertIn(token, self.code)
         self.assertEqual(
             self.notebook["metadata"].get("cdea_revision"),
-            "clean_dataset_bundle_small_model_study_single_notebook",
+            "main_small_study_two_archives_single_notebook",
         )
 
 
