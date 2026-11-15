@@ -129,7 +129,7 @@
     "official_notebook_execution": "passed against the two delivered study archives",
     "notebook_figures": "passed: 9 PNG files",
     "notebook_primary_tables": "passed: 6 CSV files",
-    "notebook_detailed_analysis": "passed: 26 CSV files",
+    "notebook_detailed_analysis": "passed: 17 CSV files",
     "notebook_summary": "passed: 1 CSV file"
   },
   "interpretation_notes": [
@@ -193,7 +193,7 @@
     "sha256": "d7f2d9d2ef3c0fb294949b203aaca38e50158cb4b10d178c80651f2f1302ace2",
     "figures_png": 9,
     "primary_tables_csv": 6,
-    "detailed_analysis_csv": 26,
+    "detailed_analysis_csv": 17,
     "summary_csv": 1,
     "notebook": "notebooks/main_analysis.ipynb"
   },

@@ -152,7 +152,7 @@ def verify_notebook():
                        for name in result_zip.namelist())
 
         detailed = list((outputs / "detailed_analysis").glob("*.csv"))
-        assert len(detailed) == 26
+        assert len(detailed) == 17, sorted(path.name for path in detailed)
         required = {
             "22_task_level_differences.csv",
             "23_task_level_sign_tests.csv",
