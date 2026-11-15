@@ -313,7 +313,7 @@ def main(argv=None):
     plan,models,roster=load()
     tasks=validate(plan,models,roster)
     if args.model_label and args.model_label not in plan["model_labels"]:
-        p.error("Unknown small-extension model")
+        p.error("Unknown Small-Model Study model")
     units=schedule(plan,models,tasks)
     if args.dry_run:
         print("SMALL-MODEL STUDY DRY RUN PASS: 32 tasks x 4 small checkpoints x 2 arms = 128 pairs, 256 episodes")

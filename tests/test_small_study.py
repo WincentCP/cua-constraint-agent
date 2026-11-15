@@ -1,4 +1,4 @@
-"""Small-only extension contracts; no browser or model service required."""
+"""Small-Model Study contracts; no browser or model service required."""
 import copy
 import csv
 import json
@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts/browsergym
 import small_study as ext
 
 
-class SmallExtensionContracts(unittest.TestCase):
+class SmallStudyContracts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.plan, cls.models, cls.roster = ext.load()

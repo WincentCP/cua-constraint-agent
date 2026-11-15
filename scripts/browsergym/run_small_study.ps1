@@ -36,4 +36,4 @@ if ($DryRun) {
         & uv run python @argsToPass
     } finally { Pop-Location }
 }
-if ($LASTEXITCODE -ne 0) { throw "Small extension command exited $LASTEXITCODE" }
+if ($LASTEXITCODE -ne 0) { throw "Small-Model Study command exited $LASTEXITCODE" }
