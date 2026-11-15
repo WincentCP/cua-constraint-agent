@@ -144,7 +144,8 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(ledger["c1"]["state"], "UNKNOWN")
         self.assertEqual(ledger["c2"]["state"], "SATISFIED")
         self.assertEqual(len(meta["grounded_tentative_evidence"]), 1)
-        self.assertFalse(meta["grounded_tentative_evidence"][0]["verified_correctness"])
+        self.assertEqual(meta["grounded_tentative_evidence"][0]["quote"], "Account A has $12")
+        self.assertTrue(meta["grounded_tentative_evidence"][0]["grounded_in_axtree"])
         self.assertEqual(ledger["c2"]["observation_sha256"], sha256(TREE.encode()).hexdigest())
 
     def test_no_probe_means_identical_action_and_allows_fill(self):

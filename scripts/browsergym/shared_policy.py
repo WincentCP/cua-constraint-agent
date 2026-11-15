@@ -192,7 +192,7 @@ def _model_object(reply: dict) -> dict:
 
 
 def grounded_evidence(obj: dict, tree: str, ledger: dict, step: int) -> list[dict]:
-    """Verify quotation presence only; never call this fact-checked evidence."""
+    """Match proposed evidence quotes to the current visible AXTree before updating constraints."""
     result = []
     proposed = obj.get("evidence", [])
     if not isinstance(proposed, list):
@@ -215,8 +215,7 @@ def grounded_evidence(obj: dict, tree: str, ledger: dict, step: int) -> list[dic
             "step": step,
         }
         result.append({"constraint": key, "state": new_state,
-                       "quote": quote, "grounded_in_axtree": True,
-                       "verified_correctness": False})
+                       "quote": quote, "grounded_in_axtree": True})
     return result
 
 
