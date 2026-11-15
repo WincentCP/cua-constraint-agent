@@ -152,7 +152,7 @@ def verify_notebook():
                        for name in result_zip.namelist())
 
         detailed = list((outputs / "detailed_analysis").glob("*.csv"))
-        assert len(detailed) == 26, sorted(path.name for path in detailed)
+        assert len(detailed) == 25, sorted(path.name for path in detailed)
         required = {
             "22_task_level_differences.csv",
             "23_task_level_sign_tests.csv",
@@ -193,7 +193,7 @@ def verify_notebook():
         assert all(row["cause_verified"].lower() == "false" for row in failure_audit)
         assert all(row["trace_available"].lower() == "false" for row in failure_audit)
 
-        print("PASS dataset bundle fixture: 6 tables, 9 figures, 26 detailed CSVs, one notebook")
+        print("PASS dataset bundle fixture: 6 tables, 9 figures, 25 detailed CSVs, one notebook")
 
 
 if __name__ == "__main__":
