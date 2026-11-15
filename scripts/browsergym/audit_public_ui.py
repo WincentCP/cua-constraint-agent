@@ -170,7 +170,7 @@ def run(root: Path, output: Path) -> dict:
     from browsergym.core.action.highlevel import HighLevelActionSet
     from action_timeout import configure_bounded_click_timeout
     from isolated_openapps import isolated_openapps
-    from matched_dev import ACTION_SUBSETS, SEED, build_env_args
+    from experiment_engine import ACTION_SUBSETS, SEED, build_env_args
 
     with isolated_openapps(root, output / "server") as server:
         env_args, _ = build_env_args(root, server.url, TASK, 2, "openbanking")
