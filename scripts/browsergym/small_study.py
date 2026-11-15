@@ -1,7 +1,6 @@
-"""Small-model follow-up: 32 tasks x 4 smaller checkpoints, paired Baseline/CDEA.
+"""Small-Model Study: 32 tasks x 4 Small checkpoints, paired Baseline/CDEA.
 
-Main Large outcomes are reused only by the downstream analysis notebook.
-This runner never schedules the former Scale Large checkpoints.
+Main Study outcomes are reused only by the downstream analysis notebook.
 """
 from __future__ import annotations
 import argparse
@@ -26,7 +25,7 @@ OUTPUT_ROOT = ROOT / "output/small_study"
 METHODS = ("Baseline", "Proposed")
 COHORTS = ("bank_information", "cross_app_workflow", "primitive_control", "ALL_TASKS")
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")
-RESULT_FIELDS = ("scale_id","pair_id","task_group","task","stratum","family","model_label","size",
+RESULT_FIELDS = ("study_id","pair_id","task_group","task","stratum","family","model_label","size",
                  "method","pair_status","paired_valid","episode_status","episode_valid",
                  "official_success_raw","paired_analysis_success","official_reward_raw",
                  "steps","model_calls","model_seconds","probe_opportunities","policy_overrides",
@@ -44,16 +43,16 @@ def load() -> tuple[dict,list,dict]:
             pilot.load_object(TASKSET_FILE))
 
 def validate(plan, models, roster):
-    if plan.get("protocol") != "cdea_small_extension_v1" or plan.get("status") != "small_only_follow_up":
-        raise ValueError("Scale protocol mismatch")
+    if plan.get("protocol") != "cdea_small_study" or plan.get("status") != "small_study":
+        raise ValueError("Small-Model Study protocol mismatch")
     for key, val in {"seed":233, "max_steps":40, "model_timeout":240, "temperature":0,
                      "num_predict":640, "num_ctx":8192, "think":False,
                      "planned_tasks":32, "planned_matched_pairs":128,
                      "planned_episodes":256}.items():
         if plan.get(key) != val:
-            raise ValueError("Scale fixed parameter mismatch: " + key)
+            raise ValueError("Small-Model Study fixed parameter mismatch: " + key)
     if plan.get("methods") != list(METHODS) or plan.get("models_file") != "config/small_models.json":
-        raise ValueError("Scale methods/registry mismatch")
+        raise ValueError("Small-Model Study methods/registry mismatch")
     if plan.get("taskset_file") != "config/main_taskset.json":
         raise ValueError("Taskset mismatch")
     if not isinstance(models,list) or len(models)!=4:
@@ -108,8 +107,8 @@ def identities_for(plan,models,origin,*,client=request_json):
                             "digest":found["digest"],"ollama_url":base}
     return result
 
-def manifest(scale_id,plan,models,roster,units,identities,repo_sha):
-    return {"protocol":plan["protocol"],"scale_id":scale_id,
+def manifest(study_id,plan,models,roster,units,identities,repo_sha):
+    return {"protocol":plan["protocol"],"study_id":study_id,
             "created_utc":datetime.now(timezone.utc).isoformat(),
             "controller_git_commit":repo_sha,
             "plan_sha256":pilot.hash_file(PLAN_FILE),
@@ -130,7 +129,7 @@ def inspect(folder,slot,locked):
     status=report.get("status","invalid_pair") if report else (
         "unsealed_pair" if root.exists() else "not_started")
     if report and (report.get("pair_id")!=slot["pair_id"] or
-                   report.get("scale_id")!=folder.name or
+                   report.get("study_id")!=folder.name or
                    report.get("model_label")!=slot["model_label"]):
         raise RuntimeError("Sealed slot identity drift")
     records={}
@@ -143,8 +142,8 @@ def inspect(folder,slot,locked):
             return False
         reward=ep.get("official_reward")
         success=ep.get("official_success")
-        return (ep.get("mode")=="paired_scale_exploratory" and
-                ep.get("study_phase")=="scale" and ep.get("scale_id")==folder.name and
+        return (ep.get("mode")=="paired_small_study" and
+                ep.get("study_phase")=="small_study" and ep.get("study_id")==folder.name and
                 ep.get("model")==locked["name"] and ep.get("model_digest")==locked["digest"] and
                 ep.get("method")==method and ep.get("task")==slot["task"] and
                 ep.get("task_group")==slot["task_group"] and
@@ -159,7 +158,7 @@ def inspect(folder,slot,locked):
                 len(ep["initial_sha256"])==64 and
                 isinstance(ep.get("trace"),list) and
                 ep.get("server",{}).get("database_dir"))
-    valid=(status=="paired_scale_completed" and all(good(method) for method in METHODS)
+    valid=(status=="paired_small_study_completed" and all(good(method) for method in METHODS)
            and records["Baseline"][0]["initial_sha256"]==records["Proposed"][0]["initial_sha256"]
            and records["Baseline"][0]["server"]["database_dir"]!=records["Proposed"][0]["server"]["database_dir"]
            and report.get("initial_hash_parity") is True
@@ -176,7 +175,7 @@ def inspect(folder,slot,locked):
     for method in METHODS:
         ep,file=records[method]
         ep=ep or {}
-        rows.append({"scale_id":folder.name,"pair_id":slot["pair_id"],
+        rows.append({"study_id":folder.name,"pair_id":slot["pair_id"],
                      **{k:slot[k] for k in ("task_group","task","stratum","family","model_label","size")},
                      "method":method,"pair_status":status,"paired_valid":valid,
                      "episode_status":ep.get("status","not_run"),"episode_valid":ep.get("valid",""),
@@ -217,18 +216,18 @@ def report_outputs(folder,manifest_obj):
                 summaries.append({"cohort":cohort,"family":model["family"],"size":model["size"],
                                   "model_label":model["label"],"method":method,
                                   "planned_pairs":len(sub),"valid_pairs":len(valid),
-                                  "invalid_pairs":sum(v["status"] not in ("not_started","paired_scale_completed") or
-                                                      (v["status"]=="paired_scale_completed" and not v["valid"]) for v in sub),
+                                  "invalid_pairs":sum(v["status"] not in ("not_started","paired_small_study_completed") or
+                                                      (v["status"]=="paired_small_study_completed" and not v["valid"]) for v in sub),
                                   "not_started_pairs":sum(v["status"]=="not_started" for v in sub),
                                   "successes":wins,"success_rate":wins/len(valid) if valid else "",
                                   "comparable_probe_decisions":sum(v["comparison"].get("comparable_probe_decisions",0) for v in valid),
                                   "policy_action_divergences":sum(v["comparison"].get("policy_action_divergences",0) for v in valid)})
-    analysis={"protocol":manifest_obj["protocol"],"scale_id":folder.name,"planned_pairs":len(views),
+    analysis={"protocol":manifest_obj["protocol"],"study_id":folder.name,"planned_pairs":len(views),
               "valid_pairs":sum(v["valid"] for v in views),
               "invalid_pairs":sum(v["status"]!="not_started" and not v["valid"] for v in views),
               "not_started_pairs":sum(v["status"]=="not_started" for v in views),
               "status_counts":dict(Counter(v["status"] for v in views)),
-              "complete":all(v["status"] in ("paired_scale_completed","invalid_pair") for v in views),
+              "complete":all(v["status"] in ("paired_small_study_completed","invalid_pair") for v in views),
               "note":"Small checkpoints only. Main Large is supplied separately to the analysis notebook; no Large checkpoint is scheduled or inferred here."}
     pilot.atomic_csv(folder/"results.csv",RESULT_FIELDS,results)
     pilot.atomic_csv(folder/"pairs.csv",PAIR_FIELDS,pairs)
@@ -237,7 +236,7 @@ def report_outputs(folder,manifest_obj):
     return analysis
 
 def execute(folder,manifest_obj,args,identities):
-    lock=folder/".scale_running.lock"
+    lock=folder/".small_study_running.lock"
     with lock.open("x",encoding="utf-8") as f:
         f.write("active\n")
     try:
@@ -257,13 +256,13 @@ def execute(folder,manifest_obj,args,identities):
                 break
             n+=1
             target.mkdir(parents=True)
-            pair={"pair_id":slot["pair_id"],"scale_id":folder.name,
+            pair={"pair_id":slot["pair_id"],"study_id":folder.name,
                   "model_label":slot["model_label"],"artifact_dir":str(target),
                   "status":"invalid_pair","initial_hash_parity":False,
                   "episodes":{},"policy_diagnostics":{}}
             opts=SimpleNamespace(openapps_dir=str(args.openapps_dir),ollama_url=args.ollama_url,
-                                 models_file=str(MODELS_FILE),scale_id=folder.name,
-                                 study_phase="scale",num_ctx=manifest_obj["shared_parameters"]["num_ctx"],
+                                 models_file=str(MODELS_FILE),study_id=folder.name,
+                                 study_phase="small_study",num_ctx=manifest_obj["shared_parameters"]["num_ctx"],
                                  model_label=slot["model_label"],task=slot["task"],
                                  task_group=slot["task_group"],seed=233,max_steps=40,model_timeout=240)
             try:
@@ -283,7 +282,7 @@ def execute(folder,manifest_obj,args,identities):
                 pilot.atomic_json(target/"pair.json",pair)
                 report_outputs(folder,manifest_obj)
             print(slot["pair_id"],slot["model_label"],pair["status"],flush=True)
-            if args.stop_on_invalid and pair["status"]!="paired_scale_completed":
+            if args.stop_on_invalid and pair["status"]!="paired_small_study_completed":
                 break
     finally:
         lock.unlink(missing_ok=True)
@@ -297,16 +296,16 @@ def main(argv=None):
     mode.add_argument("--dry-run",action="store_true")
     mode.add_argument("--check-models",action="store_true")
     mode.add_argument("--run",action="store_true")
-    p.add_argument("--study-id", dest="scale_id")
+    p.add_argument("--study-id", dest="study_id")
     p.add_argument("--openapps-dir",type=Path)
     p.add_argument("--ollama-url",default="http://127.0.0.1:11434")
     p.add_argument("--model-label")
     p.add_argument("--max-pairs",type=int)
     p.add_argument("--stop-on-invalid",action="store_true")
     args=p.parse_args(argv)
-    if args.run and (not args.scale_id or not ID_RE.fullmatch(args.scale_id)):
+    if args.run and (not args.study_id or not ID_RE.fullmatch(args.study_id)):
         p.error("--run requires valid --study-id")
-    if not args.run and (args.scale_id or args.max_pairs or args.stop_on_invalid):
+    if not args.run and (args.study_id or args.max_pairs or args.stop_on_invalid):
         p.error("execution options require --run")
     if args.max_pairs is not None and not 1<=args.max_pairs<=128:
         p.error("--max-pairs must be 1..128")
@@ -340,8 +339,8 @@ def main(argv=None):
         print("Checked",checked,"synthetic action contracts. No BrowserGym episodes executed.")
         return 0
     repo_sha=pilot.git_head(ROOT)
-    folder=OUTPUT_ROOT/args.scale_id
-    expected=manifest(args.scale_id,plan,models,roster,units,identities,repo_sha)
+    folder=OUTPUT_ROOT/args.study_id
+    expected=manifest(args.study_id,plan,models,roster,units,identities,repo_sha)
     if folder.exists():
         if not (folder/"manifest.json").is_file():
             raise RuntimeError("Unsealed study directory")

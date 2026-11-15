@@ -107,14 +107,14 @@ def run_episode(root: Path, server, method: str, identity: dict,
     from open_apps.state import get_current_state
 
     phase = getattr(args, "study_phase", "development")
-    if phase not in ("development", "pilot", "main", "scale"):
+    if phase not in ("development", "pilot", "main", "small_study"):
         raise ValueError("Unknown study phase")
     destination.mkdir(parents=True, exist_ok=False)
     path = destination / "episode.json"
     record = {
         "mode": ("paired_pilot_exploratory" if phase == "pilot"
                  else "paired_main_confirmatory" if phase == "main"
-                 else "paired_scale_exploratory" if phase == "scale"
+                 else "paired_small_study" if phase == "small_study"
                  else "paired_development_only"),
         "study_phase": phase,
         "pilot_id": getattr(args, "pilot_id", None) if phase == "pilot" else None,
@@ -138,10 +138,10 @@ def run_episode(root: Path, server, method: str, identity: dict,
         "validation_includes_shared_safety_guards": True,
         "trace": [], "probe_opportunities": 0, "policy_overrides": 0,
     }
-    if phase in ("main", "scale"):
+    if phase in ("main", "small_study"):
         record["num_ctx"] = args.num_ctx
-    if phase == "scale":
-        record["scale_id"] = args.scale_id
+    if phase == "small_study":
+        record["study_id"] = args.study_id
     started = time.monotonic()
     env = None
     try:
@@ -200,7 +200,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
                 "think": False, "format": "json",
                 "options": {"temperature": TEMPERATURE, "num_predict": NUM_PREDICT},
             }
-            if phase in ("main", "scale"):
+            if phase in ("main", "small_study"):
                 request["options"]["num_ctx"] = args.num_ctx
             invalid_attempts = []
             model_telemetry = []
@@ -491,10 +491,10 @@ def run_pair(args, report: dict) -> None:
         "num_predict": NUM_PREDICT, "think": False,
         "action_subsets": list(ACTION_SUBSETS),
     }
-    if getattr(args, "study_phase", "development") in ("main", "scale"):
+    if getattr(args, "study_phase", "development") in ("main", "small_study"):
         report["parameters"]["num_ctx"] = args.num_ctx
-    if getattr(args, "study_phase", "development") == "scale":
-        report["parameters"]["scale_id"] = args.scale_id
+    if getattr(args, "study_phase", "development") == "small_study":
+        report["parameters"]["study_id"] = args.study_id
     first_hash = None
     directories = set()
     base = Path(report["artifact_dir"])
@@ -551,7 +551,7 @@ def run_pair(args, report: dict) -> None:
         if getattr(args, "study_phase", "development") == "pilot"
         else "paired_main_completed"
         if getattr(args, "study_phase", "development") == "main"
-        else "paired_scale_completed"
-        if getattr(args, "study_phase", "development") == "scale"
+        else "paired_small_study_completed"
+        if getattr(args, "study_phase", "development") == "small_study"
         else "paired_development_completed"
     )

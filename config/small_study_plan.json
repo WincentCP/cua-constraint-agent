@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "protocol": "cdea_small_extension_v1",
-  "status": "small_only_follow_up",
+  "protocol": "cdea_small_study",
+  "status": "small_study",
   "taskset_file": "config/main_taskset.json",
   "models_file": "config/small_models.json",
   "methods": [
@@ -31,5 +31,5 @@
   "planned_matched_pairs": 128,
   "planned_episodes": 256,
   "pinned_openapps_commit": "6e6782794433c60468d65ac75bc3f03c56007f8c",
-  "analysis_note": "Only four small checkpoints are scheduled. For the exploratory size comparison, reuse the four Large checkpoint outcomes from the separate frozen Main archive; do not run Scale Large."
+  "analysis_note": "Four Small checkpoints are scheduled across the same 32 tasks. Main Study outcomes are reused only for descriptive size comparisons in the analysis notebook."
 }
