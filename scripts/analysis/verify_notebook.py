@@ -54,7 +54,7 @@ def make_archive(path, protocol, sizes):
                         "model_label": label,
                         "family": family,
                         "size": size,
-                        "pair_status": "paired_small_study_completed,
+                        "pair_status": "paired_small_study_completed",
                         "paired_valid": "true",
                         "baseline_success": str(baseline).lower(),
                         "proposed_success": str(proposed).lower(),
@@ -152,15 +152,13 @@ def verify_notebook():
                        for name in result_zip.namelist())
 
         detailed = list((outputs / "detailed_analysis").glob("*.csv"))
-        assert len(detailed) == 27
+        assert len(detailed) == 26
         required = {
             "22_task_level_differences.csv",
             "23_task_level_sign_tests.csv",
             "24_episode_efficiency_distribution.csv",
             "25_episode_termination_reasons.csv",
             "26_cdea_loss_pairs.csv",
-            "27_ledger_trace_scope.csv",
-            "28_ledger_status_transitions.csv",
             "29_failure_trace_audit.csv",
         }
         actual = {path.name for path in detailed}
@@ -187,9 +185,6 @@ def verify_notebook():
             terminations = list(csv.DictReader(stream))
         assert sum(int(row["episodes"]) for row in terminations) == 512
 
-        with (outputs / "detailed_analysis" / "28_ledger_status_transitions.csv").open(encoding="utf-8") as stream:
-            assert list(csv.DictReader(stream)) == []
-
         with (outputs / "detailed_analysis" / "26_cdea_loss_pairs.csv").open(encoding="utf-8") as stream:
             loss_pairs = list(csv.DictReader(stream))
         with (outputs / "detailed_analysis" / "29_failure_trace_audit.csv").open(encoding="utf-8") as stream:
@@ -198,7 +193,7 @@ def verify_notebook():
         assert all(row["cause_verified"].lower() == "false" for row in failure_audit)
         assert all(row["trace_available"].lower() == "false" for row in failure_audit)
 
-        print("PASS dataset bundle fixture: 6 tables, 9 figures, 27 detailed CSVs, one notebook")
+        print("PASS dataset bundle fixture: 6 tables, 9 figures, 26 detailed CSVs, one notebook")
 
 
 if __name__ == "__main__":

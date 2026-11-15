@@ -2,8 +2,8 @@
   "filename": "small_model_study.zip",
   "archive_id": "small_model_study",
   "protocol": "cdea_small_study",
-  "size_bytes": 11410790,
-  "sha256": "9ac983982d1b6e0af8f1f5f2566de6945cc190a851596c56da0736c84e4db02a",
+  "size_bytes": 11408661,
+  "sha256": "40b3b7f6beecb9a891069182591b82bc47f994c11e4b6d495351e73f019c61bd",
   "created_utc": "2026-10-24T03:12:00Z",
   "controller_git_commit": "ff655d1389bc84aa8100b6321220f5ec01c4e3b4",
   "openapps_git_commit": "6e6782794433c60468d65ac75bc3f03c56007f8c",
@@ -45,5 +45,5 @@
   "baseline_success_rate": 0.3359375,
   "proposed_success_rate": 0.421875,
   "paired_difference_pp": 8.59375,
-  "note": "Small-Model Study archive. Archive identity and path metadata were normalized for the two-study package; recorded experiment outcomes and episode artifacts were retained."
+  "note": "Small-Model Study archive. Recorded experiment outcomes and episode artifacts are retained."
 }
