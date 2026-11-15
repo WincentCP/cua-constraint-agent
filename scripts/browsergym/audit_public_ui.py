@@ -19,7 +19,7 @@ import sys
 from uuid import uuid4
 
 from public_ui import clickable_generic_hints
-from qwen_dev import describe_bid, permitted_bids
+from browser_actions import describe_bid, permitted_bids
 from smoke import extract_axtree_text, UPSTREAM_PIN
 
 ROOT = Path(__file__).resolve().parents[2]
