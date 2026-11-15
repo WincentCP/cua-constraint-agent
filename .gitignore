@@ -17,18 +17,18 @@ coverage.xml
 htmlcov/
 
 # Local experiment inputs and generated research artifacts
-main_observation.zip
-scale_reference.zip
-Dataset_CDEA*.zip
+main_study.zip
+small_model_study.zip
+scale_full_source_archive.zip
+dataset_bundle.zip
 archive_audit.json
-# Keep only empty runtime directory markers; generated experiment artifacts stay local.
 output/**
 !output/
 !output/**/
 !output/**/.gitkeep
 log_outputs/
-CDEA_Analysis_Results/
-CDEA_Analysis_Results.zip
+analysis_results/
+analysis_results.zip
 
 # Notebook runtime state
 .ipynb_checkpoints/
@@ -40,7 +40,3 @@ node_modules/
 .vscode/
 .DS_Store
 Thumbs.db
-
-# Additional author-held source bundles (kept outside Git history)
-scale_reference_small_v1.zip
-Hasil_Analisis_CDEA_small_only.zip

@@ -102,8 +102,8 @@ def audit(main_path, small_path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--main', default='main_observation.zip', type=Path)
-    parser.add_argument('--small', default='scale_reference_small_v1.zip', type=Path)
+    parser.add_argument('--main', default='main_study.zip', type=Path)
+    parser.add_argument('--small', default='small_model_study.zip', type=Path)
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     report = audit(args.main, args.small)

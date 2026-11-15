@@ -1,12 +1,12 @@
 {
   "dataset_package": {
-    "filename": "Dataset_CDEA_small_only.zip",
-    "size_bytes": 15774265,
-    "sha256": "cccbb4608aab683d089341142c86644463e292b86f04e4d607a099bc3f7f7d5f"
+    "filename": "dataset_bundle.zip",
+    "size_bytes": 15408302,
+    "sha256": "819089e992e7d73ca5ad5e5dcc7fbcf62fa7946365cee5889470d96b4343ab24"
   },
   "source_archives": [
     {
-      "filename": "main_observation.zip",
+      "filename": "main_study.zip",
       "size_bytes": 3971324,
       "sha256": "74f48100b4dc6ae074573596dc87beed18770d4c3740f2c01f5efcd57a2d885c",
       "protocol": "cdea_main_v1",
@@ -37,7 +37,7 @@
       }
     },
     {
-      "filename": "scale_reference.zip",
+      "filename": "scale_full_source_archive.zip",
       "size_bytes": 23343948,
       "sha256": "25d4ae4f6c595bb8658d6d0dcbf0b6017e3f2b9d0f1ce7de3b80d582eadbb0b5",
       "protocol": "cdea_scale_v1",
@@ -74,21 +74,21 @@
   ],
   "analysis_selection": {
     "main": {
-      "source_archive": "main_observation.zip",
+      "source_archive": "main_study.zip",
       "size": "large",
       "selected_pairs": 128,
       "selected_episodes": 256
     },
     "small": {
-      "source_archive": "scale_reference_small_v1.zip",
+      "source_archive": "small_model_study.zip",
       "size": "small",
       "selected_pairs": 128,
       "selected_episodes": 256,
-      "source_provenance_archive": "scale_reference.zip",
+      "source_provenance_archive": "scale_full_source_archive.zip",
       "archive_id": "scale_reference_small_v1"
     },
     "excluded": {
-      "source_archive": "scale_reference.zip",
+      "source_archive": "scale_full_source_archive.zip",
       "size": "large",
       "excluded_pairs": 128,
       "excluded_episodes": 256
@@ -105,7 +105,6 @@
   "validation": {
     "outer_zip_integrity": "passed",
     "main_source_zip_integrity": "passed",
-    "scale_source_zip_integrity": "passed",
     "selected_pair_ids_match_source": "passed",
     "selected_episode_records_match_source": "passed for validity, success, steps, model calls, model time, total time, probe opportunities, and policy overrides",
     "success_by_task_matches_source_pairs": "passed",
@@ -123,7 +122,6 @@
     "scale_observation_sha256": "passed for 24,656 observation references",
     "scale_file_hash_inventory": "passed",
     "selected_results_total_seconds_match_episode_json": "passed for all 512 selected episodes",
-    "small_only_archive_zip_integrity": "passed",
     "small_only_model_roster": "passed: 4/4 Small models",
     "small_only_pair_json_coverage": "passed: 128/128",
     "small_only_episode_records": "passed: 256/256",
@@ -135,26 +133,30 @@
     "ledger_status_transition_audit": "passed: Main 96 status transitions to SATISFIED across 48 pairs; Small-Model Study 8 status transitions to SATISFIED across 4 pairs; no REFUTED transitions; all 8 Small events have quotes and observation hashes, 7 have grounded_in_axtree=true, and none has verified_correctness=true",
     "baseline_only_failure_trace_audit": "passed: Main 1 Baseline-only pair and Small-Model Study 10 Baseline-only pairs; both episode traces are available for all 11 pairs (22 episode rows); descriptive only, no causal attribution",
     "small_success_pair_efficiency_reconciled": "passed: 33 Small-Model Study pairs where both methods succeeded; mean Proposed minus Baseline total_seconds = 0.6945757576 seconds; mean steps difference = 0.0606060606",
-    "published_summary_csvs": "passed: 5 CSVs; success percentages and percentage-point differences recomputed from integer counts with ROUND_HALF_UP to 2 decimal places"
+    "published_summary_csvs": "passed: 5 CSVs; success percentages and percentage-point differences recomputed from integer counts with ROUND_HALF_UP to 2 decimal places",
+    "full_scale_source_archive_zip_integrity": "passed",
+    "small_model_study_archive_integrity": "passed: renamed archive root and 17,508 internal file hashes rechecked",
+    "single_official_notebook": "passed: notebooks/main_analysis.ipynb is the only notebook in the repository"
   },
   "interpretation_notes": [
-    "The Main and Scale archives use different Agent Controller commits.",
+    "The Main Study and full Scale source archives use different Agent Controller commits.",
     "The Main manifest does not explicitly record num_ctx; Scale explicitly records num_ctx=8192.",
     "The thesis comparison uses Main Study and Small-Model Study only; Scale Large is excluded from the selected comparison dataset.",
     "Archive checks establish internal integrity and record consistency, not independent verification of the execution host or runtime.",
     "Model checkpoint digests are copied exactly from each source archive manifest; the Main and Scale manifests use different string formatting.",
     "Main decision-comparison indicators in pair_outcomes.csv.gz are aggregated from the two source episode rows per pair after verifying that the Baseline and Proposed records match; each pair is counted once.",
-    "Scale decision-comparison indicators are copied from the Scale pair records and retained for the selected 128 Small pairs.",
+    "Small-Model Study decision-comparison indicators are copied from the Scale pair records and retained for the selected 128 Small pairs.",
     "The repaired Scale archive retains the newer episode artifacts supplied for pair_109–pair_256; pairs.csv, results.csv, and analysis.json remain unchanged.",
     "Pair-level metadata is complete at 256/256 pair.json files. The 148 records for pair_109–pair_256 were rebuilt or reconciled from existing manifest, pair, result, and episode records; no episode traces or observations were fabricated.",
     "The selected_results.csv total_seconds values were refreshed against the current episode.json records; 148 of the 256 selected Scale values changed.",
     "The repaired Scale validation report verifies internal consistency only and does not independently attest live runtime, host process ownership, or the model checkpoint loaded.",
-    "The current analysis package uses scale_reference_small_v1.zip, a cdea_small_extension_v1 derived subset with only 4 Small models and 128 pairs.",
+    "The current analysis package uses small_model_study.zip, a derived subset with 4 Small models and 128 pairs; the historical protocol ID cdea_small_extension_v1 is retained only for provenance.",
     "The original full scale_reference_v4 archive remains unchanged as an audit source; its 128 Large pairs are excluded from the Small-Model Study-only analysis archive.",
     "Main Study remains a separate experiment. Cross-cohort Large-versus-Small charts are descriptive because the two source archives use different Agent Controller commits.",
     "The selected Small archive contains 8 status transitions to SATISFIED across 4 pair IDs and no REFUTED transitions. All 8 ledger records have a quote and observation hash; 7 have a matching grounded_in_axtree=true entry, and none records verified_correctness=true. One Proposed episode (pair_232) has a SATISFIED ledger state while the official task outcome remains unsuccessful. Ledger status is not factual verification or task completion.",
     "Small success-conditioned efficiency was recalculated from 33 matched pairs with both methods successful using total_seconds from episode.json: mean Proposed minus Baseline is +0.6945757576 seconds and +0.0606060606 steps.",
-    "The notebook's Baseline-only trace audit includes both episode arms for 1 Main pair and 10 Small-Model Study pairs. The trace summaries are descriptive and do not establish causal reasons for the outcome differences."
+    "The notebook's Baseline-only trace audit includes both episode arms for 1 Main pair and 10 Small-Model Study pairs. The trace summaries are descriptive and do not establish causal reasons for the outcome differences.",
+    "The display filename small_model_study.zip replaces the older scale_reference_small_v1.zip. Historical archive ID scale_reference_small_v1 and protocol cdea_small_extension_v1 remain unchanged inside metadata for provenance and compatibility."
   ],
   "derived_outputs": {
     "pair_outcomes.csv.gz": {
@@ -162,19 +164,20 @@
       "rows": 256,
       "generated_by": "scripts/analysis/build_public_results.py",
       "source_files": [
-        "Dataset_CDEA/derived/selected_pairs.csv",
-        "Dataset_CDEA/main_observation/main_observation_v1/results.csv",
-        "Dataset_CDEA/scale_reference/scale_reference_v4/pairs.csv"
+        "derived/selected_pairs.csv",
+        "main_study.zip!/main_observation_v1/results.csv",
+        "audit_only/scale_full_source_archive.zip!/scale_reference_v4/pairs.csv"
       ],
-      "transformation": "Main decision indicators are taken from results.csv after confirming that Baseline and Proposed episode rows contain identical pair-level values; each pair is counted once. Scale decision indicators are checked against and retained from the Scale pairs.csv records."
+      "transformation": "Main decision indicators are aggregated once per pair from mirrored Baseline and Proposed episode rows. Small-Model Study indicators are checked against both the renamed Small subset and the original full Scale source archive."
     },
     "decision_comparison_by_group.csv": {
       "sha256": "9ac7630f0e5609fe917e526b562affde5230f45d59880c4cd3fb96f5a807fc21",
       "rows": 2,
       "generated_by": "scripts/analysis/build_public_results.py",
       "source_files": [
-        "Dataset_CDEA/main_observation/main_observation_v1/results.csv",
-        "Dataset_CDEA/scale_reference/scale_reference_v4/pairs.csv"
+        "main_study.zip!/main_observation_v1/results.csv",
+        "small_model_study.zip!/small_model_study/pairs.csv",
+        "audit_only/scale_full_source_archive.zip!/scale_reference_v4/pairs.csv"
       ],
       "summary": [
         {
@@ -194,16 +197,16 @@
           "pairs_without_comparable_decision": 53
         }
       ],
-      "transformation": "Main decision indicators are taken from results.csv after confirming that Baseline and Proposed episode rows contain identical pair-level values; each pair is counted once. Small-Model Study decision indicators are checked against and retained from the selected Small pair records."
+      "transformation": "Main decision indicators are aggregated once per pair from mirrored episode rows. Small-Model Study decision indicators are cross-checked against the Small subset and full source archive."
     },
     "selected_results.csv": {
       "sha256": "71b603f71d0c62f40bb4512b236100fc59a668e69c58d3a6f25a644e61444f58",
       "rows": 512,
       "source_files": [
-        "Dataset_CDEA/derived/selected_pairs.csv",
-        "Dataset_CDEA/main_observation/main_observation_v1/results.csv",
-        "Dataset_CDEA/scale_reference/scale_reference_v4/results.csv",
-        "Dataset_CDEA/scale_reference/scale_reference_v4/episodes/{pair_id}/{method}/episode/episode.json"
+        "derived/selected_pairs.csv",
+        "main_study.zip!/main_observation_v1/results.csv",
+        "audit_only/scale_full_source_archive.zip!/scale_reference_v4/results.csv",
+        "audit_only/scale_full_source_archive.zip!/scale_reference_v4/episodes/{pair_id}/{method}/episode/episode.json"
       ],
       "transformation": "Selected Main Study and Small-Model Study episode rows; total_seconds reconciled to current episode.json values. Other selected fields were checked against source records."
     },
@@ -255,7 +258,7 @@
   },
   "archive_repair": {
     "repair_date": "2026-11-12",
-    "scale_archive": "scale_reference.zip",
+    "scale_archive": "scale_full_source_archive.zip",
     "scale_pair_json_total": 256,
     "pair_json_byte_identical_and_retained": 108,
     "pair_json_rebuilt_or_updated": 148,
@@ -274,13 +277,13 @@
   },
   "analysis_archives": [
     {
-      "filename": "scale_reference_small_v1.zip",
-      "size_bytes": 11758406,
-      "sha256": "3fd21228b1df5e65f8c6ffd5e117a12e7a3f7c978a514bbe4ef399df8a4c750b",
+      "filename": "small_model_study.zip",
+      "size_bytes": 11513085,
+      "sha256": "bcd69fe60dbedc9dd90b7ae970e0266af5f44a1d9272e61440e8a125d9ff0bd5",
       "protocol": "cdea_small_extension_v1",
       "archive_id": "scale_reference_small_v1",
       "source_protocol": "cdea_scale_v1",
-      "source_archive": "scale_reference.zip",
+      "source_archive": "scale_full_source_archive.zip",
       "source_archive_id": "scale_reference_v4",
       "source_archive_sha256": "25d4ae4f6c595bb8658d6d0dcbf0b6017e3f2b9d0f1ce7de3b80d582eadbb0b5",
       "planned_pairs": 128,
@@ -296,20 +299,7 @@
       ],
       "task_count": 32,
       "method_count": 2,
-      "note": "Derived archive for the Small-Model Study; it contains only 4 Small models and 128 pairs. The original full Scale source archive is preserved separately and remains unchanged."
+      "note": "Renamed display archive for the Small-Model Study. The historical archive ID and protocol remain unchanged for provenance and compatibility."
     }
-  ],
-  "analysis_exports": {
-    "analysis_csv_bundle.zip": {
-      "sha256": "470dd495ee1d3fbf0103f56b65bc986811fd18e1d4f6294ac068a121bc738790",
-      "size_bytes": 11915,
-      "csv_file_count": 27,
-      "detailed_analysis_csv_count": 20,
-      "main_table_csv_count": 6,
-      "summary_csv_count": 1,
-      "source_archive": "Hasil_Analisis_CDEA_small_only.zip",
-      "source_archive_sha256": "b681d9f5bb6098b5cec8dec154bbf7685ae00bfb88f15da2399aa2f3f300b404",
-      "note": "CSV exports only; does not include raw episodes, traces, AXTree observations, or SQLite snapshots."
-    }
-  }
+  ]
 }

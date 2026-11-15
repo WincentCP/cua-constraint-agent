@@ -1,10 +1,10 @@
 {
-  "archive": "scale_reference_small_v1.zip",
+  "archive": "small_model_study.zip",
   "archive_id": "scale_reference_small_v1",
   "protocol": "cdea_small_extension_v1",
-  "size_bytes": 11758406,
-  "sha256": "3fd21228b1df5e65f8c6ffd5e117a12e7a3f7c978a514bbe4ef399df8a4c750b",
-  "source_archive": "scale_reference.zip",
+  "size_bytes": 11513085,
+  "sha256": "bcd69fe60dbedc9dd90b7ae970e0266af5f44a1d9272e61440e8a125d9ff0bd5",
+  "source_archive": "scale_full_source_archive.zip",
   "source_archive_id": "scale_reference_v4",
   "source_archive_sha256": "25d4ae4f6c595bb8658d6d0dcbf0b6017e3f2b9d0f1ce7de3b80d582eadbb0b5",
   "selection": {
@@ -46,5 +46,6 @@
   "proposed_success_rate": 0.421875,
   "paired_difference_pp": 8.59375,
   "integrity": "passed",
-  "note": "Derived subset for the Small-Model Study; the original full Scale source archive is retained unchanged for audit."
+  "note": "Renamed display archive for the Small-Model Study. The historical archive ID and protocol are retained for provenance and compatibility.",
+  "display_name": "Small-Model Study"
 }

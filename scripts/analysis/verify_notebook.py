@@ -1,5 +1,6 @@
-"""Uji integrasi notebook asli memakai data fixture, tanpa episode penelitian."""
+"""Run the official notebook against synthetic fixtures, never research outcomes."""
 import csv
+import hashlib
 import io
 import json
 from pathlib import Path
@@ -8,181 +9,210 @@ import zipfile
 
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
-from audit_archives import audit
+
+from audit_archives import audit, read_source
 
 ROOT = Path(__file__).resolve().parents[2]
-NOTEBOOK = ROOT / 'notebooks/main_analysis.ipynb'
-GROUPS = [('bank_information', 5), ('cross_app_workflow', 18), ('primitive_control', 9)]
-FAMILIES = ('qwen3.5', 'ministral3', 'granite4.1', 'xlam2')
+NOTEBOOK = ROOT / "notebooks" / "main_analysis.ipynb"
+GROUPS = [("bank_information", 5), ("cross_app_workflow", 18), ("primitive_control", 9)]
+FAMILIES = ("qwen3.5", "ministral3", "granite4.1", "xlam2")
+
+
+def _sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
 
 
 def csv_bytes(rows):
     out = io.StringIO()
-    writer = csv.DictWriter(out, fieldnames=list(rows[0]))
+    writer = csv.DictWriter(out, fieldnames=list(rows[0]), lineterminator="\n")
     writer.writeheader()
     writer.writerows(rows)
-    return out.getvalue().encode('utf-8')
+    return out.getvalue().encode("utf-8")
 
 
-def make_archive(path, protocol, include_large):
-    """Fixture berbasis schema runner; seluruh outcome khusus uji otomatis."""
-    sizes = ('small', 'large') if include_large else (('large',) if protocol == 'cdea_main_v1' else ('small',))
+def make_archive(path, protocol, sizes):
+    """Build schema-only fixtures; outcomes are synthetic and CI-only."""
     pairs, episodes = [], []
     index = 0
     for size in sizes:
-        for family, large_size, small_size in zip(FAMILIES, ('9b', '8b', '8b', '8b'), ('4b', '3b', '3b', '3b')):
-            label = family + '-' + (large_size if size == 'large' else small_size)
+        for family, large_size, small_size in zip(
+            FAMILIES, ("9b", "8b", "8b", "8b"), ("4b", "3b", "3b", "3b")
+        ):
+            label = family + "-" + (large_size if size == "large" else small_size)
             for category, count in GROUPS:
                 for task_idx in range(count):
                     index += 1
-                    pair_id = f'pair_{index:03d}'
-                    task = f'test_fixture_{category}_{task_idx:02d}'
-                    b = (task_idx + index // 5) % 4 != 0
-                    p = (task_idx + index // 7) % 6 != 0
-                    pair = {
-                        'pair_id': pair_id, 'task_group': 'fixture', 'task': task,
-                        'stratum': category, 'model_label': label, 'family': family, 'size': size,
-                        'pair_status': 'paired_scale_completed', 'paired_valid': 'true',
-                        'baseline_success': str(b).lower(), 'proposed_success': str(p).lower(),
-                        'comparable_probe_decisions': 1, 'policy_action_divergences': int(b != p),
-                    }
-                    pairs.append(pair)
-                    for method, success in [('Baseline', b), ('Proposed', p)]:
+                    pair_id = f"pair_{index:03d}"
+                    task = f"test_fixture_{category}_{task_idx:02d}"
+                    baseline = (task_idx + index // 5) % 4 != 0
+                    proposed = (task_idx + index // 7) % 6 != 0
+                    pairs.append({
+                        "pair_id": pair_id,
+                        "task_group": "fixture",
+                        "task": task,
+                        "stratum": category,
+                        "model_label": label,
+                        "family": family,
+                        "size": size,
+                        "pair_status": "paired_scale_completed",
+                        "paired_valid": "true",
+                        "baseline_success": str(baseline).lower(),
+                        "proposed_success": str(proposed).lower(),
+                        "comparable_probe_decisions": 1,
+                        "policy_action_divergences": int(baseline != proposed),
+                    })
+                    for method, success in (("Baseline", baseline), ("Proposed", proposed)):
                         episodes.append({
-                            'pair_id': pair_id, 'method': method, 'task_group': 'fixture',
-                            'task': task, 'stratum': category, 'model_label': label,
-                            'official_success_raw': str(success).lower(),
-                            'paired_analysis_success': str(success).lower(),
-                            'episode_valid': 'true', 'analysis_included': 'true',
-                            'steps': 6 if method == 'Baseline' else 5,
-                            'model_calls': 3, 'model_seconds': 12.4,
-                            'total_seconds': 31.6 if method == 'Baseline' else 30.1,
-                            'repair_requests': 0, 'end_reason': 'environment_ended',
-                            'episode_artifact': '',
+                            "pair_id": pair_id,
+                            "method": method,
+                            "task_group": "fixture",
+                            "task": task,
+                            "stratum": category,
+                            "model_label": label,
+                            "official_success_raw": str(success).lower(),
+                            "paired_analysis_success": str(success).lower(),
+                            "episode_valid": "true",
+                            "analysis_included": "true",
+                            "steps": 6 if method == "Baseline" else 5,
+                            "model_calls": 3,
+                            "model_seconds": 12.4,
+                            "total_seconds": 31.6 if method == "Baseline" else 30.1,
+                            "repair_requests": 0,
+                            "end_reason": "environment_ended",
+                            "episode_artifact": "",
                         })
     manifest = {
-        'protocol': protocol, 'planned_pairs': len(pairs), 'planned_episodes': len(episodes),
-        'controller_git_commit': 'TEST_FIXTURE_ONLY', 'openapps_git_commit': 'TEST_FIXTURE_ONLY',
-        'shared_parameters': {'seed': 233, 'max_steps': 40},
-        'pairs': [{'pair_id': p['pair_id']} for p in pairs],
+        "protocol": protocol,
+        "planned_pairs": len(pairs),
+        "planned_episodes": len(episodes),
+        "controller_git_commit": "TEST_FIXTURE_ONLY",
+        "openapps_git_commit": "TEST_FIXTURE_ONLY",
+        "shared_parameters": {"seed": 233, "max_steps": 40},
+        "pairs": [{"pair_id": row["pair_id"]} for row in pairs],
     }
-    with zipfile.ZipFile(path, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr('manifest.json', json.dumps(manifest))
-        archive.writestr('pairs.csv', csv_bytes(pairs))
-        archive.writestr('results.csv', csv_bytes(episodes))
+    with zipfile.ZipFile(path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("manifest.json", json.dumps(manifest))
+        archive.writestr("pairs.csv", csv_bytes(pairs))
+        archive.writestr("results.csv", csv_bytes(episodes))
 
 
-def verify(protocol, package_mode=False):
-    with TemporaryDirectory(prefix='cdea_notebook_fixture_') as directory:
+def build_fixture_bundle(work: Path) -> Path:
+    main = work / "main_study.zip"
+    small = work / "small_model_study.zip"
+    full = work / "scale_full_source_archive.zip"
+    make_archive(main, "cdea_main_v1", ("large",))
+    make_archive(small, "cdea_small_extension_v1", ("small",))
+    make_archive(full, "cdea_scale_v1", ("small", "large"))
+
+    report = audit(main, small)
+    assert report["selected_pairs_total"] == 256
+    full_report = read_source(full, "small")
+    assert full_report["planned_pairs"] == 256
+    assert full_report["selected_pairs"] == 128
+    assert full_report["excluded_large_pairs"] == 128
+
+    files = [
+        {"path": "main_study.zip", "sha256": _sha(main.read_bytes()), "size_bytes": main.stat().st_size},
+        {"path": "small_model_study.zip", "sha256": _sha(small.read_bytes()), "size_bytes": small.stat().st_size},
+        {"path": "audit_only/scale_full_source_archive.zip", "sha256": _sha(full.read_bytes()), "size_bytes": full.stat().st_size},
+    ]
+    manifest = {
+        "schema_version": 1,
+        "package_id": "ci_fixture_only",
+        "files": files,
+        "derived_files": [],
+    }
+    bundle_path = work / "dataset_bundle.zip"
+    with zipfile.ZipFile(bundle_path, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
+        bundle.writestr("DATASET_BUNDLE.json", json.dumps(manifest))
+        bundle.write(main, "main_study.zip")
+        bundle.write(small, "small_model_study.zip")
+        bundle.write(full, "audit_only/scale_full_source_archive.zip")
+    return bundle_path
+
+
+def verify_notebook():
+    with TemporaryDirectory(prefix="cdea_notebook_fixture_") as directory:
         work = Path(directory)
-        make_archive(work / 'main_observation.zip', 'cdea_main_v1', include_large=False)
-        make_archive(work / 'scale_reference.zip', protocol, include_large=protocol == 'cdea_scale_v1')
-        report = audit(work / 'main_observation.zip', work / 'scale_reference.zip')
-        assert report['selected_pairs_total'] == 256
-        nb = nbformat.read(NOTEBOOK, as_version=4)
-        # The production notebook defaults to the Small-only archive name; fixtures use the legacy test filename.
-        for cell in nb.cells:
-            if cell.cell_type == 'code' and "SCALE_ZIP = 'scale_reference_small_v1.zip'" in cell.source:
+        bundle_path = build_fixture_bundle(work)
+        notebook = nbformat.read(NOTEBOOK, as_version=4)
+        found = False
+        for cell in notebook.cells:
+            if cell.cell_type == "code" and "DATASET_BUNDLE = 'dataset_bundle.zip'" in cell.source:
                 cell.source = cell.source.replace(
-                    "SCALE_ZIP = 'scale_reference_small_v1.zip'",
-                    "SCALE_ZIP = 'scale_reference.zip'"
+                    "DATASET_BUNDLE = 'dataset_bundle.zip'",
+                    "DATASET_BUNDLE = " + repr(str(bundle_path)),
                 )
+                found = True
                 break
-        if package_mode:
-            # Simulasikan paket pengguna: 2 arsip sumber berada di dalam Dataset_CDEA/.
-            package_path = work / 'Dataset_CDEA(1).zip'
-            with zipfile.ZipFile(package_path, 'w', compression=zipfile.ZIP_DEFLATED) as package:
-                package.write(work / 'main_observation.zip', 'Dataset_CDEA/main_observation.zip')
-                package.write(work / 'scale_reference.zip', 'Dataset_CDEA/scale_reference.zip')
-            (work / 'main_observation.zip').unlink()
-            (work / 'scale_reference.zip').unlink()
-            found = False
-            for cell in nb.cells:
-                if cell.cell_type == 'code' and "DATASET_PAKET = ''" in cell.source:
-                    cell.source = cell.source.replace(
-                        "DATASET_PAKET = ''",
-                        "DATASET_PAKET = " + repr(str(package_path)))
-                    found = True
-                    break
-            assert found, 'DATASET_PAKET setting was not found in notebook'
-        ExecutePreprocessor(timeout=180, kernel_name='python3').preprocess(
-            nb, {'metadata': {'path': str(work)}})
-        outputs = work / 'CDEA_Analysis_Results'
-        figures = sorted((outputs / 'figures').glob('Gambar_4_*.png'))
-        tables = sorted((outputs / 'tables').glob('Tabel_4_*.csv'))
-        expected_figures = [f'Gambar_4_{i}.png' for i in range(1, 10)]
-        expected_tables = [f'Tabel_4_{i}.csv' for i in range(1, 7)]
-        assert [p.name for p in figures] == expected_figures
-        assert [p.name for p in tables] == expected_tables
-        assert not list((outputs / 'summary').glob('*pemetaan*.json'))
-        archive_path = work / 'CDEA_Analysis_Results.zip'
+        assert found, "DATASET_BUNDLE setting was not found in notebook"
+
+        ExecutePreprocessor(timeout=240, kernel_name="python3").preprocess(
+            notebook, {"metadata": {"path": str(work)}}
+        )
+        outputs = work / "analysis_results"
+        figures = sorted((outputs / "figures").glob("Gambar_4_*.png"))
+        tables = sorted((outputs / "tables").glob("Tabel_4_*.csv"))
+        assert [path.name for path in figures] == [f"Gambar_4_{i}.png" for i in range(1, 10)]
+        assert [path.name for path in tables] == [f"Tabel_4_{i}.csv" for i in range(1, 7)]
+        assert (outputs / "summary" / "ringkasan_statistik.csv").is_file()
+
+        archive_path = work / "analysis_results.zip"
         assert archive_path.is_file()
         with zipfile.ZipFile(archive_path) as result_zip:
-            assert any(name.startswith('CDEA_Analysis_Results/figures/Gambar_4_1.png')
+            assert result_zip.testzip() is None
+            assert any(name.startswith("analysis_results/figures/Gambar_4_1.png")
                        for name in result_zip.namelist())
-        assert (outputs / 'summary' / 'ringkasan_statistik.csv').is_file()
-        # The fixture has no episode JSON traces or selected probe examples.
-        # The notebook intentionally skips its optional 17_probe_examples.csv.
-        detailed = list((outputs / 'detailed_analysis').glob('*.csv'))
+
+        detailed = list((outputs / "detailed_analysis").glob("*.csv"))
         assert len(detailed) == 27
-        # Delapan keluaran tambahan sesuai catatan dosen; 17_probe_examples opsional.
         required = {
-            '22_task_level_differences.csv',
-            '23_task_level_sign_tests.csv',
-            '24_episode_efficiency_distribution.csv',
-            '25_episode_termination_reasons.csv',
-            '26_cdea_loss_pairs.csv',
-            '27_ledger_trace_scope.csv',
-            '28_ledger_status_transitions.csv',
-            '29_failure_trace_audit.csv',
+            "22_task_level_differences.csv",
+            "23_task_level_sign_tests.csv",
+            "24_episode_efficiency_distribution.csv",
+            "25_episode_termination_reasons.csv",
+            "26_cdea_loss_pairs.csv",
+            "27_ledger_trace_scope.csv",
+            "28_ledger_status_transitions.csv",
+            "29_failure_trace_audit.csv",
         }
-        actual = {p.name for p in detailed}
+        actual = {path.name for path in detailed}
         assert required.issubset(actual), sorted(required - actual)
-        with (outputs / 'detailed_analysis' / '23_task_level_sign_tests.csv').open(
-                encoding='utf-8') as f:
-            tests = list(csv.DictReader(f))
-        assert {(t['study'], t['cohort']) for t in tests} == {
-            ('Main Study', 'primary_bank_5_tasks'),
-            ('Main Study', 'all_32_tasks'),
-            ('Small-Model Study', 'all_32_tasks'),
+
+        with (outputs / "detailed_analysis" / "23_task_level_sign_tests.csv").open(encoding="utf-8") as stream:
+            tests = list(csv.DictReader(stream))
+        assert {(row["study"], row["cohort"]) for row in tests} == {
+            ("Main Study", "primary_bank_5_tasks"),
+            ("Main Study", "all_32_tasks"),
+            ("Small-Model Study", "all_32_tasks"),
         }
-        for t in tests:
-            assert (int(t['improved_tasks']) + int(t['worsened_tasks'])
-                    + int(t['tied_tasks']) == int(t['unique_tasks']))
-            assert 0 <= float(t['exact_sign_test_p_two_sided']) <= 1
-        with (outputs / 'detailed_analysis' / '24_episode_efficiency_distribution.csv').open(
-                encoding='utf-8') as f:
-            efficiencies = list(csv.DictReader(f))
+        for row in tests:
+            assert int(row["improved_tasks"]) + int(row["worsened_tasks"]) + int(row["tied_tasks"]) == int(row["unique_tasks"])
+            assert 0 <= float(row["exact_sign_test_p_two_sided"]) <= 1
+
+        with (outputs / "detailed_analysis" / "24_episode_efficiency_distribution.csv").open(encoding="utf-8") as stream:
+            efficiencies = list(csv.DictReader(stream))
         assert len(efficiencies) == 4
-        assert all(int(e['episode_rows']) == 128 and int(e['max_steps_setting']) == 40
-                   for e in efficiencies)
-        assert all(int(e['episodes_reaching_cap']) == 0 for e in efficiencies)
-        with (outputs / 'detailed_analysis' / '25_episode_termination_reasons.csv').open(
-                encoding='utf-8') as f:
-            terminations = list(csv.DictReader(f))
-        assert sum(int(e['episodes']) for e in terminations) == 512
-        assert not (outputs / 'detailed_analysis' / '17_probe_examples.csv').exists()
-        with (outputs / 'detailed_analysis' / '28_ledger_status_transitions.csv').open(
-                encoding='utf-8') as f:
-            ledger_events = list(csv.DictReader(f))
-        # Synthetic fixtures intentionally contain no episode traces.
-        assert ledger_events == []
-        with (outputs / 'detailed_analysis' / '26_cdea_loss_pairs.csv').open(
-                encoding='utf-8') as f:
-            loss_pairs = list(csv.DictReader(f))
-        with (outputs / 'detailed_analysis' / '29_failure_trace_audit.csv').open(
-                encoding='utf-8') as f:
-            failure_audit = list(csv.DictReader(f))
+        assert all(int(row["episode_rows"]) == 128 and int(row["max_steps_setting"]) == 40 for row in efficiencies)
+        assert all(int(row["episodes_reaching_cap"]) == 0 for row in efficiencies)
+
+        with (outputs / "detailed_analysis" / "25_episode_termination_reasons.csv").open(encoding="utf-8") as stream:
+            terminations = list(csv.DictReader(stream))
+        assert sum(int(row["episodes"]) for row in terminations) == 512
+
+        with (outputs / "detailed_analysis" / "28_ledger_status_transitions.csv").open(encoding="utf-8") as stream:
+            assert list(csv.DictReader(stream)) == []
+
+        with (outputs / "detailed_analysis" / "26_cdea_loss_pairs.csv").open(encoding="utf-8") as stream:
+            loss_pairs = list(csv.DictReader(stream))
+        with (outputs / "detailed_analysis" / "29_failure_trace_audit.csv").open(encoding="utf-8") as stream:
+            failure_audit = list(csv.DictReader(stream))
         assert len(failure_audit) == 2 * len(loss_pairs)
-        assert all(row['cause_verified'].lower() == 'false' for row in failure_audit)
-        assert all(row['trace_available'].lower() == 'false' for row in failure_audit)
-        print(f'PASS {protocol} (package={package_mode}): 6 tabel, 9 gambar, 128 pasangan Small')
+        assert all(row["cause_verified"].lower() == "false" for row in failure_audit)
+        assert all(row["trace_available"].lower() == "false" for row in failure_audit)
+
+        print("PASS dataset bundle fixture: 6 tables, 9 figures, 27 detailed CSVs, one notebook")
 
 
-def verify_small_only_archive():
-    # Run the full notebook against the 128-pair Small-only protocol.
-    verify('cdea_small_extension_v1')
-
-if __name__ == '__main__':
-    verify('cdea_scale_v1', package_mode=True)
-    verify_small_only_archive()
+if __name__ == "__main__":
+    verify_notebook()
