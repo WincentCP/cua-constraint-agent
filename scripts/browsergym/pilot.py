@@ -21,7 +21,7 @@ import subprocess
 import sys
 from types import SimpleNamespace
 
-import matched_dev
+import experiment_engine
 from ollama_preflight import MODELS_FILE, get_model
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -106,11 +106,11 @@ def validate_plan(plan: dict, model_configs: list) -> list[dict]:
             raise ValueError("Pilot task entry must be an object")
         group, task, family = (item.get("task_group"), item.get("task"),
                                item.get("family"))
-        if group not in matched_dev.TASK_GROUPS:
+        if group not in experiment_engine.TASK_GROUPS:
             raise ValueError("Unsupported official task group: " + str(group))
-        if not isinstance(task, str) or not matched_dev.TASK_KEY.fullmatch(task):
+        if not isinstance(task, str) or not experiment_engine.TASK_KEY.fullmatch(task):
             raise ValueError("Invalid official task key")
-        if not isinstance(family, str) or not matched_dev.TASK_KEY.fullmatch(family):
+        if not isinstance(family, str) or not experiment_engine.TASK_KEY.fullmatch(family):
             raise ValueError("Invalid task family label")
         if (group, task) in seen:
             raise ValueError("Duplicate pilot task entry")
@@ -153,7 +153,7 @@ def pair_schedule(plan: dict) -> list[dict]:
                 "task_group": task["task_group"],
                 "family": task["family"],
                 "model_label": model_label,
-                "order": matched_dev.pair_order(
+                "order": experiment_engine.pair_order(
                     task["task"], model_label, plan["seed"],
                 ),
             })
@@ -163,7 +163,7 @@ def pair_schedule(plan: dict) -> list[dict]:
 def create_manifest(pilot_id: str, plan: dict, repo_sha: str,
                     models: list, model_config_sha: str,
                     plan_sha: str, openapps_sha: str) -> dict:
-    if openapps_sha != matched_dev.UPSTREAM_PIN:
+    if openapps_sha != experiment_engine.UPSTREAM_PIN:
         raise RuntimeError("OpenApps git SHA does not match the pinned version")
     pairs = pair_schedule(plan)
     if len(pairs) != 24:
@@ -183,10 +183,10 @@ def create_manifest(pilot_id: str, plan: dict, repo_sha: str,
         "shared_parameters": {
             "seed": plan["seed"], "max_steps": plan["max_steps"],
             "model_timeout": plan["model_timeout"],
-            "temperature": matched_dev.TEMPERATURE,
-            "num_predict": matched_dev.NUM_PREDICT,
-            "action_subsets": list(matched_dev.ACTION_SUBSETS),
-            "bid_click_timeout_ms": matched_dev.DEV_CLICK_TIMEOUT_MS,
+            "temperature": experiment_engine.TEMPERATURE,
+            "num_predict": experiment_engine.NUM_PREDICT,
+            "action_subsets": list(experiment_engine.ACTION_SUBSETS),
+            "bid_click_timeout_ms": experiment_engine.CLICK_TIMEOUT_MS,
             "click_force_retry": False,
             "bounded_shared_repairs": 1,
         },
@@ -315,7 +315,7 @@ def inspect_slot(directory: Path, slot: dict, locks: dict) -> dict:
     pair_dir = directory / "episodes" / slot["pair_id"]
     episodes = {
         method: _read_episode(pair_dir / method / "episode" / "episode.json")
-        for method in matched_dev.METHODS
+        for method in experiment_engine.METHODS
     }
     status = report.get("status") if report else "not_started"
     locked = locks.get(slot["model_label"])
@@ -341,7 +341,7 @@ def inspect_slot(directory: Path, slot: dict, locks: dict) -> dict:
     valid_pair = bool(
         report is not None and status == "paired_pilot_completed"
         and report.get("initial_hash_parity") is True
-        and all(episode_valid(method) for method in matched_dev.METHODS)
+        and all(episode_valid(method) for method in experiment_engine.METHODS)
         and episodes["Baseline"]["initial_sha256"]
         == episodes["Proposed"]["initial_sha256"]
         and report.get("model_identity", {}).get("digest")
@@ -351,7 +351,7 @@ def inspect_slot(directory: Path, slot: dict, locks: dict) -> dict:
     if not isinstance(comparison, dict):
         comparison = {}
     results = []
-    for method in matched_dev.METHODS:
+    for method in experiment_engine.METHODS:
         ep = episodes[method] or {}
         path = pair_dir / method / "episode" / "episode.json"
         raw_success = ep.get("official_success")
@@ -412,7 +412,7 @@ def _fmt_avg(values) -> str:
 def summarize(views: list[dict], model_labels: list[str]) -> list[dict]:
     result = []
     for label in [*model_labels, "ALL_MODELS"]:
-        for method in matched_dev.METHODS:
+        for method in experiment_engine.METHODS:
             selected = [
                 v for v in views
                 if label == "ALL_MODELS" or
@@ -549,7 +549,7 @@ def execute_pairs(directory: Path, manifest: dict, args,
                 f"{slot['task_group']}/{slot['task']}", flush=True
             )
             try:
-                matched_dev.run_pair(episode_args, report)
+                experiment_engine.run_pair(episode_args, report)
                 if report.get("order") != slot["order"]:
                     raise RuntimeError(
                         "Paired order drifted from frozen pilot schedule"
@@ -633,7 +633,7 @@ def main(argv=None) -> int:
     if not (openapps / "launch.py").is_file():
         raise RuntimeError("Pinned OpenApps checkout missing at " + str(openapps))
     openapps_sha = git_head(openapps)
-    if openapps_sha != matched_dev.UPSTREAM_PIN:
+    if openapps_sha != experiment_engine.UPSTREAM_PIN:
         raise RuntimeError("OpenApps checkout SHA differs from official pin")
     official_task_preflight(openapps, tasks)
     schedule = pair_schedule(plan)
@@ -653,7 +653,7 @@ def main(argv=None) -> int:
     missing = []
     for label in labels:
         try:
-            identities[label] = matched_dev.model_identity(
+            identities[label] = experiment_engine.model_identity(
                 label, args.ollama_url,
             )
         except Exception as exc:

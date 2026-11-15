@@ -1,6 +1,6 @@
 """Preregistered, execution-gated official OpenApps Main: 32 x 4 x 2.
 
-Pure orchestrator: Baseline and Proposed reuse matched_dev.run_pair, the same
+Pure orchestrator: Baseline and Proposed reuse experiment_engine.run_pair, the same
 public AXTree/model prompts/action policy and official BrowserGym evaluator.
 No synthetic observations, no fallback reward, no selective reruns.
 Offline CI tests do NOT constitute live experimental evidence.
@@ -21,13 +21,13 @@ import sys
 from types import SimpleNamespace
 from uuid import uuid4
 
-import matched_dev
+import experiment_engine
 import pilot
 from ollama_preflight import MODELS_FILE, get_model
 
 ROOT = Path(__file__).resolve().parents[2]
 MAIN_PLAN = ROOT / "config" / "main_plan.json"
-TASKSET = ROOT / "config" / "main_taskset_v1.json"
+TASKSET = ROOT / "config" / "main_taskset.json"
 PILOT_PLAN = ROOT / "config" / "pilot_plan.json"
 READINESS_TEMPLATE = ROOT / "config" / "main_readiness_template.json"
 OUTPUT_ROOT = ROOT / "output" / "main"
@@ -74,17 +74,17 @@ def validate_plan(plan: dict, roster: dict, models: list) -> list[dict]:
             or plan.get("status") != "preregistered_execution_gated"):
         raise ValueError("Main protocol/status/version differs from reviewed v1")
     if (roster.get("protocol") != plan.get("taskset_protocol")
-            or plan.get("taskset_file") != "config/main_taskset_v1.json"
+            or plan.get("taskset_file") != "config/main_taskset.json"
             or plan.get("task_order_sha256") != roster.get("task_order_sha256")
-            or plan.get("pinned_openapps_commit") != matched_dev.UPSTREAM_PIN
-            or roster.get("openapps_git_commit") != matched_dev.UPSTREAM_PIN):
+            or plan.get("pinned_openapps_commit") != experiment_engine.UPSTREAM_PIN
+            or roster.get("openapps_git_commit") != experiment_engine.UPSTREAM_PIN):
         raise ValueError("Main frozen roster/official OpenApps pin mismatch")
     expected_controls = {
         "seed": 233, "max_steps": 40, "model_timeout": 240,
-        "temperature": matched_dev.TEMPERATURE,
-        "num_predict": matched_dev.NUM_PREDICT,
+        "temperature": experiment_engine.TEMPERATURE,
+        "num_predict": experiment_engine.NUM_PREDICT,
         "num_ctx": 8192,
-        "think": False, "action_subsets": list(matched_dev.ACTION_SUBSETS),
+        "think": False, "action_subsets": list(experiment_engine.ACTION_SUBSETS),
         "bounded_shared_repairs": 1, "click_force_retry": False,
         "planned_tasks": 32, "planned_matched_pairs": 128,
         "planned_episodes": 256,
@@ -124,16 +124,16 @@ def validate_plan(plan: dict, roster: dict, models: list) -> list[dict]:
     seen, families, strata = set(), set(), Counter()
     for i, task in enumerate(tasks, start=1):
         group, key = task.get("task_group"), task.get("task")
-        if (group not in matched_dev.TASK_GROUPS
+        if (group not in experiment_engine.TASK_GROUPS
                 or not isinstance(key, str)
-                or not matched_dev.TASK_KEY.fullmatch(key)
+                or not experiment_engine.TASK_KEY.fullmatch(key)
                 or (group, key) in seen
                 or (group, key) in pilot_ids
                 or task.get("main_index") != i):
             raise ValueError(f"Duplicate, invalid or Pilot-overlapping main task #{i}")
         if (not isinstance(task.get("family"), str)
                 or task["family"] in families
-                or not matched_dev.TASK_KEY.fullmatch(task["family"])):
+                or not experiment_engine.TASK_KEY.fullmatch(task["family"])):
             raise ValueError("Main task operational family invalid/duplicated")
         expected_stratum = {
             "all_tasks": "primitive_control",
@@ -166,7 +166,7 @@ def pair_schedule(plan: dict, tasks: list[dict]) -> list[dict]:
                 "task": task["task"], "task_group": task["task_group"],
                 "family": task["family"], "stratum": task["stratum"],
                 "model_label": model,
-                "order": matched_dev.pair_order(task["task"], model, plan["seed"]),
+                "order": experiment_engine.pair_order(task["task"], model, plan["seed"]),
             })
     pairs.sort(key=lambda s: sha256(
         f'{plan["seed"]}|{s["task_group"]}/{s["task"]}|{s["model_label"]}'
@@ -262,7 +262,7 @@ def initialize_readiness(path: Path, plan: dict, controller_sha: str) -> Path:
 def create_manifest(main_id: str, plan: dict, tasks: list[dict],
                     models: list, repo_sha: str, openapps_sha: str,
                     approval: dict, identities: dict) -> dict:
-    if openapps_sha != matched_dev.UPSTREAM_PIN:
+    if openapps_sha != experiment_engine.UPSTREAM_PIN:
         raise RuntimeError("Official OpenApps pin mismatch before Main")
     if set(identities) != set(plan["model_labels"]):
         raise ValueError("ALL FOUR model checkpoints must be available before first Main pair")
@@ -301,7 +301,7 @@ def create_manifest(main_id: str, plan: dict, tasks: list[dict],
             "num_predict": plan["num_predict"],
             "num_ctx": plan["num_ctx"], "think": False,
             "action_subsets": plan["action_subsets"],
-            "bid_click_timeout_ms": matched_dev.DEV_CLICK_TIMEOUT_MS,
+            "bid_click_timeout_ms": experiment_engine.CLICK_TIMEOUT_MS,
             "bounded_shared_repairs": 1, "click_force_retry": False,
         },
         "paired_validity_rule": plan["paired_validity_rule"],
@@ -441,7 +441,7 @@ def inspect_slot(directory: Path, slot: dict, manifest: dict,
     )
     comparison = {}
     if valid_pair:
-        comparison = matched_dev.comparable_decisions(episodes)
+        comparison = experiment_engine.comparable_decisions(episodes)
         declared = report.get("policy_diagnostics")
         if not isinstance(declared, dict) or any(
             declared.get(k) != value for k, value in comparison.items()
@@ -716,7 +716,7 @@ def execute_pairs(directory: Path, manifest: dict, args,
             print(f"MAIN {slot['pair_id']}/128 | {slot['model_label']} | "
                   f"{slot['task_group']}/{slot['task']}", flush=True)
             try:
-                matched_dev.run_pair(episode_args, report)
+                experiment_engine.run_pair(episode_args, report)
                 if report.get("order") != slot["order"]:
                     raise RuntimeError("Main paired order drifted")
                 if (report.get("model_identity", {}).get("name") != identity["name"]
@@ -908,7 +908,7 @@ def main(argv=None) -> int:
     errors = []
     for label in plan["model_labels"]:
         try:
-            identities[label] = matched_dev.model_identity(label, args.ollama_url)
+            identities[label] = experiment_engine.model_identity(label, args.ollama_url)
         except Exception as exc:
             errors.append(f"{label}: {type(exc).__name__}: {exc}")
     if errors:

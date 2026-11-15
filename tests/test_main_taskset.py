@@ -15,7 +15,7 @@ import unittest
 from collections import Counter
 
 ROOT = Path(__file__).resolve().parents[1]
-MAIN = ROOT / "config" / "main_taskset_v1.json"
+MAIN = ROOT / "config" / "main_taskset.json"
 PILOT = ROOT / "config" / "pilot_plan.json"
 FROZEN_SHA256 = "73d4a4a8e377422072c6ab27c066f87f8acbed7683ed50168c3407c861d61333"
 UPSTREAM_PIN = "6e6782794433c60468d65ac75bc3f03c56007f8c"

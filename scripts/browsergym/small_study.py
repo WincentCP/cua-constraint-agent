@@ -14,15 +14,15 @@ import re
 import sys
 from types import SimpleNamespace
 
-import matched_dev
+import experiment_engine
 import pilot
 from ollama_preflight import find_installed_model, get_model, request_json, validate_ollama_url
 
 ROOT = Path(__file__).resolve().parents[2]
-PLAN_FILE = ROOT / "config/small_extension_plan.json"
-MODELS_FILE = ROOT / "config/models_small_extension.json"
-TASKSET_FILE = ROOT / "config/main_taskset_v1.json"
-OUTPUT_ROOT = ROOT / "output/small_extension"
+PLAN_FILE = ROOT / "config/small_study_plan.json"
+MODELS_FILE = ROOT / "config/small_models.json"
+TASKSET_FILE = ROOT / "config/main_taskset.json"
+OUTPUT_ROOT = ROOT / "output/small_study"
 METHODS = ("Baseline", "Proposed")
 COHORTS = ("bank_information", "cross_app_workflow", "primitive_control", "ALL_TASKS")
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")
@@ -52,12 +52,12 @@ def validate(plan, models, roster):
                      "planned_episodes":256}.items():
         if plan.get(key) != val:
             raise ValueError("Scale fixed parameter mismatch: " + key)
-    if plan.get("methods") != list(METHODS) or plan.get("models_file") != "config/models_small_extension.json":
+    if plan.get("methods") != list(METHODS) or plan.get("models_file") != "config/small_models.json":
         raise ValueError("Scale methods/registry mismatch")
-    if plan.get("taskset_file") != "config/main_taskset_v1.json":
+    if plan.get("taskset_file") != "config/main_taskset.json":
         raise ValueError("Taskset mismatch")
     if not isinstance(models,list) or len(models)!=4:
-        raise ValueError("Small extension requires exactly four small checkpoints")
+        raise ValueError("Small-Model Study requires exactly four small checkpoints")
     labels=[m["label"] for m in models]
     if plan.get("model_labels") != labels or len(set(labels))!=4:
         raise ValueError("Model labels/order mismatch")
@@ -76,7 +76,7 @@ def validate(plan, models, roster):
     if not isinstance(tasks,list) or len(tasks)!=32:
         raise ValueError("Requires all 32 frozen task IDs")
     for task in tasks:
-        if task.get("task_group") not in matched_dev.TASK_GROUPS or not task.get("task"):
+        if task.get("task_group") not in experiment_engine.TASK_GROUPS or not task.get("task"):
             raise ValueError("Invalid official task")
     return tasks
 
@@ -87,13 +87,13 @@ def schedule(plan,models,tasks):
             units.append({"task_group":t["task_group"],"task":t["task"],
                           "stratum":t["stratum"],"family":m["family"],
                           "model_label":m["label"],"size":m["size"],
-                          "order":matched_dev.pair_order(t["task"],m["label"],plan["seed"])})
+                          "order":experiment_engine.pair_order(t["task"],m["label"],plan["seed"])})
     units.sort(key=lambda x:sha256(
         f'{plan["seed"]}|{x["task_group"]}/{x["task"]}|{x["model_label"]}'.encode()).hexdigest())
     for i,x in enumerate(units,1):
         x["pair_id"]=f"pair_{i:03d}"
     if len(units)!=128 or len({(x["task_group"],x["task"],x["model_label"]) for x in units})!=128:
-        raise ValueError("Non-unique small-extension schedule")
+        raise ValueError("Non-unique Small-Model Study schedule")
     return units
 
 def identities_for(plan,models,origin,*,client=request_json):
@@ -154,7 +154,7 @@ def inspect(folder,slot,locked):
                 ep.get("num_ctx")==8192 and ep.get("max_steps")==40 and
                 ep.get("seed")==233 and ep.get("temperature")==0 and
                 ep.get("num_predict")==640 and ep.get("think") is False and
-                ep.get("upstream_commit")==matched_dev.UPSTREAM_PIN and
+                ep.get("upstream_commit")==experiment_engine.UPSTREAM_PIN and
                 isinstance(ep.get("initial_sha256"),str) and
                 len(ep["initial_sha256"])==64 and
                 isinstance(ep.get("trace"),list) and
@@ -167,7 +167,7 @@ def inspect(folder,slot,locked):
            and report.get("model_identity",{}).get("digest")==locked["digest"])
     comparison={}
     if valid:
-        comparison=matched_dev.comparable_decisions(
+        comparison=experiment_engine.comparable_decisions(
             {method:records[method][0] for method in METHODS})
         if comparison!=report.get("policy_diagnostics"):
             valid=False
@@ -268,8 +268,8 @@ def execute(folder,manifest_obj,args,identities):
                                  task_group=slot["task_group"],seed=233,max_steps=40,model_timeout=240)
             try:
                 current=identities[slot["model_label"]]
-                matched_dev.verify_model_identity(current)
-                matched_dev.run_pair(opts,pair)
+                experiment_engine.verify_model_identity(current)
+                experiment_engine.run_pair(opts,pair)
                 if pair.get("order")!=slot["order"] or pair["model_identity"]["digest"]!=current["digest"]:
                     raise RuntimeError("Pair order or model digest changed")
             except KeyboardInterrupt:
@@ -288,7 +288,7 @@ def execute(folder,manifest_obj,args,identities):
     finally:
         lock.unlink(missing_ok=True)
     outcome=report_outputs(folder,manifest_obj)
-    print("SMALL EXTENSION:",json.dumps({k:outcome[k] for k in ("valid_pairs","invalid_pairs","not_started_pairs")}))
+    print("SMALL-MODEL STUDY:",json.dumps({k:outcome[k] for k in ("valid_pairs","invalid_pairs","not_started_pairs")}))
     return 3 if outcome["invalid_pairs"] else 0
 
 def main(argv=None):
@@ -297,7 +297,7 @@ def main(argv=None):
     mode.add_argument("--dry-run",action="store_true")
     mode.add_argument("--check-models",action="store_true")
     mode.add_argument("--run",action="store_true")
-    p.add_argument("--extension-id", dest="scale_id")
+    p.add_argument("--study-id", dest="scale_id")
     p.add_argument("--openapps-dir",type=Path)
     p.add_argument("--ollama-url",default="http://127.0.0.1:11434")
     p.add_argument("--model-label")
@@ -305,7 +305,7 @@ def main(argv=None):
     p.add_argument("--stop-on-invalid",action="store_true")
     args=p.parse_args(argv)
     if args.run and (not args.scale_id or not ID_RE.fullmatch(args.scale_id)):
-        p.error("--run requires valid --extension-id")
+        p.error("--run requires valid --study-id")
     if not args.run and (args.scale_id or args.max_pairs or args.stop_on_invalid):
         p.error("execution options require --run")
     if args.max_pairs is not None and not 1<=args.max_pairs<=128:
@@ -316,7 +316,7 @@ def main(argv=None):
         p.error("Unknown small-extension model")
     units=schedule(plan,models,tasks)
     if args.dry_run:
-        print("SMALL EXTENSION DRY RUN PASS: 32 tasks x 4 small checkpoints x 2 arms = 128 pairs, 256 episodes")
+        print("SMALL-MODEL STUDY DRY RUN PASS: 32 tasks x 4 small checkpoints x 2 arms = 128 pairs, 256 episodes")
         print("No browser/model/server started.")
         return 0
     if args.openapps_dir is None or not (args.openapps_dir/"launch.py").is_file():
@@ -358,5 +358,5 @@ if __name__=="__main__":
     try:
         raise SystemExit(main())
     except (ValueError,RuntimeError,OSError,LookupError) as exc:
-        print("SMALL EXTENSION BLOCKED:",type(exc).__name__,str(exc),file=sys.stderr)
+        print("SMALL-MODEL STUDY BLOCKED:",type(exc).__name__,str(exc),file=sys.stderr)
         raise SystemExit(2)

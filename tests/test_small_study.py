@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts/browsergym"))
-import small_extension as ext
+import small_study as ext
 
 
 class SmallExtensionContracts(unittest.TestCase):

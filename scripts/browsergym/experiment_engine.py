@@ -1,12 +1,10 @@
-"""Matched Baseline / CDEA DEVELOPMENT episodes on official BrowserGym + OpenApps.
+"""Shared execution engine for paired Baseline/CDEA BrowserGym episodes.
 
-NOT a pilot or main experiment. One selected installed Ollama model, one public
-OpenApps task, two independent app DBs, identical model/AXTree/action budgets.
-The treatment is only candidate-probe ranking in shared_policy.py.
-"""
+Used by the Pilot, Main Study, and Small-Model Study runners. Both methods share
+the same model interaction, public observations, action validation, and official
+evaluator; the treatment is candidate-probe ranking in shared_policy.py."""
 from __future__ import annotations
 
-import argparse
 from dataclasses import asdict
 from datetime import datetime, timezone
 from hashlib import sha256
@@ -14,20 +12,18 @@ import json
 import os
 from pathlib import Path
 import re
-import sys
 import time
 from urllib.request import urlopen
-from uuid import uuid4
 
-from action_timeout import DEV_CLICK_TIMEOUT_MS, configure_bounded_click_timeout
+from action_timeout import CLICK_TIMEOUT_MS, configure_bounded_click_timeout
 from evaluator_controls import require_state
 from public_ui import (active_dialog_context, clickable_generic_hints,
                        dialog_background_action_guard, redundant_current_app_link)
 from isolated_openapps import isolated_openapps
 from ollama_preflight import (MODELS_FILE, find_installed_model, get_model,
                               request_json, validate_ollama_url)
-from qwen_dev import (describe_bid, guarded_action, should_stop_for_unexpected_todo,
-                      summarize_todo_delta)
+from browser_actions import (describe_bid, guarded_action, permitted_bids,
+                              should_stop_for_unexpected_todo, summarize_todo_delta)
 from shared_policy import (METHODS, choose_action, initial_ledger, public_constraints,
                            public_messages, rejected_action_diagnostic, repair_message)
 from smoke import extract_axtree_text, hash_state, UPSTREAM_PIN
@@ -131,7 +127,7 @@ def run_episode(root: Path, server, method: str, identity: dict,
         "seed": args.seed, "max_steps": args.max_steps, "num_predict": NUM_PREDICT,
         "temperature": TEMPERATURE, "think": False, "action_subsets": list(ACTION_SUBSETS),
         "browsergym_core_version": None,
-        "bid_click_timeout_ms": DEV_CLICK_TIMEOUT_MS,
+        "bid_click_timeout_ms": CLICK_TIMEOUT_MS,
         "click_force_retry": False,
         "status": "invalid_episode", "valid": False, "run_complete": False,
         "official_reward": None, "official_success": None,
@@ -190,7 +186,6 @@ def run_episode(root: Path, server, method: str, identity: dict,
             tree_path = observations_dir / f"step_{step + 1:03d}_before.axtree.txt"
             # Write exact bytes to preserve the recorded SHA-256 on Windows.
             tree_path.write_bytes(tree.encode("utf-8"))
-            from qwen_dev import permitted_bids
             bids = permitted_bids(obs, tree)
             if not bids:
                 raise RuntimeError("No visible BrowserGym element IDs")
@@ -379,9 +374,8 @@ def run_episode(root: Path, server, method: str, identity: dict,
                     else "browser_action_error"
                 )
                 entry["browser_error_category"] = failure
-                from qwen_dev import permitted_bids as _permitted
                 entry["active_dialog_after_error"] = active_dialog_context(
-                    obs, _permitted(obs, next_tree),
+                    obs, permitted_bids(obs, next_tree),
                 )
                 timeout_match = re.search(r"Timeout ([0-9]+)ms exceeded", raw_error)
                 if timeout_match:
@@ -492,7 +486,7 @@ def run_pair(args, report: dict) -> None:
         "study_phase": getattr(args, "study_phase", "development"),
         "task_group": args.task_group, "seed": args.seed, "max_steps": args.max_steps,
         "model_timeout": args.model_timeout, "temperature": TEMPERATURE,
-        "bid_click_timeout_ms": DEV_CLICK_TIMEOUT_MS,
+        "bid_click_timeout_ms": CLICK_TIMEOUT_MS,
         "click_force_retry": False,
         "num_predict": NUM_PREDICT, "think": False,
         "action_subsets": list(ACTION_SUBSETS),
@@ -561,62 +555,3 @@ def run_pair(args, report: dict) -> None:
         if getattr(args, "study_phase", "development") == "scale"
         else "paired_development_completed"
     )
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--openapps-dir", required=True)
-    parser.add_argument("--model-label", default="qwen3.5-9b")
-    parser.add_argument("--task", default="add_call_mom_to_my_todo")
-    parser.add_argument("--task-group", choices=TASK_GROUPS,
-                        default="all_tasks")
-    parser.add_argument("--ollama-url", default="http://127.0.0.1:11434")
-    parser.add_argument("--seed", type=int, default=SEED)
-    parser.add_argument("--max-steps", type=int, default=16)
-    parser.add_argument("--model-timeout", type=int, default=240)
-    args = parser.parse_args(argv)
-    if not TASK_KEY.fullmatch(args.task):
-        parser.error("task must be an official OpenApps task key")
-    if not 1 <= args.max_steps <= 30 or not 30 <= args.model_timeout <= 600:
-        parser.error("Invalid step budget or model timeout")
-    base = ROOT / "output/browsergym/matched_dev" / uuid4().hex
-    base.mkdir(parents=True, exist_ok=False)
-    report = {"mode": "matched_development_only", "status": "invalid_pair",
-              "task": args.task, "task_group": args.task_group,
-              "model_label": args.model_label,
-              "artifact_dir": str(base), "episodes": {},
-              "initial_hash_parity": False}
-    artifact = base / "pair.json"
-    try:
-        run_pair(args, report)
-    except Exception as exc:
-        report["status"] = "invalid_pair"
-        report["error"] = type(exc).__name__ + ": " + str(exc)
-        print("INVALID MATCHED DEVELOPMENT: " + report["error"], file=sys.stderr)
-        result = 2
-    else:
-        print("PASS: matched development episodes finished with isolated equal initial states")
-        print("Official success:", {k: report["episodes"][k]["official_success"]
-                                    for k in METHODS})
-        for method in METHODS:
-            episode = report["episodes"][method]
-            print(f"  {method}: end_reason={episode.get('end_reason')} "
-                  f"steps={episode['steps']} model_calls={episode['model_calls']} "
-                  f"probe_opportunities={episode['probe_opportunities']} "
-                  f"repairs={episode['repair_requests']}")
-        print("Policy diagnostics:", report["policy_diagnostics"])
-        print("Mechanism status:", report["mechanism_status"])
-        if report["mechanism_status"] != "policy_separation_observed":
-            print("RESEARCH GATE: CDEA intervention has not demonstrated "
-                  "a different decision on a comparable public probe menu.")
-        print("NOT pilot/main results. Inspect probe opportunities and action divergence.")
-        result = 0
-    finally:
-        artifact.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n",
-                            encoding="utf-8")
-        print("Matched development artifact:", artifact)
-    return result
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

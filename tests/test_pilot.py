@@ -46,7 +46,7 @@ class PilotContracts(unittest.TestCase):
         out, manifest = pilot.open_pilot(
             "pilot_contracts", self.plan, self.models,
             "demo_plan_sha", "demo_models_sha", "demo_git_sha",
-            pilot.matched_dev.UPSTREAM_PIN,
+            pilot.experiment_engine.UPSTREAM_PIN,
         )
         pilot.freeze_model_digest(out, manifest, self.identity)
         return out, manifest
@@ -58,7 +58,7 @@ class PilotContracts(unittest.TestCase):
             "name": "qwen3.5:9b-q4_K_M",
             "digest": "test-sha256-model-digest",
         }
-        report["order"] = pilot.matched_dev.pair_order(
+        report["order"] = pilot.experiment_engine.pair_order(
             args.task, args.model_label, args.seed,
         )
         report["initial_hash_parity"] = True
@@ -68,7 +68,7 @@ class PilotContracts(unittest.TestCase):
             "treatment_separation_observed": False,
         }
         report["status"] = "paired_pilot_completed"
-        for method in pilot.matched_dev.METHODS:
+        for method in pilot.experiment_engine.METHODS:
             dest = Path(report["artifact_dir"]) / method / "episode"
             dest.mkdir(parents=True)
             (dest / "episode.json").write_text(
@@ -109,7 +109,7 @@ class PilotContracts(unittest.TestCase):
                               for p in pairs}), 24)
         for item in pairs:
             self.assertEqual(set(item["order"]), {"Baseline", "Proposed"})
-            self.assertEqual(item["order"], pilot.matched_dev.pair_order(
+            self.assertEqual(item["order"], pilot.experiment_engine.pair_order(
                 item["task"], item["model_label"], 233
             ))
 
@@ -138,7 +138,7 @@ class PilotContracts(unittest.TestCase):
         later, second = pilot.open_pilot(
             "pilot_contracts", self.plan, self.models,
             "demo_plan_sha", "demo_models_sha", "demo_git_sha",
-            pilot.matched_dev.UPSTREAM_PIN,
+            pilot.experiment_engine.UPSTREAM_PIN,
         )
         self.assertEqual(directory, later)
         self.assertEqual(first, second)
@@ -146,13 +146,13 @@ class PilotContracts(unittest.TestCase):
             pilot.open_pilot(
                 "pilot_contracts", self.plan, self.models,
                 "DIFFERENT_PLAN_SHA", "demo_models_sha",
-                "demo_git_sha", pilot.matched_dev.UPSTREAM_PIN,
+                "demo_git_sha", pilot.experiment_engine.UPSTREAM_PIN,
             )
         with self.assertRaisesRegex(RuntimeError, "manifest differs"):
             pilot.open_pilot(
                 "pilot_contracts", self.plan, self.models,
                 "demo_plan_sha", "demo_models_sha",
-                "DIFFERENT_COMMIT", pilot.matched_dev.UPSTREAM_PIN,
+                "DIFFERENT_COMMIT", pilot.experiment_engine.UPSTREAM_PIN,
             )
         self.assertEqual(pilot.load_object(directory / "manifest.json"), first)
 
@@ -162,7 +162,7 @@ class PilotContracts(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     pilot.open_pilot(
                         invalid, self.plan, self.models,
-                        "a", "b", "c", pilot.matched_dev.UPSTREAM_PIN,
+                        "a", "b", "c", pilot.experiment_engine.UPSTREAM_PIN,
                     )
         with self.assertRaisesRegex(RuntimeError, "pinned"):
             pilot.create_manifest(
@@ -187,7 +187,7 @@ class PilotContracts(unittest.TestCase):
 
     def test_partial_one_pair_resume_skips_and_preserves_original(self):
         directory, manifest = self.make_pilot()
-        with patch.object(pilot.matched_dev, "run_pair",
+        with patch.object(pilot.experiment_engine, "run_pair",
                           side_effect=self.fake_paired_runner) as stub:
             self.assertEqual(
                 pilot.execute_pairs(directory, manifest, self.args,
@@ -211,7 +211,7 @@ class PilotContracts(unittest.TestCase):
 
     def test_rows_include_all_48_episodes_with_distinct_valid_denominator(self):
         directory, manifest = self.make_pilot()
-        with patch.object(pilot.matched_dev, "run_pair",
+        with patch.object(pilot.experiment_engine, "run_pair",
                           side_effect=self.fake_paired_runner):
             pilot.execute_pairs(directory, manifest, self.args, self.identities)
         rows = list(csv.DictReader(
@@ -294,7 +294,7 @@ class PilotContracts(unittest.TestCase):
 
     def test_initial_sha_mismatch_excluded_even_if_pair_claims_success(self):
         directory, manifest = self.make_pilot()
-        with patch.object(pilot.matched_dev, "run_pair",
+        with patch.object(pilot.experiment_engine, "run_pair",
                           side_effect=self.fake_paired_runner):
             pilot.execute_pairs(directory, manifest, self.args, self.identities)
         slot = manifest["pairs"][0]
@@ -314,7 +314,7 @@ class PilotContracts(unittest.TestCase):
         partial = directory / "episodes" / "pair_001"
         partial.mkdir(parents=True)
         (partial / "partial.log").write_text("incomplete")
-        with patch.object(pilot.matched_dev, "run_pair") as stub:
+        with patch.object(pilot.experiment_engine, "run_pair") as stub:
             with self.assertRaisesRegex(RuntimeError, "Incomplete pair"):
                 pilot.execute_pairs(directory, manifest, self.args,
                                     self.identities)
@@ -324,7 +324,7 @@ class PilotContracts(unittest.TestCase):
 
     def test_interrupted_pair_saved_and_not_automatically_retried(self):
         directory, manifest = self.make_pilot()
-        with patch.object(pilot.matched_dev, "run_pair",
+        with patch.object(pilot.experiment_engine, "run_pair",
                           side_effect=KeyboardInterrupt()):
             self.assertEqual(
                 pilot.execute_pairs(directory, manifest, self.args,
@@ -333,7 +333,7 @@ class PilotContracts(unittest.TestCase):
         invalid = directory / "episodes" / "pair_001" / "pair.json"
         self.assertEqual(pilot.load_object(invalid)["status"], "invalid_pair")
         self.assertFalse((directory / ".pilot_running.lock").exists())
-        with patch.object(pilot.matched_dev, "run_pair",
+        with patch.object(pilot.experiment_engine, "run_pair",
                           side_effect=self.fake_paired_runner) as stub:
             pilot.execute_pairs(directory, manifest, self.args, self.identities)
             self.assertEqual(stub.call_count, 1)

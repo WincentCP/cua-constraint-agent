@@ -2,8 +2,8 @@
   "schema_version": 1,
   "protocol": "cdea_small_extension_v1",
   "status": "small_only_follow_up",
-  "taskset_file": "config/main_taskset_v1.json",
-  "models_file": "config/models_small_extension.json",
+  "taskset_file": "config/main_taskset.json",
+  "models_file": "config/small_models.json",
   "methods": [
     "Baseline",
     "Proposed"

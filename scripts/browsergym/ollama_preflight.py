@@ -16,7 +16,7 @@ from urllib.request import Request, urlopen
 from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[2]
-MODELS_FILE = ROOT / "config" / "models.json"
+MODELS_FILE = ROOT / "config" / "main_models.json"
 
 
 def validate_ollama_url(value: str) -> str:

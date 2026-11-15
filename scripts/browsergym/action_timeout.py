@@ -5,8 +5,8 @@ even when BrowserEnv.timeout is larger. We retain the official action parser
 and evaluator and change only that exact line in THIS action-set instance.
 
 Never retry/force a timed-out click: it may already have had a side effect.
-This DEVELOPMENT-only change must be applied identically to both arms and
-frozen before pilot/main; the episode records the configured timeout.
+This controller-level adaptation must be applied identically to both arms
+and frozen before a study run. the episode records the configured timeout.
 """
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from importlib.metadata import version as distribution_version
 
 EXPECTED_BROWSERGYM_CORE_VERSION = "0.13.4"
 UPSTREAM_CLICK_TIMEOUT_MS = 500
-DEV_CLICK_TIMEOUT_MS = 3000
+CLICK_TIMEOUT_MS = 3000
 
 # The exact source expression in BrowserGym v0.13.4's
 # browsergym.core.action.functions.click(), not dblclick().
@@ -58,7 +58,7 @@ def configure_bounded_click_timeout(action_set) -> str:
         _CLICK_LINE,
         _CLICK_LINE.replace(
             f"timeout={UPSTREAM_CLICK_TIMEOUT_MS}",
-            f"timeout={DEV_CLICK_TIMEOUT_MS}",
+            f"timeout={CLICK_TIMEOUT_MS}",
         ),
     )
     action_set.python_includes = source[:start] + updated + source[next_def:]

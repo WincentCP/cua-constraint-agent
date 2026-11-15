@@ -2,7 +2,7 @@ param(
     [switch]$DryRun,
     [switch]$CheckModels,
     [switch]$Run,
-    [string]$ExtensionId = '',
+    [string]$StudyId = '',
     [string]$ModelLabel = '',
     [ValidateRange(1,128)][int]$MaxPairs = 128,
     [switch]$StopOnInvalid,
@@ -12,14 +12,14 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 $count = @($DryRun.IsPresent,$CheckModels.IsPresent,$Run.IsPresent) | Where-Object { $_ }
 if ($count.Count -ne 1) { throw 'Choose exactly one: -DryRun, -CheckModels or -Run.' }
-if ($Run -and -not $ExtensionId) { throw '-Run requires a fresh -ExtensionId.' }
-if (-not $Run -and ($ExtensionId -or $StopOnInvalid)) { throw 'Execution flags require -Run.' }
+if ($Run -and -not $StudyId) { throw '-Run requires a fresh -StudyId.' }
+if (-not $Run -and ($StudyId -or $StopOnInvalid)) { throw 'Execution flags require -Run.' }
 $repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$target = Join-Path $repo 'scripts/browsergym/small_extension.py'
+$target = Join-Path $repo 'scripts/browsergym/small_study.py'
 $argsToPass = @($target, '--openapps-dir', $OpenAppsDir)
 if ($DryRun) { $argsToPass += '--dry-run' }
 if ($CheckModels) { $argsToPass += '--check-models' }
-if ($Run) { $argsToPass += @('--run','--extension-id',$ExtensionId,'--max-pairs',"$MaxPairs") }
+if ($Run) { $argsToPass += @('--run','--study-id',$StudyId,'--max-pairs',"$MaxPairs") }
 if ($ModelLabel) { $argsToPass += @('--model-label',$ModelLabel) }
 if ($StopOnInvalid) { $argsToPass += '--stop-on-invalid' }
 if (-not $DryRun -and -not (Test-Path (Join-Path $OpenAppsDir 'launch.py') -PathType Leaf)) {

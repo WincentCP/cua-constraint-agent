@@ -56,7 +56,7 @@ class MainContracts(unittest.TestCase):
     def manifest(self):
         return experiment.create_manifest(
             "main_contracts", self.plan, self.tasks, self.models,
-            "fixture-repo-commit", experiment.matched_dev.UPSTREAM_PIN,
+            "fixture-repo-commit", experiment.experiment_engine.UPSTREAM_PIN,
             self.make_approval(), self.identities,
         )
 
@@ -94,7 +94,7 @@ class MainContracts(unittest.TestCase):
                 "task": slot["task"], "task_group": slot["task_group"],
                 "model": self.identity["name"],
                 "model_digest": self.identity["digest"],
-                "upstream_commit": experiment.matched_dev.UPSTREAM_PIN,
+                "upstream_commit": experiment.experiment_engine.UPSTREAM_PIN,
                 "valid": True, "run_complete": True,
                 "status": "main_success" if success else "main_unsuccessful",
                 "official_success": success, "official_reward": float(success),
@@ -134,7 +134,7 @@ class MainContracts(unittest.TestCase):
         self.assertEqual(sum(r["stratum"] == "bank_information" for r in a), 20)
         for item in a:
             self.assertEqual(set(item["order"]), {"Baseline", "Proposed"})
-            self.assertEqual(item["order"], experiment.matched_dev.pair_order(
+            self.assertEqual(item["order"], experiment.experiment_engine.pair_order(
                 item["task"], item["model_label"], self.plan["seed"]
             ))
 
@@ -169,7 +169,7 @@ class MainContracts(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "ALL FOUR"):
             experiment.create_manifest(
                 "main_contracts", self.plan, self.tasks, self.models,
-                "fixture-repo-commit", experiment.matched_dev.UPSTREAM_PIN,
+                "fixture-repo-commit", experiment.experiment_engine.UPSTREAM_PIN,
                 self.make_approval(), reduced,
             )
         manifest = self.manifest()
@@ -317,7 +317,7 @@ class MainContracts(unittest.TestCase):
             stop_on_invalid=False, openapps_dir=self.base / "OpenApps",
             ollama_url="http://127.0.0.1:11434",
         )
-        with patch.object(experiment.matched_dev, "run_pair") as runnable:
+        with patch.object(experiment.experiment_engine, "run_pair") as runnable:
             with self.assertRaisesRegex(RuntimeError, "Unsealed"):
                 experiment.execute_pairs(
                     directory, manifest, args,

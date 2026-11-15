@@ -15,7 +15,7 @@ from urllib.request import urlopen
 from uuid import uuid4
 
 import main as experiment
-import matched_dev
+import experiment_engine
 import pilot
 from evaluator_controls import require_state
 from isolated_openapps import isolated_openapps
@@ -70,7 +70,7 @@ def audit_live_initial_state(openapps: Path, tasks: list[dict],
         for item in tasks:
             # build_env_args instantiates the official task and registers it
             # with BrowserGym; it does NOT create an environment or step it.
-            _, task = matched_dev.build_env_args(
+            _, task = experiment_engine.build_env_args(
                 openapps, server.url, item["task"], 40, item["task_group"],
             )
             # Independent official scoring against the unchanged initial state.
@@ -103,7 +103,7 @@ def run_audit(openapps: Path) -> tuple[Path, dict]:
     if not (openapps / "launch.py").is_file():
         raise RuntimeError("OpenApps pinned checkout missing launch.py")
     sha = pilot.git_head(openapps)
-    if sha != matched_dev.UPSTREAM_PIN:
+    if sha != experiment_engine.UPSTREAM_PIN:
         raise RuntimeError("OpenApps checkout Git SHA does not match frozen pin")
     pilot.official_task_preflight(openapps, tasks)
     output = PREFLIGHT_ROOT / uuid4().hex

@@ -15,9 +15,9 @@ from unittest.mock import patch
 HERE = Path(__file__).resolve().parents[1] / "scripts/browsergym"
 sys.path.insert(0, str(HERE))
 import action_timeout
-spec = importlib.util.spec_from_file_location("matched_dev", HERE / "matched_dev.py")
+spec = importlib.util.spec_from_file_location("experiment_engine", HERE / "experiment_engine.py")
 matched = importlib.util.module_from_spec(spec)
-sys.modules["matched_dev"] = matched
+sys.modules["experiment_engine"] = matched
 spec.loader.exec_module(matched)
 
 

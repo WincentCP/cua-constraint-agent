@@ -22,7 +22,7 @@ class OllamaPreflightContract(unittest.TestCase):
                 mod.validate_ollama_url(value)
 
     def test_exact_model_label_and_tag(self):
-        cfg = json.loads((ROOT / "config/models.json").read_text(encoding="utf-8"))
+        cfg = json.loads((ROOT / "config/main_models.json").read_text(encoding="utf-8"))
         target = mod.get_model(cfg, "qwen3.5-9b")
         result = mod.find_installed_model(
             {"models": [{"name": target, "digest": "sha256:abc"}]}, target)

@@ -82,7 +82,7 @@ class SuitabilityContracts(unittest.TestCase):
              patch.object(checker, "require_state"), \
              patch.object(checker, "probe_app_routes", return_value=[
                 {"route": "/", "status": 200, "body_nonempty": True}
-             ]), patch.object(checker.matched_dev, "build_env_args",
+             ]), patch.object(checker.experiment_engine, "build_env_args",
                                side_effect=fake_build):
             out = checker.audit_live_initial_state(
                 self.out, self.tasks, self.out / "case"
@@ -111,7 +111,7 @@ class SuitabilityContracts(unittest.TestCase):
         }), patch.object(checker, "isolated_openapps", side_effect=server), \
              patch.object(checker, "require_state"), \
              patch.object(checker, "probe_app_routes", return_value=[]), \
-             patch.object(checker.matched_dev, "build_env_args",
+             patch.object(checker.experiment_engine, "build_env_args",
                           return_value=(object(), fake_task)):
             with self.assertRaisesRegex(RuntimeError, "already complete"):
                 checker.audit_live_initial_state(
@@ -124,7 +124,7 @@ class SuitabilityContracts(unittest.TestCase):
         (openapps / "launch.py").write_text("fixture not upstream\n")
         with patch.object(checker, "PREFLIGHT_ROOT", self.out / "preflight"), \
              patch.object(checker.pilot, "git_head",
-                          return_value=checker.matched_dev.UPSTREAM_PIN), \
+                          return_value=checker.experiment_engine.UPSTREAM_PIN), \
              patch.object(checker.pilot, "official_task_preflight"), \
              patch.object(checker, "audit_live_initial_state",
                           return_value={
