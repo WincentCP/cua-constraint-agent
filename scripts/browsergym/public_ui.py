@@ -10,7 +10,7 @@ import json
 import re
 from urllib.parse import urlsplit
 
-from qwen_dev import describe_bid
+from browser_actions import describe_bid
 
 
 def _node_text(node: dict) -> str:

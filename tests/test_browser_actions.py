@@ -11,6 +11,29 @@ spec.loader.exec_module(actions)
 
 
 class TestBrowserActions(unittest.TestCase):
+
+    def test_structured_model_actions_are_restricted(self):
+        bids = {"a1", "b2"}
+        good = [
+            ('{"action":"click","bid":"a1"}', 'click("a1")'),
+            ('{"action":"fill","bid":"b2","text":"Call Mom"}', 'fill("b2", "Call Mom")'),
+            ('{"action":"press","bid":"b2","key":"Enter"}', 'press("b2", "Enter")'),
+            ('{"action":"back"}', "go_back()"),
+            ('{"action":"finish"}', "finish"),
+        ]
+        for raw, expected in good:
+            self.assertEqual(actions.parse_action({"message": {"content": raw}}, bids), expected)
+        bad = [
+            '{"action":"click","bid":"ghost"}',
+            '{"action":"press","bid":"a1","key":"F12"}',
+            '{"action":"goto","url":"http://evil.example"}',
+            '{"action":"fill","bid":"a1","text":""}',
+            "click('a1')",
+        ]
+        for raw in bad:
+            with self.assertRaises((ValueError, TypeError)):
+                actions.parse_action({"message": {"content": raw}}, bids)
+
     def test_bid_from_live_raw_axtree(self):
         obs = {"axtree_object": {"nodes": [
             {"browsergym_id": "a1", "ignored": False},

@@ -11,7 +11,7 @@ import re
 from hashlib import sha256
 from urllib.parse import urlsplit
 
-from qwen_dev import describe_bid, parse_action, permitted_bids
+from browser_actions import describe_bid, parse_action, permitted_bids
 
 METHODS = ("Baseline", "Proposed")
 PROBE_ROLES = frozenset({

@@ -15,6 +15,39 @@ def permitted_bids(obs: dict, rendered_tree: str) -> set[str]:
     return node_ids & set(BID_PATTERN.findall(rendered_tree))
 
 
+
+def parse_action(payload: dict, bids: set[str]) -> str:
+    """Convert a structured model reply into a validated BrowserGym action."""
+    message = payload.get("message")
+    raw = message.get("content") if isinstance(message, dict) else None
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError("No visible model answer")
+    obj = json.loads(raw)
+    if not isinstance(obj, dict):
+        raise ValueError("Model answer must be a JSON object")
+    action = obj.get("action")
+    if action == "finish":
+        return "finish"
+    if action == "back":
+        return "go_back()"
+    if action not in ("click", "fill", "press"):
+        raise ValueError("Unrecognized model action")
+    bid = obj.get("bid")
+    if not isinstance(bid, str) or bid not in bids:
+        raise ValueError("Model selected an unobserved element")
+    if action == "click":
+        return "click(" + json.dumps(bid) + ")"
+    if action == "fill":
+        value = obj.get("text")
+        if not isinstance(value, str) or not 0 < len(value) <= 300:
+            raise ValueError("Invalid text to fill")
+        return "fill(" + json.dumps(bid) + ", " + json.dumps(value) + ")"
+    key = obj.get("key")
+    if key not in ("Enter", "Tab", "Escape", "ArrowUp", "ArrowDown"):
+        raise ValueError("Invalid key for press")
+    return "press(" + json.dumps(bid) + ", " + json.dumps(key) + ")"
+
+
 def describe_bid(observation: dict, bid: str) -> dict:
     """Describe a selected element from the public AXTree only."""
     nodes = observation.get("axtree_object", {}).get("nodes", [])
