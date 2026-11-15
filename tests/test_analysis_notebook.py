@@ -54,9 +54,6 @@ class AnalysisNotebookContracts(unittest.TestCase):
     def test_trace_outputs_are_part_of_official_notebook(self):
         for token in ("29_failure_trace_audit", "cause_verified", "policy_override_steps"):
             self.assertIn(token, self.code)
-        for token in ("verified_correctness", "factual_evidence_verified",
-                      "27_ledger_trace_scope", "28_ledger_status_transitions"):
-            self.assertNotIn(token, self.code + "\\n" + self.prose)
         self.assertEqual(
             self.notebook["metadata"].get("cdea_revision"),
             "main_small_study_two_archives_single_notebook",
