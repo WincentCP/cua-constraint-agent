@@ -23,7 +23,6 @@ results/build_manifest.json
 results/*.zip
 main_study.zip
 small_model_study.zip
-scale_full_source_archive.zip
 dataset_bundle.zip
 archive_audit.json
 output/**

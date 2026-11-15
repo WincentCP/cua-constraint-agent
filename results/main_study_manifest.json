@@ -1,0 +1,44 @@
+{
+  "filename": "main_study.zip",
+  "archive_id": "main_study",
+  "protocol": "cdea_main_v1",
+  "size_bytes": 3169436,
+  "sha256": "762f041c8bc4edc24e7b92c88cc671fc207e47449e37b7ba37d92e9cbc85b26f",
+  "created_utc": "2026-10-20T10:00:00+00:00",
+  "controller_git_commit": "ee8e7a0a60ea54ee9ff27acc0baf1424af2b80a1",
+  "openapps_git_commit": "6e6782794433c60468d65ac75bc3f03c56007f8c",
+  "planned_pairs": 128,
+  "planned_episodes": 256,
+  "valid_pairs": 128,
+  "invalid_pairs": 0,
+  "not_started_pairs": 0,
+  "model_labels": [
+    "granite4.1-8b",
+    "ministral3-8b",
+    "qwen3.5-9b",
+    "xlam2-8b"
+  ],
+  "shared_parameters": {
+    "seed": 233,
+    "max_steps": 40,
+    "model_timeout": 240,
+    "temperature": 0,
+    "num_predict": 640,
+    "think": false,
+    "action_subsets": [
+      "bid",
+      "nav"
+    ],
+    "bid_click_timeout_ms": 3000,
+    "bounded_shared_repairs": 1,
+    "click_force_retry": false
+  },
+  "model_checkpoint_digests": {
+    "qwen3.5-9b": "8570bc3f191c06144a95b9e8f201e9c55ac519d13abed1b5ff5eff8b7e9da481",
+    "ministral3-8b": "0f77b3dc63f5602561bff3df86c5416cabe9e05689e52dc577b5899c95139db5",
+    "granite4.1-8b": "e8fbab6177227e8540ad00331964418fdbf59b12c0f15387f4ab60df8527a79f",
+    "xlam2-8b": "dd024d68a4bcefc26c7ee1e2b3c707760a632105ebde34edab19a1ab20c3c011"
+  },
+  "task_count": 32,
+  "method_count": 2
+}
