@@ -21,7 +21,7 @@ class AnalysisNotebookContracts(unittest.TestCase):
     def test_exactly_one_notebook_and_valid_python_cells(self):
         notebooks = list((ROOT / "notebooks").glob("*.ipynb"))
         self.assertEqual(notebooks, [NOTEBOOK])
-        self.assertEqual(len(self.notebook["cells"]), 50)
+        self.assertEqual(len(self.notebook["cells"]), 49)
         self.assertEqual(sum(c["cell_type"] == "code" for c in self.notebook["cells"]), 25)
         for cell in self.notebook["cells"]:
             if cell["cell_type"] == "code":
@@ -36,6 +36,13 @@ class AnalysisNotebookContracts(unittest.TestCase):
         self.assertIn("Tabel_4_6", self.code)
         self.assertIn("Path('analysis_results')", self.code)
         self.assertIn("analysis_results.zip", self.code)
+        self.assertIn("record_table('07_size_overview'", self.code)
+        self.assertIn("record_table('08_eight_models'", self.code)
+        self.assertIn("record_table('09_task_category_size'", self.code)
+        self.assertNotIn("07_derived_size_overview", self.code)
+        self.assertNotIn("08_derived_eight_models", self.code)
+        self.assertNotIn("09_derived_task_category_size", self.code)
+        self.assertNotIn("derived", self.prose.lower())
 
     def test_clean_dataset_inputs_and_historical_protocol_only(self):
         for token in (
