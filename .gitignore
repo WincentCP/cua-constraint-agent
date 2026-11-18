@@ -17,20 +17,16 @@ coverage.xml
 htmlcov/
 
 # Local experiment inputs and generated research artifacts
-results/*.csv
-results/*.csv.gz
-results/build_manifest.json
-results/*.zip
+# Keep verified result tables and analysis exports trackable.
 main_study.zip
 small_model_study.zip
-dataset_bundle.zip
 archive_audit.json
 output/**
 !output/
 !output/**/
 !output/**/.gitkeep
 log_outputs/
-analysis_results/
+results/*.zip
 analysis_results.zip
 
 # Notebook runtime state

@@ -1,0 +1,4 @@
+Kelompok,Tugas (n),Paired runs (n),Baseline (%),CDEA (%),Selisih (pp),Tugas meningkat (n),Tugas menurun (n),Tugas setara (n),"p (uji tanda, 2 sisi)",IK 95% bawah (pp),IK 95% atas (pp)
+Main Study — 32 tugas (H1),32,128,57.03125,75.78125,18.75,11,0,21,0.0009765625,9.375,29.6875
+Informasi perbankan — 5 tugas (H2),5,20,50,90,40,4,0,1,0.125,15,60
+Small-Model Study — 32 tugas,32,128,33.59375,42.1875,8.59375,10,5,17,0.30175781,0,17.96875

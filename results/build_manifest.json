@@ -1,0 +1,44 @@
+{
+  "dataset_bundle": "dataset_bundle.zip",
+  "dataset_bundle_sha256": "66cd3ecc6f6a6c0e8e34d45f30e1685511b9fd524641f9ada946fd5518e7fca5",
+  "selected_pairs": 256,
+  "selected_episodes": 512,
+  "source_archives": {
+    "main_study.zip": {
+      "sha256": "42f85429ca3ad9b575d9028a6326acc0fbd835a25aabc9a5606618d157dad882",
+      "size_bytes": 3510938
+    },
+    "small_model_study.zip": {
+      "sha256": "08ae38e7c2023c981ddcf5680ab37ac5c0aa6c1372660caf1bc733f02886ae46",
+      "size_bytes": 11408690
+    }
+  },
+  "outputs": {
+    "pair_outcomes.csv.gz": "8ec4e88bf8c8815f4279cf4d7dc0e6ecbde9ffff697ba418ba02911faee40258",
+    "decision_comparison_by_group.csv": "9ac7630f0e5609fe917e526b562affde5230f45d59880c4cd3fb96f5a807fc21",
+    "success_by_model.csv": "1b92dfdfda87ae3a60f49d738f91424ae6be2feb944bbe7bc62c6a534fd22cd1",
+    "success_by_task.csv": "4e2886286ebc7da7cd67cf126361d7227da73a9a9d5d810c628ab467b781847f",
+    "model_size_comparison_by_task.csv": "fb67c78fc0fd25c5d184116710615144d377dfdd839dc25c241ec90ab9aa616d",
+    "small_model_higher_uplift_tasks.csv": "872c04bc27fe0f01a644f5922cef36ba0c2b9af408909bc27d17f23a1d7a240d",
+    "small_model_success_comparison_examples.csv": "4401e09c266e677a5ec5be45b25342508e0721a00cdfbac16da72ffe6027588e"
+  },
+  "decision_summary": [
+    {
+      "study_group": "Main Study",
+      "valid_pairs": 128,
+      "pairs_with_comparable_decisions": 48,
+      "pairs_with_different_actions": 33,
+      "pairs_with_same_action_when_comparable": 15,
+      "pairs_without_comparable_decision": 80
+    },
+    {
+      "study_group": "Small-Model Study",
+      "valid_pairs": 128,
+      "pairs_with_comparable_decisions": 75,
+      "pairs_with_different_actions": 49,
+      "pairs_with_same_action_when_comparable": 26,
+      "pairs_without_comparable_decision": 53
+    }
+  ],
+  "scope": "Derived result tables; source archives are read-only and are not modified."
+}
