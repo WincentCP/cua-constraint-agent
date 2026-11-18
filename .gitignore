@@ -17,14 +17,17 @@ coverage.xml
 htmlcov/
 
 # Local experiment inputs and generated research artifacts
-# Keep verified result tables and analysis exports trackable.
+# Runtime experiment outputs are intentionally trackable for reproducibility.
 main_study.zip
 small_model_study.zip
 archive_audit.json
-output/**
-!output/
-!output/**/
-!output/**/.gitkeep
+# Ignore only transient locks and interrupted atomic-write temporary files.
+output/**/.main_running.lock
+output/**/.small_study_running.lock
+output/**/.pilot_running.lock
+output/**/*.tmp
+output/**/__pycache__/
+output/**/*.pyc
 log_outputs/
 results/*.zip
 analysis_results.zip
