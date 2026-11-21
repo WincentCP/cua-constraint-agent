@@ -196,6 +196,5 @@
     "detailed_analysis_csv": 26,
     "summary_csv": 1,
     "notebook": "notebooks/main_analysis.ipynb"
-  },
-  "runtime_execution_note": "The package includes the preserved Main Study and Small-Model Study experiment archives and their episode-level logs/observations. It does not claim that the current repository runner was re-executed against live OpenApps and model services during package assembly."
+  }
 }
